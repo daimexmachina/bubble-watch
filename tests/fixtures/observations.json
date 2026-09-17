@@ -5,7 +5,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/RSP?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:23Z"
+        "retrieved_at": "2026-09-17T23:35:03Z"
       },
       "points": [
         {
@@ -14,19 +14,19 @@
         },
         {
           "date": "2025-09-19",
-          "value": 186.12307739257812
+          "value": 186.12306213378903
         },
         {
           "date": "2025-09-22",
-          "value": 186.2119598388672
+          "value": 186.21197509765625
         },
         {
           "date": "2025-09-23",
-          "value": 186.439208984375
+          "value": 186.4392242431641
         },
         {
           "date": "2025-09-24",
-          "value": 186.00450134277344
+          "value": 186.0045166015625
         },
         {
           "date": "2025-09-25",
@@ -42,7 +42,7 @@
         },
         {
           "date": "2025-09-30",
-          "value": 187.41729736328125
+          "value": 187.4172821044922
         },
         {
           "date": "2025-10-01",
@@ -54,11 +54,11 @@
         },
         {
           "date": "2025-10-03",
-          "value": 188.9486389160156
+          "value": 188.94862365722656
         },
         {
           "date": "2025-10-06",
-          "value": 188.88937377929688
+          "value": 188.8893585205078
         },
         {
           "date": "2025-10-07",
@@ -78,15 +78,15 @@
         },
         {
           "date": "2025-10-13",
-          "value": 184.6707305908203
+          "value": 184.67074584960935
         },
         {
           "date": "2025-10-14",
-          "value": 186.2021026611328
+          "value": 186.20208740234375
         },
         {
           "date": "2025-10-15",
-          "value": 186.5775146484375
+          "value": 186.57752990722656
         },
         {
           "date": "2025-10-16",
@@ -102,19 +102,19 @@
         },
         {
           "date": "2025-10-21",
-          "value": 188.4645233154297
+          "value": 188.46453857421875
         },
         {
           "date": "2025-10-22",
-          "value": 187.55560302734375
+          "value": 187.5555877685547
         },
         {
           "date": "2025-10-23",
-          "value": 188.4447784423828
+          "value": 188.44479370117188
         },
         {
           "date": "2025-10-24",
-          "value": 188.95851135253903
+          "value": 188.95852661132812
         },
         {
           "date": "2025-10-27",
@@ -126,11 +126,11 @@
         },
         {
           "date": "2025-10-29",
-          "value": 186.06378173828125
+          "value": 186.0637664794922
         },
         {
           "date": "2025-10-30",
-          "value": 185.26353454589844
+          "value": 185.26351928710935
         },
         {
           "date": "2025-10-31",
@@ -146,7 +146,7 @@
         },
         {
           "date": "2025-11-05",
-          "value": 185.06593322753903
+          "value": 185.06594848632812
         },
         {
           "date": "2025-11-06",
@@ -154,11 +154,11 @@
         },
         {
           "date": "2025-11-07",
-          "value": 185.30303955078125
+          "value": 185.3030242919922
         },
         {
           "date": "2025-11-10",
-          "value": 186.37005615234375
+          "value": 186.3700408935547
         },
         {
           "date": "2025-11-11",
@@ -174,15 +174,15 @@
         },
         {
           "date": "2025-11-14",
-          "value": 185.085693359375
+          "value": 185.0856781005859
         },
         {
           "date": "2025-11-17",
-          "value": 182.65530395507812
+          "value": 182.65528869628903
         },
         {
           "date": "2025-11-18",
-          "value": 182.7639617919922
+          "value": 182.76397705078125
         },
         {
           "date": "2025-11-19",
@@ -194,27 +194,27 @@
         },
         {
           "date": "2025-11-21",
-          "value": 183.52468872070312
+          "value": 183.5247039794922
         },
         {
           "date": "2025-11-24",
-          "value": 184.28543090820312
+          "value": 184.2854461669922
         },
         {
           "date": "2025-11-25",
-          "value": 186.9035491943359
+          "value": 186.90353393554688
         },
         {
           "date": "2025-11-26",
-          "value": 188.20767211914065
+          "value": 188.20765686035156
         },
         {
           "date": "2025-11-28",
-          "value": 189.2252655029297
+          "value": 189.22528076171875
         },
         {
           "date": "2025-12-01",
-          "value": 187.9310302734375
+          "value": 187.93104553222656
         },
         {
           "date": "2025-12-02",
@@ -222,7 +222,7 @@
         },
         {
           "date": "2025-12-03",
-          "value": 189.1857452392578
+          "value": 189.18576049804688
         },
         {
           "date": "2025-12-04",
@@ -230,7 +230,7 @@
         },
         {
           "date": "2025-12-05",
-          "value": 189.68960571289065
+          "value": 189.6896209716797
         },
         {
           "date": "2025-12-08",
@@ -254,15 +254,15 @@
         },
         {
           "date": "2025-12-15",
-          "value": 191.31976318359375
+          "value": 191.3197479248047
         },
         {
           "date": "2025-12-16",
-          "value": 189.9761199951172
+          "value": 189.97610473632812
         },
         {
           "date": "2025-12-17",
-          "value": 189.46238708496097
+          "value": 189.46237182617188
         },
         {
           "date": "2025-12-18",
@@ -290,7 +290,7 @@
         },
         {
           "date": "2025-12-29",
-          "value": 191.95164489746097
+          "value": 191.95166015625
         },
         {
           "date": "2025-12-30",
@@ -298,15 +298,15 @@
         },
         {
           "date": "2025-12-31",
-          "value": 190.00753784179688
+          "value": 190.0075225830078
         },
         {
           "date": "2026-01-02",
-          "value": 191.2969970703125
+          "value": 191.29701232910156
         },
         {
           "date": "2026-01-05",
-          "value": 193.0724945068359
+          "value": 193.07247924804688
         },
         {
           "date": "2026-01-06",
@@ -314,7 +314,7 @@
         },
         {
           "date": "2026-01-07",
-          "value": 193.21136474609375
+          "value": 193.2113494873047
         },
         {
           "date": "2026-01-08",
@@ -342,11 +342,11 @@
         },
         {
           "date": "2026-01-16",
-          "value": 197.43682861328125
+          "value": 197.4368438720703
         },
         {
           "date": "2026-01-20",
-          "value": 194.49090576171875
+          "value": 194.4908905029297
         },
         {
           "date": "2026-01-21",
@@ -354,15 +354,15 @@
         },
         {
           "date": "2026-01-22",
-          "value": 198.0419006347656
+          "value": 198.04188537597656
         },
         {
           "date": "2026-01-23",
-          "value": 197.15911865234375
+          "value": 197.1591033935547
         },
         {
           "date": "2026-01-26",
-          "value": 197.6252899169922
+          "value": 197.62530517578125
         },
         {
           "date": "2026-01-27",
@@ -378,7 +378,7 @@
         },
         {
           "date": "2026-01-30",
-          "value": 196.4746856689453
+          "value": 196.4747009277344
         },
         {
           "date": "2026-02-02",
@@ -390,7 +390,7 @@
         },
         {
           "date": "2026-02-04",
-          "value": 198.67669677734375
+          "value": 198.6767120361328
         },
         {
           "date": "2026-02-05",
@@ -410,19 +410,19 @@
         },
         {
           "date": "2026-02-11",
-          "value": 201.81109619140625
+          "value": 201.8111114501953
         },
         {
           "date": "2026-02-12",
-          "value": 199.1627197265625
+          "value": 199.16273498535156
         },
         {
           "date": "2026-02-13",
-          "value": 201.22586059570312
+          "value": 201.2258758544922
         },
         {
           "date": "2026-02-17",
-          "value": 200.87872314453125
+          "value": 200.8787078857422
         },
         {
           "date": "2026-02-18",
@@ -438,23 +438,23 @@
         },
         {
           "date": "2026-02-23",
-          "value": 200.21414184570312
+          "value": 200.2141571044922
         },
         {
           "date": "2026-02-24",
-          "value": 201.81109619140625
+          "value": 201.8111114501953
         },
         {
           "date": "2026-02-25",
-          "value": 201.9301300048828
+          "value": 201.93011474609375
         },
         {
           "date": "2026-02-26",
-          "value": 203.07080078125
+          "value": 203.07078552246097
         },
         {
           "date": "2026-02-27",
-          "value": 203.30886840820312
+          "value": 203.3088531494141
         },
         {
           "date": "2026-03-02",
@@ -474,27 +474,27 @@
         },
         {
           "date": "2026-03-06",
-          "value": 196.54412841796875
+          "value": 196.5441131591797
         },
         {
           "date": "2026-03-09",
-          "value": 197.09959411621097
+          "value": 197.099609375
         },
         {
           "date": "2026-03-10",
-          "value": 195.6216735839844
+          "value": 195.6216583251953
         },
         {
           "date": "2026-03-11",
-          "value": 194.9769287109375
+          "value": 194.97694396972656
         },
         {
           "date": "2026-03-12",
-          "value": 191.96157836914065
+          "value": 191.96156311035156
         },
         {
           "date": "2026-03-13",
-          "value": 191.95164489746097
+          "value": 191.95166015625
         },
         {
           "date": "2026-03-16",
@@ -514,7 +514,7 @@
         },
         {
           "date": "2026-03-20",
-          "value": 188.9362945556641
+          "value": 188.936279296875
         },
         {
           "date": "2026-03-23",
@@ -1019,7 +1019,7 @@
         "source": "sec-edgar-fulltext",
         "endpoint": "efts.sec.gov/LATEST/search-index forms=S-1 window=2025-09-17..=2026-09-17",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:26Z"
+        "retrieved_at": "2026-09-17T23:35:07Z"
       },
       "points": [
         {
@@ -1033,7 +1033,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:23Z"
+        "retrieved_at": "2026-09-17T23:35:03Z"
       },
       "points": [
         {
@@ -2047,7 +2047,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=5y&interval=1mo",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:22Z"
+        "retrieved_at": "2026-09-17T23:35:03Z"
       },
       "points": [
         {
@@ -2301,7 +2301,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:24Z"
+        "retrieved_at": "2026-09-17T23:35:04Z"
       },
       "points": [
         {
@@ -3315,7 +3315,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:24Z"
+        "retrieved_at": "2026-09-17T23:35:04Z"
       },
       "points": [
         {
@@ -4333,7 +4333,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T22:48:24Z"
+        "retrieved_at": "2026-09-17T23:35:04Z"
       },
       "points": [
         {
@@ -5361,7 +5361,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLC0A0CM&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-17T22:48:25Z"
+        "retrieved_at": "2026-09-17T23:35:05Z"
       },
       "points": [
         {
@@ -8515,7 +8515,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-17T22:48:25Z"
+        "retrieved_at": "2026-09-17T23:35:05Z"
       },
       "points": [
         {
@@ -11673,7 +11673,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-17T22:48:26Z"
+        "retrieved_at": "2026-09-17T23:35:06Z"
       },
       "points": [
         {
@@ -84412,7 +84412,893 @@
           "days": 365
         }
       ],
-      "issuance": []
+      "issuance": [],
+      "lease": [
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 20881000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 22415000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 23904000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 25835000000.0,
+          "form": "10-K",
+          "filed": "2020-01-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 25835000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 25835000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 25835000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 27084000000.0,
+          "form": "10-Q",
+          "filed": "2020-05-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 29599000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 35255000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 39099000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 39099000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 39099000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 39099000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 39099000000.0,
+          "form": "10-K",
+          "filed": "2022-02-04",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 40978000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 45283000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 53954000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 58330000000.0,
+          "form": "10-K",
+          "filed": "2022-02-04",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 58330000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 58330000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 58330000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 58330000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 58286000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 60606000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 64783000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 69040000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 69040000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 69040000000.0,
+          "form": "10-Q",
+          "filed": "2023-08-04",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 69040000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 69040000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 71248000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 73370000000.0,
+          "form": "10-Q",
+          "filed": "2023-08-04",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 73902000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 75639000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 75639000000.0,
+          "form": "10-Q",
+          "filed": "2024-05-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 75639000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 75639000000.0,
+          "form": "10-Q",
+          "filed": "2024-11-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 75639000000.0,
+          "form": "10-K",
+          "filed": "2025-02-07",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 76019000000.0,
+          "form": "10-Q",
+          "filed": "2024-05-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 77432000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 79677000000.0,
+          "form": "10-Q",
+          "filed": "2024-11-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 79596000000.0,
+          "form": "10-K",
+          "filed": "2025-02-07",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 79596000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 79596000000.0,
+          "form": "10-Q",
+          "filed": "2025-08-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 79596000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 79596000000.0,
+          "form": "10-K",
+          "filed": "2026-02-06",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 81731000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 84991000000.0,
+          "form": "10-Q",
+          "filed": "2025-08-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 86233000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 89252000000.0,
+          "form": "10-K",
+          "filed": "2026-02-06",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 89252000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 89252000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 91617000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 96320000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-31",
+          "days": 0
+        }
+      ],
+      "purchase_obligation": [
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2013-09-30",
+          "end": "2013-09-30",
+          "val": 947000000.0,
+          "form": "10-Q",
+          "filed": "2013-10-25",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2014-03-31",
+          "end": "2014-03-31",
+          "val": 1144000000.0,
+          "form": "10-Q",
+          "filed": "2014-04-25",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2014-06-30",
+          "end": "2014-06-30",
+          "val": 1393000000.0,
+          "form": "10-Q",
+          "filed": "2014-07-25",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2014-09-30",
+          "end": "2014-09-30",
+          "val": 1468000000.0,
+          "form": "10-Q",
+          "filed": "2014-10-24",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2014-12-31",
+          "end": "2014-12-31",
+          "val": 1434000000.0,
+          "form": "10-K",
+          "filed": "2015-01-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-03-31",
+          "end": "2015-03-31",
+          "val": 1776000000.0,
+          "form": "10-Q",
+          "filed": "2015-04-24",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-06-30",
+          "end": "2015-06-30",
+          "val": 1748000000.0,
+          "form": "10-Q",
+          "filed": "2015-07-24",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-09-30",
+          "end": "2015-09-30",
+          "val": 1868000000.0,
+          "form": "10-Q",
+          "filed": "2015-10-23",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-12-31",
+          "end": "2015-12-31",
+          "val": 1782000000.0,
+          "form": "10-K",
+          "filed": "2016-01-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2016-03-31",
+          "end": "2016-03-31",
+          "val": 1825000000.0,
+          "form": "10-Q",
+          "filed": "2016-04-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2016-06-30",
+          "end": "2016-06-30",
+          "val": 1967000000.0,
+          "form": "10-Q",
+          "filed": "2016-07-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2016-09-30",
+          "end": "2016-09-30",
+          "val": 1900000000.0,
+          "form": "10-Q",
+          "filed": "2016-10-28",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2016-12-31",
+          "end": "2016-12-31",
+          "val": 1710000000.0,
+          "form": "10-K",
+          "filed": "2017-02-10",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2017-03-31",
+          "end": "2017-03-31",
+          "val": 1735000000.0,
+          "form": "10-Q",
+          "filed": "2017-04-28",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2017-06-30",
+          "end": "2017-06-30",
+          "val": 1623000000.0,
+          "form": "10-Q",
+          "filed": "2017-07-28",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2017-09-30",
+          "end": "2017-09-30",
+          "val": 24794000000.0,
+          "form": "10-Q",
+          "filed": "2017-10-27",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 24200000000.0,
+          "form": "10-K",
+          "filed": "2018-02-02",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2018-03-31",
+          "end": "2018-03-31",
+          "val": 23520000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-27",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 22281000000.0,
+          "form": "10-Q",
+          "filed": "2018-07-27",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 21800000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-26",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 22193000000.0,
+          "form": "10-K",
+          "filed": "2019-02-01",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 20567000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-26",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 19478000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-26",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 18858000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-25",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 19988000000.0,
+          "form": "10-K",
+          "filed": "2020-01-31",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 18610000000.0,
+          "form": "10-Q",
+          "filed": "2020-05-01",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 17417000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 16544000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 16486000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 32935000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 34110000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 34590000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 34902000000.0,
+          "form": "10-K",
+          "filed": "2022-02-04",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 33653000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 35079000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 33843000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-28",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 34776000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 33661000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-28",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 33136000000.0,
+          "form": "10-Q",
+          "filed": "2023-08-04",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 31870000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-27",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 35484000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 39869000000.0,
+          "form": "10-Q",
+          "filed": "2024-05-01",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 32408000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-02",
+          "days": 0
+        }
+      ]
     },
     "GOOGL": {
       "cik": "0001652044",
@@ -89352,6 +90238,280 @@
           "form": "10-Q",
           "filed": "2026-07-23",
           "days": 180
+        }
+      ],
+      "lease": [
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 9348000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 10152000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 10791000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 11413000000.0,
+          "form": "10-K",
+          "filed": "2020-02-04",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 11788000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 12125000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 12519000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 12840000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 13578000000.0,
+          "form": "10-K",
+          "filed": "2022-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 14978000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15251000000.0,
+          "form": "10-K",
+          "filed": "2024-01-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15251000000.0,
+          "form": "10-K",
+          "filed": "2025-02-05",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 14578000000.0,
+          "form": "10-K",
+          "filed": "2025-02-05",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 14578000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 14578000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 14578000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 14578000000.0,
+          "form": "10-K",
+          "filed": "2026-02-05",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 14551000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 14959000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 15205000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 15954000000.0,
+          "form": "10-K",
+          "filed": "2026-02-05",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 15954000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 15954000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-23",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 16161000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 18037000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-23",
+          "days": 0
+        }
+      ],
+      "purchase_obligation": [
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-12-31",
+          "end": "2015-12-31",
+          "val": 1700000000.0,
+          "form": "10-K",
+          "filed": "2016-02-11",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-12-31",
+          "end": "2015-12-31",
+          "val": 1700000000.0,
+          "form": "8-K",
+          "filed": "2016-05-03",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2016-12-31",
+          "end": "2016-12-31",
+          "val": 2500000000.0,
+          "form": "10-K",
+          "filed": "2017-02-03",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 42600000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 75600000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
         }
       ]
     },
@@ -95733,6 +96893,604 @@
           "form": "10-K",
           "filed": "2016-01-28",
           "days": 364
+        }
+      ],
+      "lease": [
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 0.0,
+          "form": "10-Q",
+          "filed": "2019-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 0.0,
+          "form": "10-K",
+          "filed": "2020-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 6565000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7122000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 8356000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 9524000000.0,
+          "form": "10-K",
+          "filed": "2020-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 9524000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 9524000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 9524000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 9524000000.0,
+          "form": "10-K",
+          "filed": "2021-01-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 9509000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 9633000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 9641000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9631000000.0,
+          "form": "10-K",
+          "filed": "2021-01-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9631000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9631000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9631000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9631000000.0,
+          "form": "10-K",
+          "filed": "2022-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 10574000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 10956000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 11554000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 12746000000.0,
+          "form": "10-K",
+          "filed": "2022-02-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 12746000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 12746000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 12746000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 12746000000.0,
+          "form": "10-K",
+          "filed": "2023-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 12894000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 14792000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 14687000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 15301000000.0,
+          "form": "10-K",
+          "filed": "2023-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 15301000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 15301000000.0,
+          "form": "10-Q",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 15301000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 15301000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 16171000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 16440000000.0,
+          "form": "10-Q",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 16374000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 17226000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 17226000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 17226000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 17226000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 17226000000.0,
+          "form": "10-K",
+          "filed": "2025-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 17570000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 17685000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 18208000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18292000000.0,
+          "form": "10-K",
+          "filed": "2025-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18292000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18292000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18292000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18292000000.0,
+          "form": "10-K",
+          "filed": "2026-01-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 18714000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 18751000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 20113000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 22940000000.0,
+          "form": "10-K",
+          "filed": "2026-01-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 22940000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 22940000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 25607000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiabilityNoncurrent",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 26229000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-30",
+          "days": 0
+        }
+      ],
+      "purchase_obligation": [
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 34120000000.0,
+          "form": "10-K",
+          "filed": "2025-01-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 35270000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-01",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 52560000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-31",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 58140000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-10-31",
+          "end": "2025-10-31",
+          "val": 12310000000.0,
+          "form": "10-K",
+          "filed": "2026-01-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 103770000000.0,
+          "form": "10-K",
+          "filed": "2026-01-29",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 182880000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 278990000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-30",
+          "days": 0
         }
       ]
     },
@@ -106588,7 +108346,685 @@
           "filed": "2026-07-29",
           "days": 364
         }
-      ]
+      ],
+      "lease": [
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2016-06-30",
+          "end": "2016-06-30",
+          "val": 0.0,
+          "form": "10-K",
+          "filed": "2017-08-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2017-06-30",
+          "end": "2017-06-30",
+          "val": 0.0,
+          "form": "10-K",
+          "filed": "2017-08-02",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2017-06-30",
+          "end": "2017-06-30",
+          "val": 6795000000.0,
+          "form": "10-Q",
+          "filed": "2018-01-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2017-06-30",
+          "end": "2017-06-30",
+          "val": 6795000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2017-06-30",
+          "end": "2017-06-30",
+          "val": 6795000000.0,
+          "form": "10-K",
+          "filed": "2018-08-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2017-09-30",
+          "end": "2017-09-30",
+          "val": 7020000000.0,
+          "form": "10-Q",
+          "filed": "2017-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 6983000000.0,
+          "form": "10-Q",
+          "filed": "2018-01-31",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-03-31",
+          "end": "2018-03-31",
+          "val": 7133000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 6967000000.0,
+          "form": "10-K",
+          "filed": "2018-08-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 6967000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 6967000000.0,
+          "form": "10-Q",
+          "filed": "2019-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 6967000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 6967000000.0,
+          "form": "10-K",
+          "filed": "2019-08-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 7024000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 7104000000.0,
+          "form": "10-Q",
+          "filed": "2019-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 7433000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7703000000.0,
+          "form": "10-K",
+          "filed": "2019-08-01",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7703000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-23",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7703000000.0,
+          "form": "10-Q",
+          "filed": "2020-01-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7703000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7703000000.0,
+          "form": "10-K",
+          "filed": "2020-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 8210000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-23",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 8788000000.0,
+          "form": "10-Q",
+          "filed": "2020-01-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 8805000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 9287000000.0,
+          "form": "10-K",
+          "filed": "2020-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 9287000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 9287000000.0,
+          "form": "10-Q",
+          "filed": "2021-01-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 9287000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 9287000000.0,
+          "form": "10-K",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 9497000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 10741000000.0,
+          "form": "10-Q",
+          "filed": "2021-01-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 11148000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 11591000000.0,
+          "form": "10-K",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 11591000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 11591000000.0,
+          "form": "10-Q",
+          "filed": "2022-01-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 11591000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 11591000000.0,
+          "form": "10-K",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 12099000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 12900000000.0,
+          "form": "10-Q",
+          "filed": "2022-01-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 13516000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-26",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 13717000000.0,
+          "form": "10-K",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 13717000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 13717000000.0,
+          "form": "10-Q",
+          "filed": "2023-01-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 13717000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 13717000000.0,
+          "form": "10-K",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 13884000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 14285000000.0,
+          "form": "10-Q",
+          "filed": "2023-01-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 14639000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 15137000000.0,
+          "form": "10-K",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 15137000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 15137000000.0,
+          "form": "10-Q",
+          "filed": "2024-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 15137000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 15137000000.0,
+          "form": "10-K",
+          "filed": "2024-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 15137000000.0,
+          "form": "8-K",
+          "filed": "2024-12-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 16025000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-24",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 16942000000.0,
+          "form": "10-Q",
+          "filed": "2024-01-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 17882000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 19077000000.0,
+          "form": "10-K",
+          "filed": "2024-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 19077000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 19077000000.0,
+          "form": "8-K",
+          "filed": "2024-12-03",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 19077000000.0,
+          "form": "10-Q",
+          "filed": "2025-01-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 19077000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 19077000000.0,
+          "form": "10-K",
+          "filed": "2025-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 20370000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 21862000000.0,
+          "form": "10-Q",
+          "filed": "2025-01-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 22924000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 22861000000.0,
+          "form": "10-K",
+          "filed": "2025-07-30",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 22861000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 22861000000.0,
+          "form": "10-Q",
+          "filed": "2026-01-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 22861000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 22861000000.0,
+          "form": "10-K",
+          "filed": "2026-07-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 22733000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 22865000000.0,
+          "form": "10-Q",
+          "filed": "2026-01-28",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 22238000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-29",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 21925000000.0,
+          "form": "10-K",
+          "filed": "2026-07-29",
+          "days": 0
+        }
+      ],
+      "purchase_obligation": []
     },
     "ORCL": {
       "cik": "0001341439",
@@ -110428,12 +112864,705 @@
       ],
       "debt": [
         {
-          "tag": "LongTermDebt",
-          "start": "2022-05-31",
-          "end": "2022-05-31",
-          "val": 0.0,
+          "tag": "LongTermNotesPayable",
+          "start": "2009-05-31",
+          "end": "2009-05-31",
+          "val": 9237000000.0,
+          "form": "10-Q",
+          "filed": "2009-09-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2009-05-31",
+          "end": "2009-05-31",
+          "val": 9237000000.0,
+          "form": "10-Q",
+          "filed": "2009-12-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2009-05-31",
+          "end": "2009-05-31",
+          "val": 9237000000.0,
+          "form": "10-Q",
+          "filed": "2010-03-29",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2009-05-31",
+          "end": "2009-05-31",
+          "val": 9237000000.0,
+          "form": "10-K",
+          "filed": "2010-07-01",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2009-08-31",
+          "end": "2009-08-31",
+          "val": 13723000000.0,
+          "form": "10-Q",
+          "filed": "2009-09-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2009-11-30",
+          "end": "2009-11-30",
+          "val": 13751000000.0,
+          "form": "10-Q",
+          "filed": "2009-12-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-02-28",
+          "end": "2010-02-28",
+          "val": 11498000000.0,
+          "form": "10-Q",
+          "filed": "2010-03-29",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-05-31",
+          "end": "2010-05-31",
+          "val": 11510000000.0,
+          "form": "10-K",
+          "filed": "2010-07-01",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-05-31",
+          "end": "2010-05-31",
+          "val": 11510000000.0,
+          "form": "10-Q/A",
+          "filed": "2010-09-29",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-05-31",
+          "end": "2010-05-31",
+          "val": 11510000000.0,
+          "form": "10-Q",
+          "filed": "2010-12-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-05-31",
+          "end": "2010-05-31",
+          "val": 11510000000.0,
+          "form": "10-Q",
+          "filed": "2011-03-29",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-05-31",
+          "end": "2010-05-31",
+          "val": 11510000000.0,
+          "form": "10-K",
+          "filed": "2011-06-28",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-08-31",
+          "end": "2010-08-31",
+          "val": 14778000000.0,
+          "form": "10-Q/A",
+          "filed": "2010-09-29",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2010-11-30",
+          "end": "2010-11-30",
+          "val": 14780000000.0,
+          "form": "10-Q",
+          "filed": "2010-12-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-02-28",
+          "end": "2011-02-28",
+          "val": 14752000000.0,
+          "form": "10-Q",
+          "filed": "2011-03-29",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-05-31",
+          "end": "2011-05-31",
+          "val": 14772000000.0,
+          "form": "10-K",
+          "filed": "2011-06-28",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-05-31",
+          "end": "2011-05-31",
+          "val": 14772000000.0,
+          "form": "10-Q",
+          "filed": "2011-09-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-05-31",
+          "end": "2011-05-31",
+          "val": 14772000000.0,
+          "form": "10-Q",
+          "filed": "2011-12-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-05-31",
+          "end": "2011-05-31",
+          "val": 14772000000.0,
+          "form": "10-Q",
+          "filed": "2012-03-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-05-31",
+          "end": "2011-05-31",
+          "val": 14772000000.0,
+          "form": "10-K",
+          "filed": "2012-06-26",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-08-31",
+          "end": "2011-08-31",
+          "val": 14789000000.0,
+          "form": "10-Q",
+          "filed": "2011-09-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2011-11-30",
+          "end": "2011-11-30",
+          "val": 14778000000.0,
+          "form": "10-Q",
+          "filed": "2011-12-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-02-29",
+          "end": "2012-02-29",
+          "val": 14777000000.0,
+          "form": "10-Q",
+          "filed": "2012-03-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-05-31",
+          "end": "2012-05-31",
+          "val": 13524000000.0,
+          "form": "10-K",
+          "filed": "2012-06-26",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-05-31",
+          "end": "2012-05-31",
+          "val": 13524000000.0,
+          "form": "10-Q",
+          "filed": "2012-09-24",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-05-31",
+          "end": "2012-05-31",
+          "val": 13524000000.0,
+          "form": "10-Q",
+          "filed": "2012-12-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-05-31",
+          "end": "2012-05-31",
+          "val": 13524000000.0,
+          "form": "10-Q",
+          "filed": "2013-03-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-05-31",
+          "end": "2012-05-31",
+          "val": 13524000000.0,
+          "form": "10-K",
+          "filed": "2013-06-26",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-08-31",
+          "end": "2012-08-31",
+          "val": 13521000000.0,
+          "form": "10-Q",
+          "filed": "2012-09-24",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2012-11-30",
+          "end": "2012-11-30",
+          "val": 18507000000.0,
+          "form": "10-Q",
+          "filed": "2012-12-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-02-28",
+          "end": "2013-02-28",
+          "val": 18502000000.0,
+          "form": "10-Q",
+          "filed": "2013-03-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-05-31",
+          "end": "2013-05-31",
+          "val": 18494000000.0,
+          "form": "10-K",
+          "filed": "2013-06-26",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-05-31",
+          "end": "2013-05-31",
+          "val": 18494000000.0,
+          "form": "10-Q",
+          "filed": "2013-09-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-05-31",
+          "end": "2013-05-31",
+          "val": 18494000000.0,
+          "form": "10-Q",
+          "filed": "2013-12-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-05-31",
+          "end": "2013-05-31",
+          "val": 18494000000.0,
+          "form": "10-Q",
+          "filed": "2014-03-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-05-31",
+          "end": "2013-05-31",
+          "val": 18494000000.0,
+          "form": "10-K",
+          "filed": "2014-06-26",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-08-31",
+          "end": "2013-08-31",
+          "val": 22575000000.0,
+          "form": "10-Q",
+          "filed": "2013-09-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2013-11-30",
+          "end": "2013-11-30",
+          "val": 22641000000.0,
+          "form": "10-Q",
+          "filed": "2013-12-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-02-28",
+          "end": "2014-02-28",
+          "val": 22677000000.0,
+          "form": "10-Q",
+          "filed": "2014-03-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-05-31",
+          "end": "2014-05-31",
+          "val": 22667000000.0,
+          "form": "10-K",
+          "filed": "2014-06-26",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-05-31",
+          "end": "2014-05-31",
+          "val": 22667000000.0,
+          "form": "10-Q",
+          "filed": "2014-09-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-05-31",
+          "end": "2014-05-31",
+          "val": 22667000000.0,
+          "form": "10-Q",
+          "filed": "2014-12-19",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-05-31",
+          "end": "2014-05-31",
+          "val": 22667000000.0,
+          "form": "10-Q",
+          "filed": "2015-03-19",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-05-31",
+          "end": "2014-05-31",
+          "val": 22589000000.0,
+          "form": "10-K",
+          "filed": "2015-06-25",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-08-31",
+          "end": "2014-08-31",
+          "val": 32567000000.0,
+          "form": "10-Q",
+          "filed": "2014-09-23",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2014-11-30",
+          "end": "2014-11-30",
+          "val": 32456000000.0,
+          "form": "10-Q",
+          "filed": "2014-12-19",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-02-28",
+          "end": "2015-02-28",
+          "val": 30258000000.0,
+          "form": "10-Q",
+          "filed": "2015-03-19",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-05-31",
+          "end": "2015-05-31",
+          "val": 39959000000.0,
+          "form": "10-K",
+          "filed": "2015-06-25",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-05-31",
+          "end": "2015-05-31",
+          "val": 39959000000.0,
+          "form": "10-Q",
+          "filed": "2015-09-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-05-31",
+          "end": "2015-05-31",
+          "val": 39959000000.0,
+          "form": "10-Q",
+          "filed": "2015-12-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-05-31",
+          "end": "2015-05-31",
+          "val": 39959000000.0,
+          "form": "10-Q",
+          "filed": "2016-03-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-05-31",
+          "end": "2015-05-31",
+          "val": 39959000000.0,
+          "form": "10-K",
+          "filed": "2016-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-08-31",
+          "end": "2015-08-31",
+          "val": 40050000000.0,
+          "form": "10-Q",
+          "filed": "2015-09-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2015-11-30",
+          "end": "2015-11-30",
+          "val": 39940000000.0,
+          "form": "10-Q",
+          "filed": "2015-12-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2016-02-29",
+          "end": "2016-02-29",
+          "val": 40106000000.0,
+          "form": "10-Q",
+          "filed": "2016-03-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2016-05-31",
+          "end": "2016-05-31",
+          "val": 40105000000.0,
+          "form": "10-K",
+          "filed": "2016-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2016-05-31",
+          "end": "2016-05-31",
+          "val": 40105000000.0,
+          "form": "10-Q",
+          "filed": "2016-09-19",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2016-05-31",
+          "end": "2016-05-31",
+          "val": 40105000000.0,
+          "form": "10-K",
+          "filed": "2017-06-27",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2016-08-31",
+          "end": "2016-08-31",
+          "val": 53057000000.0,
+          "form": "10-Q",
+          "filed": "2016-09-19",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2017-05-31",
+          "end": "2017-05-31",
+          "val": 48112000000.0,
+          "form": "10-K",
+          "filed": "2017-06-27",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2017-05-31",
+          "end": "2017-05-31",
+          "val": 48112000000.0,
+          "form": "10-K",
+          "filed": "2018-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 56128000000.0,
+          "form": "10-K",
+          "filed": "2018-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 56128000000.0,
+          "form": "10-K",
+          "filed": "2019-06-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 51673000000.0,
+          "form": "10-K",
+          "filed": "2019-06-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 51673000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 69226000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 69226000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 75995000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 75995000000.0,
           "form": "10-K",
           "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 72110000000.0,
+          "form": "10-K",
+          "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 72110000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 86420000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 86420000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 76264000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 76264000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 85297000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 85297000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "LongTermNotesPayable",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 122342000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
           "days": 0
         }
       ],
@@ -112627,9 +115756,364 @@
           "filed": "2026-09-11",
           "days": 91
         }
+      ],
+      "lease": [
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-08-31",
+          "end": "2019-08-31",
+          "val": 2061000000.0,
+          "form": "10-Q",
+          "filed": "2019-09-13",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2019-11-30",
+          "end": "2019-11-30",
+          "val": 1993000000.0,
+          "form": "10-Q",
+          "filed": "2019-12-13",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-02-29",
+          "end": "2020-02-29",
+          "val": 1904000000.0,
+          "form": "10-Q",
+          "filed": "2020-03-13",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 2098000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 2782000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 3658000000.0,
+          "form": "10-K",
+          "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 4849000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 7545000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 7500000000.0,
+          "form": "10-Q",
+          "filed": "2025-03-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 7545000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-02-28",
+          "end": "2025-02-28",
+          "val": 12000000000.0,
+          "form": "10-Q",
+          "filed": "2025-03-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 13450000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 13450000000.0,
+          "form": "10-Q",
+          "filed": "2025-09-10",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 13450000000.0,
+          "form": "10-Q",
+          "filed": "2025-12-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 13450000000.0,
+          "form": "10-Q",
+          "filed": "2026-03-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 13450000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-08-31",
+          "end": "2025-08-31",
+          "val": 16290000000.0,
+          "form": "10-Q",
+          "filed": "2025-09-10",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2025-11-30",
+          "end": "2025-11-30",
+          "val": 18679000000.0,
+          "form": "10-Q",
+          "filed": "2025-12-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-02-28",
+          "end": "2026-02-28",
+          "val": 21310000000.0,
+          "form": "10-Q",
+          "filed": "2026-03-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 30190000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 30190000000.0,
+          "form": "10-Q",
+          "filed": "2026-09-11",
+          "days": 0
+        },
+        {
+          "tag": "OperatingLeaseLiability",
+          "start": "2026-08-31",
+          "end": "2026-08-31",
+          "val": 34621000000.0,
+          "form": "10-Q",
+          "filed": "2026-09-11",
+          "days": 0
+        }
+      ],
+      "purchase_obligation": [
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2013-05-31",
+          "end": "2013-05-31",
+          "val": 806000000.0,
+          "form": "10-K",
+          "filed": "2013-06-26",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2014-05-31",
+          "end": "2014-05-31",
+          "val": 510000000.0,
+          "form": "10-K",
+          "filed": "2014-06-26",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2015-05-31",
+          "end": "2015-05-31",
+          "val": 1181000000.0,
+          "form": "10-K",
+          "filed": "2015-06-25",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2016-05-31",
+          "end": "2016-05-31",
+          "val": 894000000.0,
+          "form": "10-K",
+          "filed": "2016-06-22",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2017-05-31",
+          "end": "2017-05-31",
+          "val": 1476000000.0,
+          "form": "10-K",
+          "filed": "2017-06-27",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 1375000000.0,
+          "form": "10-K",
+          "filed": "2018-06-22",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 1045000000.0,
+          "form": "10-K",
+          "filed": "2019-06-21",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 1263000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 2017000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 4789000000.0,
+          "form": "10-K",
+          "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 2771000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 1587000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 2226000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2025-11-30",
+          "end": "2025-11-30",
+          "val": 10000000000.0,
+          "form": "10-Q",
+          "filed": "2025-12-11",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2026-02-28",
+          "end": "2026-02-28",
+          "val": 11000000000.0,
+          "form": "10-Q",
+          "filed": "2026-03-11",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 13309000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+          "start": "2026-08-31",
+          "end": "2026-08-31",
+          "val": 34150000000.0,
+          "form": "10-Q",
+          "filed": "2026-09-11",
+          "days": 0
+        }
       ]
     }
   },
   "failures": [],
-  "retrieved_at": "2026-09-17T22:48:22Z"
+  "retrieved_at": "2026-09-17T23:35:03Z"
 }

@@ -15,7 +15,7 @@
 # which is a deliberate decision documented in their rationale below.
 
 [meta]
-schema_version = "1.1"
+schema_version = "1.2"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -233,40 +233,45 @@ anchors = [[0.08, 8.0], [0.12, 25.0], [0.16, 42.0], [0.20, 58.0], [0.28, 78.0], 
 
 [[indicator]]
 id = "leverage"
-label = "Cohort leverage (debt vs cash generation)"
+label = "Cohort leverage (debt + leases vs cash generation)"
 weight = 6.0
-unit = "ratio, total long-term debt divided by TTM operating cash flow"
+unit = "ratio, (total long-term debt + operating leases) divided by TTM operating cash flow"
 source = "edgar"
-rationale = "Whether the cohort can carry the commitments it has signed. Capital Economics rates leverage as NOT yet alarming relative to valuations, and the anchors reflect that: this indicator should report moderate stress at current levels. Debt is from the reported balance sheet and therefore excludes the large off-balance-sheet lease and purchase commitments that Moody's flags (~USD 662bn of signed-but-not-commenced leases) — so this indicator UNDERSTATES true leverage, and the report says so."
-anchors = [[0.3, 8.0], [0.6, 20.0], [1.0, 35.0], [1.5, 55.0], [2.2, 75.0], [3.2, 92.0]]
+# METHODOLOGY CHANGED 2026-09-17 — schema_version 1.1 -> 1.2.
+#
+# Two corrections, both measured from this host:
+#
+# 1. ORCL WAS REPORTED AS HAVING NO DEBT. us-gaap:LongTermDebt resolves for Oracle
+#    to a single stale fact ending 2022-05-31 with value 0.0, and the previous
+#    first-tag-that-answers resolver used it. Oracle's notes payable are ~$122bn
+#    (us-gaap:LongTermNotesPayable) and it is the most exposed cohort member on
+#    every other measure, so the bug reported the most leveraged company as the
+#    least. Tag order now includes LongTermNotesPayable, and a stale-or-zero
+#    series is REJECTED rather than used.
+#
+# 2. OPERATING LEASES WERE EXCLUDED, which the previous rationale admitted
+#    understated true leverage. Measured effect of including them: cohort mean
+#    goes 0.556x -> 0.955x operating cash flow, i.e. stress 18.2 -> 33.3, an
+#    understatement of 15.1 points at this weight.
+#
+# Measured values at the change (debt+leases over TTM operating cash flow):
+# MSFT 0.32x, GOOGL 0.87x, AMZN 1.61x, META 1.22x, ORCL 0.76x (debt-only for
+# ORCL read 0.00x before the fix).
+#
+# Purchase obligations are deliberately NOT folded into this ratio: they are
+# disclosed inconsistently (MSFT reports no such concept at all), and blending a
+# partial total into the headline would make the ratio mean different things for
+# different filers. They are reported alongside instead, and an absent disclosure
+# renders as "not disclosed", NEVER as zero.
+#
+# The anchors below are shifted up from the old debt-only calibration, which is
+# required for the measure to mean the same thing after the definition changed.
+# They remain deliberately shallow at the low end: Capital Economics rates cohort
+# leverage as not yet alarming relative to valuations, and that reading should
+# still produce a moderate rather than a high score.
+rationale = "Whether the cohort can carry the commitments it has signed. Computed from reported total long-term debt PLUS operating lease liabilities, divided by TTM operating cash flow. Two corrections over the previous version, both measured 2026-09-17: (a) us-gaap:LongTermDebt resolves for ORCL to a stale 2022-05-31 fact worth exactly zero, so the old resolver reported the most leveraged company in the cohort as carrying no debt — ORCL's notes are ~$122bn under us-gaap:LongTermNotesPayable; (b) operating leases were excluded, which the old rationale admitted understated leverage. Including leases moves the cohort mean from 0.556x to 0.955x operating cash flow, an understatement of 15.1 stress points. A stale or exactly-zero series is now REJECTED rather than used, because both indicate a wrong tag rather than a fact. STILL EXCLUDES off-balance-sheet vehicles (SPVs, joint ventures, sale-leasebacks) that finance a growing share of data-centre construction, so true leverage remains higher than this ratio. Unconditional purchase obligations are reported alongside rather than folded in, because they are not universally disclosed and blending a partial total would make the ratio mean different things for different filers."
+anchors = [[0.3, 5.0], [0.6, 14.0], [1.0, 28.0], [1.5, 48.0], [2.2, 70.0], [3.2, 88.0], [4.5, 96.0]]
 
-# ---------------------------------------------------------------------------
-# Primary-market supply (NEW, methodology 1.1).
-#
-# Closes a gap the config previously declared as unmeasurable. It used to say a
-# five-name mega-cap cohort "cannot see the broad IPO/secondary wave that
-# historically marks a peak". That was too pessimistic for the registration leg:
-# SEC full-text search counts filings directly.
-#
-# REFERENCE VALUES. Measured from this host 2026-09-17 via efts.sec.gov full-text
-# search, annual S-1 counts:
-#
-#     2015  2,983      2020  2,890      2024  2,663
-#     2016  2,296      2021  5,619  <-  2025  2,824
-#     2017  2,359      2022  2,715      2026  1,866 (partial, to 09-17)
-#     2018  2,343      2023  2,553
-#     2019  1,867
-#
-# 2021 is the clearest primary-market mania in the available record and sets the
-# top of the scale. The 2015-2019 range sits near 2,300 and 2023-2025 near 2,650.
-# Those are the two clusters the mid-range anchors are built on, which is why the
-# anchors below are deliberately WIDE and shallow in the middle: this is a noisy
-# count and a few hundred filings either way is not a regime change.
-#
-# Caveat carried in the indicator itself: a registration is an ATTEMPT to sell,
-# not a completed sale, and the count is unadjusted for how many companies were
-# simply eligible to file. Treat it as supply-of-attempts.
-# ---------------------------------------------------------------------------
 [[indicator]]
 id = "primary_market_supply"
 label = "Primary-market supply (SEC registration statements)"

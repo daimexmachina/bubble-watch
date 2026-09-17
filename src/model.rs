@@ -69,6 +69,11 @@ pub struct CompanyFacts {
     /// Cash received from issuing common stock. Genuinely absent for filers that
     /// do not issue equity (AMZN), which is a gap and not a zero.
     pub issuance: Vec<EdgarFact>,
+    /// Operating lease liability (point in time).
+    pub lease: Vec<EdgarFact>,
+    /// Unconditional purchase obligations. Absent for filers that do not disclose
+    /// them (MSFT), which is a gap and never a zero.
+    pub purchase_obligation: Vec<EdgarFact>,
 }
 
 impl CompanyFacts {
@@ -116,6 +121,48 @@ impl CompanyFacts {
     /// Most recent fact of any duration, for point-in-time series like shares.
     pub fn latest(facts: &[EdgarFact]) -> Option<&EdgarFact> {
         facts.iter().max_by(|a, b| a.end.cmp(&b.end))
+    }
+
+    /// The balance-sheet value of a point-in-time series as of `as_of`, refusing
+    /// stale or implausible observations.
+    ///
+    /// Why this exists as a named function rather than a `latest()` call: ORCL
+    /// publishes `LongTermDebt` as a single stale fact ending 2022-05-31 with a
+    /// value of 0.0. Taking the latest fact would report Oracle — the most
+    /// leveraged company in the cohort — as carrying no debt.
+    ///
+    /// A value is rejected when:
+    ///   * it is older than `max_age_days` relative to `as_of` (a stale series is
+    ///     not an observation of the present); or
+    ///   * it is exactly zero (no large filer has zero long-term debt, so a zero
+    ///     almost always means a different concept or a placeholder).
+    ///
+    /// Rejection returns `None`, which the caller must render as unavailable — not
+    /// as zero. Returns the fact and a reason string when rejected, so the caller
+    /// can say WHY rather than silently dropping the filer.
+    pub fn point_in_time<'a>(
+        facts: &'a [EdgarFact],
+        as_of: &str,
+        max_age_days: i64,
+    ) -> Result<&'a EdgarFact, String> {
+        let Some(f) = facts.iter().max_by(|a, b| a.end.cmp(&b.end)) else {
+            return Err("no facts reported under this concept".into());
+        };
+        let age = crate::sources::edgar::days_between(&f.end, as_of);
+        if age > max_age_days {
+            return Err(format!(
+                "latest reported value is stale: {} is {} days before {}",
+                f.end, age, as_of
+            ));
+        }
+        if f.val == 0.0 {
+            return Err(format!(
+                "latest reported value is exactly zero at {}, which for this concept indicates a \
+                 wrong tag rather than an absence of debt",
+                f.end
+            ));
+        }
+        Ok(f)
     }
 }
 
@@ -378,4 +425,65 @@ pub struct Report {
     pub headline: String,
     pub caveats: Vec<String>,
     pub disclaimer: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fact(end: &str, val: f64) -> EdgarFact {
+        EdgarFact {
+            tag: "LongTermDebt".into(),
+            start: String::new(),
+            end: end.into(),
+            val,
+            form: "10-K".into(),
+            filed: end.into(),
+            days: 0,
+        }
+    }
+
+    #[test]
+    fn point_in_time_rejects_an_exactly_zero_balance() {
+        // No large filer has zero long-term debt; a zero means the tag is wrong.
+        // Reporting it would make the most leveraged company look debt-free —
+        // which is exactly the ORCL bug this guard exists to prevent.
+        let facts = vec![fact("2026-06-30", 0.0)];
+        let r = CompanyFacts::point_in_time(&facts, "2026-09-17", 200);
+        assert!(r.is_err(), "an exactly-zero balance must be rejected");
+        assert!(r.unwrap_err().contains("exactly zero"));
+    }
+
+    #[test]
+    fn point_in_time_rejects_a_stale_series() {
+        // The ORCL bug in miniature: a resolver taking the latest fact regardless
+        // of age reports a years-old balance sheet as current.
+        let facts = vec![fact("2022-05-31", 0.0), fact("2023-01-01", 5_000_000_000.0)];
+        let r = CompanyFacts::point_in_time(&facts, "2026-09-17", 200);
+        assert!(r.is_err(), "a stale series must be rejected");
+        assert!(r.unwrap_err().contains("stale"));
+    }
+
+    #[test]
+    fn point_in_time_accepts_a_current_non_zero_balance() {
+        let facts = vec![fact("2026-05-31", 122_340_000_000.0)];
+        let r = CompanyFacts::point_in_time(&facts, "2026-09-17", 200);
+        assert!(r.is_ok());
+        assert_eq!(r.unwrap().val, 122_340_000_000.0);
+    }
+
+    #[test]
+    fn point_in_time_rejects_an_empty_series_with_a_stated_reason() {
+        let empty: Vec<EdgarFact> = vec![];
+        let e = CompanyFacts::point_in_time(&empty, "2026-09-17", 200).unwrap_err();
+        assert!(e.contains("no facts"), "must say why, not just fail: {}", e);
+    }
+
+    #[test]
+    fn point_in_time_picks_the_newest_fact_not_the_first() {
+        // Ordering must not matter: EDGAR does not guarantee it.
+        let facts = vec![fact("2026-05-31", 10.0), fact("2025-05-31", 999.0)];
+        let r = CompanyFacts::point_in_time(&facts, "2026-09-17", 400).unwrap();
+        assert_eq!(r.val, 10.0, "must take the newest, not the first listed");
+    }
 }

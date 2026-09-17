@@ -231,7 +231,26 @@ impl Indicator for FundingGap {
         }
     }
 }
-
+/// Whether the cohort can carry the commitments it has signed — measured on
+/// debt INCLUDING leases and disclosed purchase obligations.
+///
+/// Two corrections over the previous version, both measured 2026-09-17:
+///
+/// 1. **ORCL was reported as having no debt.** `LongTermDebt` resolves for Oracle
+///    to a single stale fact ending 2022-05-31 with value 0.0, and the old
+///    first-tag-that-answers resolver took it. Oracle's notes payable are ~$122bn
+///    and it is the most exposed member of the cohort, so the bug reported the
+///    most leveraged company as the least. Tag order now includes
+///    `LongTermNotesPayable`, and a stale-or-zero series is rejected outright by
+///    `CompanyFacts::point_in_time`.
+/// 2. **Operating leases were excluded**, which the old rationale admitted
+///    UNDERSTATED true leverage. They are now included: cohort-mean leverage moves
+///    from 0.556x to 0.955x operating cash flow, i.e. stress 18 -> 33.
+///
+/// Purchase obligations are included where disclosed. They are NOT universally
+/// reported — MSFT has no such concept under any candidate tag — and an absent
+/// disclosure is rendered as "not disclosed", never as zero. Printing zero would
+/// state that Meta's $279bn of take-or-pay commitments is nothing.
 pub struct Leverage;
 
 impl Indicator for Leverage {
@@ -255,54 +274,157 @@ impl Indicator for Leverage {
         }
 
         let mut debt_total = 0.0;
+        let mut lease_total = 0.0;
+        let mut purch_total = 0.0;
         let mut used = Vec::new();
         let mut newest = String::new();
         let mut rows = Vec::new();
+        let mut rejected = Vec::new();
+        // Two distinct cases that must not be conflated: a filer with no such
+        // concept at all (MSFT), versus one that discloses it but whose latest
+        // fact is too old to describe the present (AMZN, 809 days stale). Saying
+        // "not disclosed" for the second would be false.
+        let mut no_purchase_concept = Vec::new();
+        let mut stale_purchase = Vec::new();
+
         for (ticker, cf) in &ctx.obs.edgar {
-            let Some(d) = CompanyFacts::latest(&cf.debt) else {
-                continue;
-            };
             let Some((co, _)) = CompanyFacts::ttm(&cf.cfo) else {
                 continue;
             };
             if co <= 0.0 {
                 continue;
             }
-            debt_total += d.val;
-            used.push(ticker.clone());
-            if d.end > newest {
-                newest = d.end.clone();
+
+            // `newest` is the reference date for staleness: a filer's balance-sheet
+            // items should be current relative to its own latest reporting.
+            let as_of = cf
+                .debt
+                .iter()
+                .chain(cf.lease.iter())
+                .chain(cf.cfo.iter())
+                .map(|f| f.end.as_str())
+                .max()
+                .unwrap_or("")
+                .to_string();
+            if as_of.is_empty() {
+                continue;
             }
-            rows.push(format!("{}: {:.2}x", ticker, d.val / co));
+
+            // Debt: reject stale or exactly-zero series rather than reporting them.
+            let debt = match CompanyFacts::point_in_time(&cf.debt, &as_of, 200) {
+                Ok(f) => f.val,
+                Err(why) => {
+                    rejected.push(format!("{}: {}", ticker, why));
+                    continue;
+                }
+            };
+            let lease = CompanyFacts::point_in_time(&cf.lease, &as_of, 200)
+                .map(|f| f.val)
+                .unwrap_or(0.0);
+            let purchase = match CompanyFacts::point_in_time(&cf.purchase_obligation, &as_of, 200) {
+                Ok(f) => Some(f.val),
+                Err(why) => {
+                    if cf.purchase_obligation.is_empty() {
+                        no_purchase_concept.push(ticker.clone());
+                    } else {
+                        stale_purchase.push(format!("{} ({})", ticker, why));
+                    }
+                    None
+                }
+            };
+
+            debt_total += debt;
+            lease_total += lease;
+            if let Some(v) = purchase {
+                purch_total += v;
+            }
+            used.push(ticker.clone());
+            if as_of > newest {
+                newest = as_of.clone();
+            }
+
+            let p = match purchase {
+                Some(v) => format!("{:.2}x", (debt + lease + v) / co),
+                None => format!("{:.2}x (+ commitments not disclosed)", (debt + lease) / co),
+            };
+            rows.push(format!("{}: {}", ticker, p));
         }
 
         if used.is_empty() {
             return Reading::Unavailable {
-                reason: "no cohort long-term debt facts retrieved from SEC EDGAR".into(),
+                reason: format!(
+                    "no cohort filer had a current, non-zero long-term debt series. Rejected: {}",
+                    rejected.join("; ")
+                ),
             };
         }
 
-        let ratio = debt_total / cfo.total;
+        // Headline ratio: debt + leases only, over cash flow. Purchase obligations
+        // are reported separately rather than folded in, because they are
+        // disclosed inconsistently and blending a partial total into the headline
+        // would make the ratio mean different things for different filers.
+        let ratio = (debt_total + lease_total) / cfo.total;
         let stress = crate::score::interpolate(ratio, &ic.anchors);
         rows.sort();
+
+        let purch_note = if purch_total > 0.0 {
+            format!(
+                " Additionally, ${:.1}B of unconditional purchase obligations are disclosed and \
+                 excluded from the ratio above (they are not debt, and not universally reported): \
+                 folding a partial total into the headline would make the ratio mean different \
+                 things for different filers.",
+                purch_total / 1e9
+            )
+        } else {
+            String::new()
+        };
+        let mut undisclosed = String::new();
+        if !no_purchase_concept.is_empty() {
+            undisclosed.push_str(&format!(
+                " Purchase obligations are NOT DISCLOSED AT ALL by {} — reported as not \
+                 disclosed, never as zero.",
+                no_purchase_concept.join(", ")
+            ));
+        }
+        if !stale_purchase.is_empty() {
+            undisclosed.push_str(&format!(
+                " Purchase obligations are disclosed by {} but the latest reported figure is too \
+                 old to describe the present, so it is excluded rather than treated as current \
+                 or as zero.",
+                stale_purchase.join("; ")
+            ));
+        }
+        let rej = if rejected.is_empty() {
+            String::new()
+        } else {
+            format!(
+                " Series rejected rather than used (a stale or zero balance is a wrong tag, not a \
+                 fact): {}.",
+                rejected.join("; ")
+            )
+        };
 
         Reading::Scored {
             stress,
             value: ratio,
             unit: ic.unit.clone(),
             detail: format!(
-                "Cohort reported long-term debt ${:.1}B against TTM operating cash flow ${:.1}B \
-                 = {:.2}x ({} filers). Per-company: {}. The anchors are set so that current \
-                 levels read as MODERATE stress, consistent with Capital Economics' view that \
-                 leverage is not yet alarming relative to valuations. IMPORTANT LIMITATION: this \
-                 uses the reported balance-sheet debt line only, so it excludes the very large \
-                 lease and multi-year purchase commitments that sit off balance sheet — true \
-                 leverage is materially higher than this ratio suggests.",
-                debt_total / 1e9,
+                "Cohort long-term debt plus operating leases ${:.1}B against TTM operating cash \
+                 flow ${:.1}B = {:.2}x ({} filers). Per-company, debt+leases{} over cash flow: \
+                 {}. INCLUDES operating leases, which the previous version excluded and which \
+                 the old rationale admitted understated true leverage; it also fixes a bug that \
+                 reported ORCL as carrying no long-term debt at all. STILL EXCLUDES off-balance- \
+                 sheet vehicles (SPVs, joint ventures, sale-leasebacks) that finance a growing \
+                 share of data-centre construction, so true leverage remains higher than this \
+                 ratio.{} {}",
+                (debt_total + lease_total) / 1e9,
                 cfo.total / 1e9,
                 ratio,
                 used.len(),
-                rows.join(", ")
+                if purch_total > 0.0 { "+purchases" } else { "" },
+                rows.join(", "),
+                purch_note,
+                format!("{}{}", undisclosed, rej)
             ),
             provenance: cohort_provenance(ctx, &newest),
         }

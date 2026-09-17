@@ -50,7 +50,43 @@ pub const TAGS_REVENUE: &[&str] = &[
     "Revenues",
 ];
 
-pub const TAGS_DEBT: &[&str] = &["LongTermDebtNoncurrent", "LongTermDebt"];
+/// Long-term debt tags, most-preferred first.
+///
+/// HAZARD, verified 2026-09-17 against the live API: `LongTermDebt` is DANGEROUS
+/// as a fallback for ORCL. It resolves, but to a single stale fact ending
+/// 2022-05-31 with a value of 0.0 — so a first-tag-that-answers resolver reports
+/// Oracle as carrying NO long-term debt, when its notes payable are ~$122bn.
+/// Oracle is the most leveraged member of the cohort, and the bug made it look
+/// like the least.
+///
+/// The fix is twofold: list `LongTermNotesPayable` (ORCL reports its debt there)
+/// and reject a series whose latest fact is stale or zero — see
+/// `CompanyFacts::debt_now`.
+pub const TAGS_DEBT: &[&str] = &[
+    "LongTermDebtNoncurrent",
+    "LongTermNotesPayable",
+    "LongTermDebt",
+];
+
+/// Operating lease liability. Present for all five scored filers (verified
+/// 2026-09-17), and excluded by the previous leverage calculation — which the
+/// config already admitted UNDERSTATED true leverage.
+pub const TAGS_LEASE: &[&str] = &[
+    "OperatingLeaseLiability",
+    "OperatingLeaseLiabilityNoncurrent",
+];
+
+/// Unconditional purchase obligations: take-or-pay commitments that fall due
+/// whether or not the demand materialises.
+///
+/// NOT universally disclosed. MSFT reports no such concept under any candidate
+/// tag, so its value must render as "not disclosed" and NEVER as zero — a
+/// fabricated zero would understate the most exposed company's obligations as
+/// nothing at all.
+pub const TAGS_PURCHASE_OBLIGATION: &[&str] = &[
+    "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
+    "PurchaseObligation",
+];
 
 /// Cash returned to shareholders by buying back stock.
 ///
@@ -319,6 +355,12 @@ pub fn company(f: &Fetcher, ticker: &str, cik: &str, name: &str) -> CompanyFacts
     }
     if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_ISSUANCE), "USD", false) {
         cf.issuance = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_LEASE), "USD", true) {
+        cf.lease = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_PURCHASE_OBLIGATION), "USD", true) {
+        cf.purchase_obligation = v;
     }
 
     let _ = ticker;
