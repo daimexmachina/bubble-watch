@@ -32,9 +32,8 @@ pub fn evaluate_one(ctx: &Ctx, ic: &IndicatorCfg) -> IndicatorReading {
                 // Declared blind spot: carried in the report, no effect on score.
                 Reading::Unavailable {
                     reason: format!(
-                        "DECLARED GAP: no free machine-readable source for this measure. \
-                         Carried with weight 0 so it is visible as a known blind spot. \
-                         {}",
+                        "DECLARED GAP — weight 0, so this never touches the composite. It is \
+                         listed so the blind spot is visible rather than absent. {}",
                         ic.rationale
                     ),
                 }

@@ -83,7 +83,7 @@ label = "Equity valuation stretch"
 weight = 14.0
 unit = "pct deviation of S&P 500 from its 5-year log-linear trend"
 source = "yahoo"
-rationale = "The theoretically correct measure is equity risk premium compression (earnings yield vs the 10Y). We have no free EPS series, so this uses price stretch above its own 5-year log-linear trend as a documented single-dimension proxy. The 10Y yield is reported alongside as context but is NOT scored here. PROXY: medium strength — trend deviation is real arithmetic, but it measures price, not earnings."
+rationale = "The theoretically correct measure is equity risk premium compression (earnings yield minus the 10Y). No free earnings series is available, so this uses deviation of price from its own 5-year log-linear trend as a documented single-dimension proxy. The 10Y yield is reported alongside as context but is NOT scored here. PROXY strength: medium — trend deviation is real arithmetic, but it measures price, not earnings. NOTE on window sensitivity: 2/3/5/7/10-year windows give notably different deviations (roughly +1.5%/+31%/+22%/+20%/+19% measured across the same history), so this indicator is sensitive to the choice of lookback. 5 years is used as the central, least-extreme choice; shortening it materially raises the reported stress, which is a weakness of the measure rather than a fact about the market."
 anchors = [[-15.0, 5.0], [-5.0, 12.0], [0.0, 18.0], [10.0, 32.0], [20.0, 50.0], [35.0, 70.0], [60.0, 90.0], [100.0, 98.0]]
 
 [[indicator]]
@@ -175,5 +175,5 @@ label = "Foreign ownership of US equities"
 weight = 0.0
 source = "none"
 unit = "pct of US equity market held by foreign investors"
-rationale = "Capital Economics flags record foreign ownership as a late-stage marker. DECLARED GAP: there is no free, machine-readable series for this at the required timeliness. Carried with weight 0 so it appears in the report as an explicitly acknowledged blind spot rather than being silently dropped. It does not affect the composite."
+rationale = "Capital Economics flags record foreign ownership of US equities as a late-stage marker, and it has reached an all-time high. There is no free, machine-readable series for it at the required timeliness, so it is carried with weight 0 as an explicitly acknowledged blind spot rather than being silently dropped. It does not affect the composite. A future version could pick it up from the Treasury TIC data releases (monthly, published as HTML tables)."
 anchors = [[0.0, 0.0], [100.0, 100.0]]
