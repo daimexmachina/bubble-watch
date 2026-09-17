@@ -12,11 +12,26 @@ pub struct Config {
     pub meta: Meta,
     pub phase: PhaseCfg,
     pub coverage_floor: CoverageFloor,
+    #[serde(default = "TrendCfg::defaults")]
+    pub trend: TrendCfg,
     pub analog: AnalogCfg,
     #[serde(default)]
     pub analog_band: Vec<AnalogBand>,
     #[serde(default)]
     pub indicator: Vec<IndicatorCfg>,
+}
+
+impl TrendCfg {
+    /// Conservative defaults, identical to the shipped config, so a config
+    /// written before v1.1 still loads and behaves the same way.
+    pub fn defaults() -> TrendCfg {
+        TrendCfg {
+            min_gap_days: 1.0,
+            coverage_tolerance_pp: 5.0,
+            flat_band: 1.0,
+            sparkline_points: 30,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -35,6 +50,16 @@ pub struct PhaseCfg {
 pub struct CoverageFloor {
     pub low_below: f64,
     pub high_above: f64,
+}
+
+/// Trend / direction-of-travel settings. See the `[trend]` block in the config
+/// for why coverage tolerance is the load-bearing value here.
+#[derive(Debug, Clone, Deserialize)]
+pub struct TrendCfg {
+    pub min_gap_days: f64,
+    pub coverage_tolerance_pp: f64,
+    pub flat_band: f64,
+    pub sparkline_points: usize,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -155,6 +180,28 @@ impl Config {
             return Err(ConfigError("duplicate indicator id".into()));
         }
 
+        // Trend settings must be sane, because each one guards against a
+        // specific way the direction-of-travel output could mislead.
+        let t = &self.trend;
+        if t.min_gap_days < 0.0 {
+            return Err(ConfigError(
+                "trend.min_gap_days must not be negative".into(),
+            ));
+        }
+        if t.coverage_tolerance_pp < 0.0 {
+            return Err(ConfigError(
+                "trend.coverage_tolerance_pp must not be negative".into(),
+            ));
+        }
+        if t.flat_band < 0.0 {
+            return Err(ConfigError("trend.flat_band must not be negative".into()));
+        }
+        if t.sparkline_points < 2 {
+            return Err(ConfigError(
+                "trend.sparkline_points must be at least 2 to draw a line".into(),
+            ));
+        }
+
         Ok(())
     }
 
@@ -193,6 +240,7 @@ mod tests {
                 low_below: 0.6,
                 high_above: 0.85,
             },
+            trend: TrendCfg::defaults(),
             analog: AnalogCfg {
                 method: "historical_analog".into(),
                 analogs: vec!["a".into()],
@@ -245,5 +293,31 @@ mod tests {
         let dup = c.indicator[0].clone();
         c.indicator.push(dup);
         assert!(c.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_a_sparkline_that_cannot_be_drawn() {
+        let mut c = base();
+        c.trend.sparkline_points = 1;
+        assert!(c.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_negative_coverage_tolerance() {
+        // A negative tolerance would make every baseline ineligible; catching it
+        // at config load is better than a silently dead trend feature.
+        let mut c = base();
+        c.trend.coverage_tolerance_pp = -1.0;
+        assert!(c.validate().is_err());
+    }
+
+    #[test]
+    fn trend_defaults_apply_when_the_block_is_absent() {
+        // A pre-v1.1 config must keep working unchanged.
+        let text = std::fs::read_to_string("config/indicators.toml").unwrap();
+        assert!(text.contains("[trend]"));
+        let d = TrendCfg::defaults();
+        assert!(d.coverage_tolerance_pp > 0.0);
+        assert!(d.sparkline_points >= 2);
     }
 }

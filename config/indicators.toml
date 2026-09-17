@@ -31,6 +31,33 @@ high_above = 0.85
 # FRED outage lands just under the "medium" boundary by construction.
 
 # ---------------------------------------------------------------------------
+# Direction of travel (v1.1).
+#
+# The trend is CONTEXT, not an eleventh indicator: none of this touches the
+# composite. It is derived FROM the composite, so scoring it inside the composite
+# would make the score partly a function of its own past.
+#
+# The single most important setting here is `coverage_tolerance_pp`. The
+# composite is renormalized over available weight, so two runs with different
+# coverage are NOT on the same scale — their difference is partly an artefact of
+# which sources answered rather than a fact about the market. Rather than print a
+# misleading number, the tool reports NO delta unless a baseline exists whose
+# coverage is within this many percentage points of the current run.
+# ---------------------------------------------------------------------------
+[trend]
+# Minimum elapsed days before a run may serve as the baseline. Guards against a
+# re-run minutes later being presented as a trend.
+min_gap_days = 1.0
+# Maximum permitted difference in weighted coverage, in percentage points,
+# between the current run and a candidate baseline run.
+coverage_tolerance_pp = 5.0
+# Absolute composite change below which the direction is reported as flat
+# rather than up or down. Prevents noise being read as a signal.
+flat_band = 1.0
+# Number of most recent daily points drawn in the HTML sparkline.
+sparkline_points = 30
+
+# ---------------------------------------------------------------------------
 # Historical-analog bands.
 #
 # IMPORTANT: state extremity is NOT timing. These bands map the composite score

@@ -118,6 +118,7 @@ pub fn analog_window(composite: Option<f64>, coverage: f64, cfg: &Config) -> Ana
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::TrendCfg;
     use crate::config::*;
 
     fn cfg() -> Config {
@@ -134,6 +135,7 @@ mod tests {
                 low_below: 0.6,
                 high_above: 0.85,
             },
+            trend: TrendCfg::defaults(),
             analog: AnalogCfg {
                 method: "historical_analog".into(),
                 analogs: vec!["dot-com".into()],

@@ -504,6 +504,7 @@ mod tests {
                 low_below: 0.6,
                 high_above: 0.85,
             },
+            trend: TrendCfg::defaults(),
             analog: AnalogCfg {
                 method: "historical_analog".into(),
                 analogs: vec![],
