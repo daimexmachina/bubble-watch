@@ -1,0 +1,179 @@
+# bubble-watch indicator configuration
+#
+# EVERY weight, anchor point and threshold in the tool lives in this file so the
+# output is auditable. Changing a number here is changing the model's opinion —
+# commit it, and say why in the rationale.
+#
+# Anchors are monotone piecewise-linear mappings: [[raw_value, stress], ...]
+#   raw   = the observed value of the primitive, in `unit`
+#   stress = 0 (calm / no bubble evidence) .. 100 (at a historical extreme)
+# Values outside the outermost anchors extrapolate FLAT (clamped), never
+# unbounded, so no single input can dominate the composite.
+#
+# Stress direction convention: for every indicator, HIGHER stress = MORE
+# bubble-like. Where the underlying primitive is inverted (tight credit spreads
+# mean complacency), the anchors encode the inversion explicitly.
+
+[meta]
+schema_version = "1.0"
+# Reviewed: 2026-09-16
+
+[phase]
+early_max = 35.0
+mid_max = 55.0
+late_max = 75.0
+
+[coverage_floor]
+low_below = 0.60
+high_above = 0.85
+# Weighted-coverage floor below which the composite is reported but flagged
+# low-confidence. Set from the sum of the FRED-dependent weights, so a total
+# FRED outage lands just under the "medium" boundary by construction.
+
+# ---------------------------------------------------------------------------
+# Historical-analog bands.
+#
+# IMPORTANT: state extremity is NOT timing. These bands map the composite score
+# to the gap between a comparable state and the eventual peak, observed in the
+# named analogs. They are a coarse descriptive comparison over n=2 episodes, and
+# the report marks them `is_probability = false`. Do not tune these to produce a
+# more satisfying answer.
+# ---------------------------------------------------------------------------
+[analog]
+method = "historical_analog"
+analogs = ["dot-com 1999-2001 (S&P 500 / Nasdaq tech)", "telecom buildout 2000-2002 (debt-financed capacity)"]
+derivation = "For each analog, the composite's component primitives (price stretch, concentration, VIX, credit spreads, cohort capex/cash-flow) were placed on a common timeline, and the interval between reaching a given band and the subsequent market peak was recorded. The band ranges below are the observed min/max spans across the two episodes, rounded outward. n=2: treat as an illustration of what such states have looked like, not a distribution."
+caveat = "State extremity is not timing. A high composite means the present configuration resembles late-stage historical episodes; it says nothing certain about if or when a reversal occurs. Bubbles can persist for years, and this model has no basis for a point forecast."
+
+[[analog_band]]
+label = "early"
+min = 0.0
+max = 35.0
+range_months = [30.0, 72.0]
+note = "Comparable states historically persisted well over two years before a peak. Little timing information."
+
+[[analog_band]]
+label = "mid"
+min = 35.0
+max = 55.0
+range_months = [15.0, 42.0]
+note = "Two to three years of runway is typical of the observed analogs."
+
+[[analog_band]]
+label = "late"
+min = 55.0
+max = 75.0
+range_months = [6.0, 24.0]
+note = "Historically the final stretch, but with wide dispersion — the single most unreliable band."
+
+[[analog_band]]
+label = "critical"
+min = 75.0
+max = 100.0
+range_months = [3.0, 18.0]
+note = "Extremes in both analogs were reached only shortly before the peak, but n=2 makes the floor fragile."
+
+# ---------------------------------------------------------------------------
+# Indicators
+# ---------------------------------------------------------------------------
+
+[[indicator]]
+id = "valuation_stretch"
+label = "Equity valuation stretch"
+weight = 14.0
+unit = "pct deviation of S&P 500 from its 5-year log-linear trend"
+source = "yahoo"
+rationale = "The theoretically correct measure is equity risk premium compression (earnings yield vs the 10Y). We have no free EPS series, so this uses price stretch above its own 5-year log-linear trend as a documented single-dimension proxy. The 10Y yield is reported alongside as context but is NOT scored here. PROXY: medium strength — trend deviation is real arithmetic, but it measures price, not earnings."
+anchors = [[-15.0, 5.0], [-5.0, 12.0], [0.0, 18.0], [10.0, 32.0], [20.0, 50.0], [35.0, 70.0], [60.0, 90.0], [100.0, 98.0]]
+
+[[indicator]]
+id = "concentration"
+label = "Index concentration (cap vs equal weight)"
+weight = 12.0
+unit = "percentage-point spread, SPY 12m return minus RSP 12m return"
+source = "yahoo"
+rationale = "Mega-cap dominance is the headline concentration concern. Computable proxy: when returns are carried by a handful of large names, cap-weight beats equal-weight. PROXY: weak-to-medium — it responds to any large-cap-vs-small-cap regime, not specifically to AI-related concentration, and it is a returns measure rather than the (unavailable) free-float market-cap share. Read alongside `breadth`."
+anchors = [[-8.0, 8.0], [-3.0, 15.0], [0.0, 22.0], [5.0, 35.0], [10.0, 50.0], [20.0, 70.0], [35.0, 88.0], [50.0, 95.0]]
+
+[[indicator]]
+id = "breadth"
+label = "Market breadth"
+weight = 10.0
+unit = "pct, equal-weight/cap-weight ratio vs its 200-day average"
+source = "yahoo"
+rationale = "A narrowing rally lifts the index while most constituents lag; the RSP/SPY ratio falling through its own 200-day average is the classic breadth tell. PROXY: medium — this is a relative-performance breadth proxy, not advance/decline line or % of stocks above their 200d, which we cannot get free. Negatives are meaningful: if breadth is healthy, this indicator reports LOW stress and the composite says so."
+anchors = [[-20.0, 93.0], [-10.0, 78.0], [-5.0, 58.0], [-2.0, 40.0], [0.0, 28.0], [3.0, 15.0], [6.0, 8.0]]
+
+[[indicator]]
+id = "issuance"
+label = "Net equity issuance / supply pressure"
+weight = 10.0
+unit = "pct, trailing share-count growth across the mega-cap cohort"
+source = "edgar"
+rationale = "Late-stage bubbles are characterised by a wave of supply: IPOs, secondaries and share issuance, which history places near market peaks. Proxy: year-over-year growth in common shares outstanding across the cohort, from SEC filings. PROXY: weak-to-medium — buybacks net against issuance and the cohort is large-cap only, so it understates a genuine IPO wave. Deliberately included despite weakness because Capital Economics flags issuance as one of the more reliable pre-peak signals."
+anchors = [[-3.0, 10.0], [-1.0, 20.0], [0.0, 30.0], [1.0, 45.0], [3.0, 65.0], [6.0, 85.0], [10.0, 95.0]]
+
+[[indicator]]
+id = "volatility"
+label = "Volatility regime"
+weight = 8.0
+unit = "VIX index level"
+source = "yahoo"
+rationale = "Capital Economics found volatility consistent with a MID-stage bubble rather than a peak — muted volatility can mean complacency, but sustained high volatility usually means the peak has already passed. The anchors are therefore deliberately SHALLOW at the low end: a calm market is only mildly bubble-like, not strongly so. Also reported: 20-day realised volatility of the S&P 500 as a cross-check."
+anchors = [[10.0, 5.0], [14.0, 15.0], [18.0, 30.0], [22.0, 45.0], [28.0, 62.0], [38.0, 80.0], [55.0, 93.0], [80.0, 98.0]]
+
+[[indicator]]
+id = "credit_hy"
+label = "US high-yield credit spreads"
+weight = 12.0
+unit = "pct, ICE BofA US High Yield option-adjusted spread"
+source = "fred"
+fred_series = "BAMLH0A0HYM2"
+rationale = "The single most important non-equity signal. Credit reprices faster and with covenants, and the debt-funded buildout means any disappointment transmits through credit first. Tight spreads mean the market is charging almost nothing for AI-credit risk — complacency, i.e. bubble-like. ANCHORS DELIBERATELY INVERTED: low spread = high stress. Currently tight, so this indicator reports LOW stress in isolation; that is the honest reading and the tool prints it."
+anchors = [[2.0, 5.0], [2.8, 18.0], [3.5, 30.0], [5.0, 50.0], [7.0, 75.0], [10.0, 95.0]]
+
+[[indicator]]
+id = "credit_ig"
+label = "US investment-grade credit spreads"
+weight = 6.0
+unit = "pct, ICE BofA US Corporate option-adjusted spread"
+source = "fred"
+fred_series = "BAMLC0A0CM"
+rationale = "Investment-grade spreads are the funding cost for the hyperscaler buildout itself. Same inversion as high yield: tight = complacent. Lower weight than HY because IG spreads are structurally less informative and the cohort is overwhelmingly IG-rated."
+anchors = [[0.5, 8.0], [0.8, 20.0], [1.1, 35.0], [1.5, 55.0], [2.0, 75.0], [3.0, 93.0]]
+
+[[indicator]]
+id = "capex_vs_cashflow"
+label = "Hyperscaler capex vs operating cash flow"
+weight = 14.0
+unit = "ratio, TTM capex divided by TTM operating cash flow, five-hyperscaler cohort"
+source = "edgar"
+rationale = "The core fundamental of this cycle: capital spending has grown past what the businesses generate internally, forcing the migration to debt markets. A ratio below ~0.5 is a self-funding business; above 1.0 the buildout is being financed externally, which is exactly the regime that converts a disappointing quarter into a refinancing story. Heaviest weight because it is the least subjective input: both numbers are audited figures from SEC filings, not market prices."
+anchors = [[0.25, 5.0], [0.45, 18.0], [0.65, 35.0], [0.85, 52.0], [1.0, 68.0], [1.2, 85.0], [1.5, 96.0]]
+
+[[indicator]]
+id = "funding_gap"
+label = "Infrastructure spend vs revenue"
+weight = 8.0
+unit = "ratio, TTM capex divided by TTM revenue, five-hyperscaler cohort"
+source = "edgar"
+rationale = "How much of the business is being plowed into AI infrastructure relative to what it sells. Rising capex/revenue is the signature of a capex boom outrunning monetisation. Caveat: hyperscaler revenue is mostly non-AI cloud and advertising, so this overstates the true AI capex-to-AI-revenue gap — the ~USD 600bn-wide gap often quoted comes from narrower segment data we cannot get from XBRL. Read as direction, not as that figure."
+anchors = [[0.08, 8.0], [0.12, 25.0], [0.16, 42.0], [0.20, 58.0], [0.28, 78.0], [0.40, 94.0]]
+
+[[indicator]]
+id = "leverage"
+label = "Cohort leverage (debt vs cash generation)"
+weight = 6.0
+unit = "ratio, total long-term debt divided by TTM operating cash flow"
+source = "edgar"
+rationale = "Whether the cohort can carry the commitments it has signed. Capital Economics rates leverage as NOT yet alarming relative to valuations, and the anchors reflect that: this indicator should report moderate stress at current levels. Debt is from the reported balance sheet and therefore excludes the large off-balance-sheet lease and purchase commitments that Moody's flags (~USD 662bn of signed-but-not-commenced leases) — so this indicator UNDERSTATES true leverage, and the report says so."
+anchors = [[0.3, 8.0], [0.6, 20.0], [1.0, 35.0], [1.5, 55.0], [2.2, 75.0], [3.2, 92.0]]
+
+[[indicator]]
+id = "foreign_interest"
+label = "Foreign ownership of US equities"
+weight = 0.0
+source = "none"
+unit = "pct of US equity market held by foreign investors"
+rationale = "Capital Economics flags record foreign ownership as a late-stage marker. DECLARED GAP: there is no free, machine-readable series for this at the required timeliness. Carried with weight 0 so it appears in the report as an explicitly acknowledged blind spot rather than being silently dropped. It does not affect the composite."
+anchors = [[0.0, 0.0], [100.0, 100.0]]
