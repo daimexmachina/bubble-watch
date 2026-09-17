@@ -40,11 +40,56 @@ pub const FRED_KEY_ENV: &str = "FRED_API_KEY";
 /// The endpoint the keyed client actually calls.
 pub const FRED_API_HOST: &str = "api.stlouisfed.org";
 
+/// Load `FRED_API_KEY` from the environment, falling back to the Hermes `.env`
+/// file so the tool works without the caller having to export anything.
+///
+/// Nothing in this repo ever sources `.env`, and shell rc files do not reference
+/// it, so relying on the process environment alone would silently degrade every
+/// run to the flaky anonymous CSV transport. Reading the file directly keeps the
+/// key in exactly one place — the user's existing secrets file — instead of
+/// duplicating it into a shell profile or, worse, into the repo.
+///
+/// The value is never returned to a caller that might print it: `key_configured`
+/// exposes only a bool, and `api_key` is used solely to build a URL that is
+/// redacted before it is logged or stored.
 fn api_key() -> Option<String> {
-    std::env::var(FRED_KEY_ENV)
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
+    if let Ok(v) = std::env::var(FRED_KEY_ENV) {
+        let v = v.trim().to_string();
+        if !v.is_empty() {
+            return Some(v);
+        }
+    }
+
+    let home = std::env::var("HOME").ok()?;
+    let path = std::path::Path::new(&home).join(".hermes").join(".env");
+    let text = std::fs::read_to_string(path).ok()?;
+    parse_env_value(&text, FRED_KEY_ENV)
+}
+
+/// Minimal `.env` reader: first `KEY=value` line wins, surrounding quotes and
+/// `export ` prefixes tolerated, comments ignored.
+///
+/// Deliberately not a full dotenv implementation — it must never *evaluate* or
+/// interpolate anything, because the file holds secrets.
+pub fn parse_env_value(text: &str, key: &str) -> Option<String> {
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let line = line.strip_prefix("export ").unwrap_or(line);
+        let Some((k, v)) = line.split_once('=') else {
+            continue;
+        };
+        if k.trim() != key {
+            continue;
+        }
+        let v = v.trim().trim_matches('"').trim_matches('\'').trim();
+        if !v.is_empty() {
+            return Some(v.to_string());
+        }
+    }
+    None
 }
 
 /// True when a key is available, so callers can report which transport is in use.
@@ -261,5 +306,54 @@ mod tests {
     fn missing_observations_array_is_an_error_not_an_empty_series() {
         let v: serde_json::Value = serde_json::from_str(r#"{"error_code":400}"#).unwrap();
         assert!(v.get("observations").and_then(|o| o.as_array()).is_none());
+    }
+
+    #[test]
+    fn env_parser_reads_plain_quoted_and_exported_forms() {
+        let text =
+            "# comment line\nOTHER=x\nFRED_API_KEY=abcdef1234567890abcdef1234567890\nMORE=y\n";
+        assert_eq!(
+            parse_env_value(text, "FRED_API_KEY").as_deref(),
+            Some("abcdef1234567890abcdef1234567890")
+        );
+
+        let quoted = "FRED_API_KEY=\"abcdef1234567890abcdef1234567890\"\n";
+        assert_eq!(
+            parse_env_value(quoted, "FRED_API_KEY").as_deref(),
+            Some("abcdef1234567890abcdef1234567890")
+        );
+
+        let exported = "export FRED_API_KEY=abcdef1234567890abcdef1234567890\n";
+        assert_eq!(
+            parse_env_value(exported, "FRED_API_KEY").as_deref(),
+            Some("abcdef1234567890abcdef1234567890")
+        );
+    }
+
+    #[test]
+    fn env_parser_ignores_comments_and_missing_keys() {
+        let text = "#FRED_API_KEY=nope\nOTHER=x\n";
+        assert!(parse_env_value(text, "FRED_API_KEY").is_none());
+        assert!(parse_env_value("", "FRED_API_KEY").is_none());
+        // A commented-out key must not be picked up.
+        assert!(parse_env_value("# FRED_API_KEY=abc\n", "FRED_API_KEY").is_none());
+    }
+
+    #[test]
+    fn env_parser_does_not_confuse_similar_key_names() {
+        let text = "FRED_API_KEY_OLD=zzz\nNOT_FRED_API_KEY=yyy\n";
+        assert!(
+            parse_env_value(text, "FRED_API_KEY").is_none(),
+            "must match the exact key name only"
+        );
+    }
+
+    #[test]
+    fn env_parser_takes_the_first_definition() {
+        let text = "FRED_API_KEY=first1234567890first1234567890\nFRED_API_KEY=second\n";
+        assert_eq!(
+            parse_env_value(text, "FRED_API_KEY").as_deref(),
+            Some("first1234567890first1234567890")
+        );
     }
 }

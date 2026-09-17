@@ -23,8 +23,25 @@ scraped from an aggregator that might be stale. A degraded run reports lower cov
 quietly pretend to have measured something.
 
 A **calm reading is not evidence of safety.** Bubbles are generally identifiable only in hindsight.
-Tight credit spreads and healthy breadth are consistent both with "no bubble" and with "the
-complacent phase of one".
+Cheap credit and healthy breadth are consistent both with "no bubble" and with "the quiet phase of
+one".
+
+### Credit: level vs direction (read this before trusting the credit rows)
+
+The credit-spread anchors are **not inverted** — a wide spread scores as high stress, a tight one as
+low. That is a deliberate choice against a plausible alternative.
+
+The alternative reading is that *tight* spreads are themselves the bubble signal, because the market
+is charging nothing for the risk. Credit did tighten into the dot-com peak, so that reading has real
+precedent. It is not implemented because it fails a practical test: HY OAS has a **~3.0% median**
+over the available record and is rarely wide, so a complacency-scored level would label most of the
+last decade a bubble — a near-constant that carries **no timing information**.
+
+Measured effect of the alternative on the composite: **32.4 → 44.2**, i.e. **EARLY → LATE**. A
+full-phase swing resting on a definition rather than on data. So the level is scored as cost-of-credit
+and **direction of travel is the signal to watch**: widening from a tight base is the early warning,
+not the level. If you prefer the other reading, mirror the two anchor stress values in
+`config/indicators.toml` — the arithmetic is symmetric, and the trade-off is documented in the config.
 
 ---
 
@@ -65,12 +82,12 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `capex_vs_cashflow` | 14 | Cohort TTM capex ÷ TTM operating cash flow | SEC EDGAR |
 | `valuation_stretch` | 14 | S&P 500 deviation from its 5-year log-linear trend | Yahoo |
 | `concentration` | 12 | Cap-weight (SPY) vs equal-weight (RSP) 12-month return gap | Yahoo |
-| `credit_hy` | 12 | US high-yield option-adjusted spread | FRED *(optional)* |
+| `credit_hy` | 12 | US high-yield option-adjusted spread | FRED *(key recommended)* |
 | `breadth` | 10 | RSP/SPY ratio vs its own 200-day average | Yahoo |
 | `issuance` | 10 | Trailing share-count change across the cohort | SEC EDGAR |
 | `volatility` | 8 | VIX level | Yahoo |
 | `funding_gap` | 8 | Cohort TTM capex ÷ TTM revenue | SEC EDGAR |
-| `credit_ig` | 6 | US investment-grade option-adjusted spread | FRED *(optional)* |
+| `credit_ig` | 6 | US investment-grade option-adjusted spread | FRED *(key recommended)* |
 | `leverage` | 6 | Cohort long-term debt ÷ TTM operating cash flow | SEC EDGAR |
 | `foreign_interest` | 0 | Foreign ownership of US equities | **declared gap** |
 

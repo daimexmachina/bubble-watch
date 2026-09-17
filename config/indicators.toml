@@ -11,8 +11,8 @@
 # unbounded, so no single input can dominate the composite.
 #
 # Stress direction convention: for every indicator, HIGHER stress = MORE
-# bubble-like. Where the underlying primitive is inverted (tight credit spreads
-# mean complacency), the anchors encode the inversion explicitly.
+# bubble-like. No indicator here is inverted — including the credit spreads,
+# which is a deliberate decision documented in their rationale below.
 
 [meta]
 schema_version = "1.0"
@@ -74,6 +74,23 @@ range_months = [3.0, 18.0]
 note = "Extremes in both analogs were reached only shortly before the peak, but n=2 makes the floor fragile."
 
 # ---------------------------------------------------------------------------
+# NOTE ON THE CREDIT INDICATORS: level vs direction.
+#
+# A plausible alternative reading is that TIGHT spreads are themselves the
+# bubble signal (complacency, and credit did tighten into the dot-com peak).
+# That reading is deliberately NOT implemented, for a concrete reason: HY OAS
+# has a ~3.0% median over the available record and has rarely been wide, so a
+# complacency-scored level would read most of the last decade as "bubble" — a
+# near-constant that carries no timing information.
+#
+# Measured effect of the alternative on the whole composite: 32.4 -> 44.2, i.e.
+# EARLY -> LATE. That is a full-phase swing resting on a definitional choice
+# rather than on data, so the level reading is kept and the direction-of-travel
+# signal (widening from a tight base) is the one to watch. If you want the other
+# reading, mirror the two anchor stress values — the arithmetic is symmetric.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # Indicators
 # ---------------------------------------------------------------------------
 
@@ -129,7 +146,7 @@ weight = 12.0
 unit = "pct, ICE BofA US High Yield option-adjusted spread"
 source = "fred"
 fred_series = "BAMLH0A0HYM2"
-rationale = "The single most important non-equity signal. Credit reprices faster and with covenants, and the debt-funded buildout means any disappointment transmits through credit first. Tight spreads mean the market is charging almost nothing for AI-credit risk — complacency, i.e. bubble-like. ANCHORS DELIBERATELY INVERTED: low spread = high stress. Currently tight, so this indicator reports LOW stress in isolation; that is the honest reading and the tool prints it."
+rationale = "The single most important non-equity signal. Credit reprices faster and with covenants, and the debt-funded buildout means any disappointment transmits through credit first. DIRECTION: wide spread = high stress, tight spread = low stress. This is NOT inverted, and the choice is deliberate — see the 'credit level vs direction' note below. Scoring tight spreads as complacent/alarming would read almost the entire post-2009 record as a bubble: HY OAS has had a ~3.0% median and has rarely been wide, so a level-based complacency score would be near-constant and carry no timing information. What matters is the DIRECTION OF TRAVEL from a tight base — widening is the early warning, not the level. Read this indicator as the cost of credit, and watch its change."
 anchors = [[2.0, 5.0], [2.8, 18.0], [3.5, 30.0], [5.0, 50.0], [7.0, 75.0], [10.0, 95.0]]
 
 [[indicator]]
@@ -139,7 +156,7 @@ weight = 6.0
 unit = "pct, ICE BofA US Corporate option-adjusted spread"
 source = "fred"
 fred_series = "BAMLC0A0CM"
-rationale = "Investment-grade spreads are the funding cost for the hyperscaler buildout itself. Same inversion as high yield: tight = complacent. Lower weight than HY because IG spreads are structurally less informative and the cohort is overwhelmingly IG-rated."
+rationale = "Investment-grade spreads are the funding cost for the hyperscaler buildout itself. Same direction as high yield: wide = high stress, tight = low stress, not inverted. Lower weight than HY because IG spreads are structurally less informative (the cohort is overwhelmingly IG-rated, so these spreads are close to a base-rate cost of capital rather than a risk judgment on AI specifically)."
 anchors = [[0.5, 8.0], [0.8, 20.0], [1.1, 35.0], [1.5, 55.0], [2.0, 75.0], [3.0, 93.0]]
 
 [[indicator]]

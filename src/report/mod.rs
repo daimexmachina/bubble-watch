@@ -121,8 +121,19 @@ pub fn build(
     );
     caveats.push(
         "A CALM READING IS NOT EVIDENCE OF SAFETY. Bubbles are generally identifiable only in \
-         hindsight, and tight credit spreads or healthy breadth are consistent with both 'no \
-         bubble' and 'the complacent phase of one'."
+         hindsight, and cheap credit or healthy breadth are consistent with both 'no bubble' and \
+         'the quiet phase of one'. More generally: this tool reports the STATE of a set of \
+         indicators, and state extremity carries no timing information."
+            .into(),
+    );
+    caveats.push(
+        "CREDIT IS SCORED AS LEVEL, NOT COMPLACENCY. A wide spread reads as high stress and a \
+         tight one as low. Scoring tight spreads as the bubble signal is a defensible \
+         alternative (credit tightened into the dot-com peak) but is deliberately not used here: \
+         HY OAS has a ~3.0% median over the available record, so a level-based complacency score \
+         would read most of the last decade as a bubble — a near-constant with no timing value. \
+         The informative credit signal is the DIRECTION OF TRAVEL from a tight base. Measured \
+         effect of the alternative reading on this composite: 32.4 -> 44.2, i.e. early -> late."
             .into(),
     );
 

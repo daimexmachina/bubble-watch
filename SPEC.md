@@ -143,8 +143,8 @@ credit and fundamental signals. `stress` is 0 = calm, 100 = historical extreme.
 | 3 | `breadth` | RSP/SPY ratio trend + divergence from its own 200d | Yahoo | 10 |
 | 4 | `issuance` | net equity issuance proxy: Σ Δ shares-outstanding across mega-caps (EDGAR `dei:EntityCommonStockSharesOutstanding`) + hyperscaler debt growth | EDGAR | 10 |
 | 5 | `volatility` | VIX (`%5EVIX`) level + realized vol of SPX | Yahoo | 8 |
-| 6 | `credit_hy` | US HY option-adjusted spread (tight = complacent = bubble) | FRED (optional) | 12 |
-| 7 | `credit_ig` | US IG OAS | FRED (optional) | 6 |
+| 6 | `credit_hy` | US HY option-adjusted spread (wide = high stress; direction of travel is the signal) | FRED | 12 |
+| 7 | `credit_ig` | US IG OAS | FRED | 6 |
 | 8 | `capex_vs_cashflow` | hyperscaler capex as % of operating cash flow ("the C-F-D ratio") | EDGAR | 14 |
 | 9 | `funding_gap` | capex vs revenue run-rate + debt growth across the cohort | EDGAR | 8 |
 | 10 | `leverage` | cohort long-term debt trend vs EBITDA-like (CFO) proxy | EDGAR | 6 |

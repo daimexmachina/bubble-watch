@@ -49,11 +49,13 @@ fn credit_reading(ctx: &Ctx, id: &str, _label: &str, what: &str) -> Reading {
         value: level,
         unit: ic.unit.clone(),
         detail: format!(
-            "{} {} as of {}. ANCHORS ARE INVERTED BY DESIGN: a TIGHT spread scores as HIGH \
-             stress, because credit charging almost nothing for this risk is the complacent \
-             reading. If the spread is currently tight this indicator deliberately reports low \
-             stress — that is the honest output, not a malfunction. Watch the direction of \
-             travel: widening from a tight base is the early warning.",
+            "{} {} as of {}. Direction: WIDE spread = high stress, tight = low stress \
+             (not inverted). A tight spread means credit is currently cheap and the market \
+             is charging little for this risk; it is NOT scored as a bubble signal, because \
+             HY spreads have a ~3.0% median over the available record and a level-based \
+             complacency score would read nearly the whole post-2009 period as a bubble. \
+             The informative signal is the DIRECTION OF TRAVEL from a tight base — widening \
+             is the early warning. Watch the change, not the level.",
             what, level, s.provenance.as_of
         ),
         provenance: s.provenance.clone(),
@@ -180,8 +182,8 @@ mod tests {
 
     #[test]
     fn tight_spread_scores_low_stress() {
-        // The inversion is the whole point: a tight spread is the complacent
-        // reading, but it must NOT be reported as extreme stress.
+        // Not inverted: a tight spread is cheap credit, reported as low stress.
+        // The informative signal is direction of travel, not level.
         let c = cfg();
         let mut obs = Observations::default();
         obs.fred
