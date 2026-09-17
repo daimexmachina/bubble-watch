@@ -2,6 +2,7 @@
 
 pub mod edgar;
 pub mod fred;
+pub mod fulltext;
 pub mod yahoo;
 
 use crate::http::Fetcher;
@@ -97,6 +98,20 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }
     }
 
+    // Primary-market filing volume: the broad IPO wave that no per-company
+    // concept can see. Stored under its own key so it can never be mistaken for
+    // a ticker series.
+    match fulltext::registrations(f, &crate::now_date(), 365) {
+        Ok(series) => {
+            obs.yahoo.insert("S1_REGISTRATIONS_1Y".to_string(), series);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "sec-edgar-fulltext".into(),
+            endpoint: "S-1 registration count, trailing 1 year".into(),
+            reason: e,
+        }),
+    }
+
     for (ticker, cik, name) in edgar::COHORT {
         let cf = edgar::company(f, ticker, cik, name);
         // Record a failure when a filer yielded nothing at all, so the gap is
@@ -125,7 +140,14 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
     use crate::model::SourceHealth;
     let mut out = Vec::new();
 
-    let yahoo_ok = obs.yahoo.len();
+    // The S-1 count lives in the same map but is NOT a yahoo series, so exclude
+    // it here — otherwise it would inflate yahoo's retrieved count and hide a
+    // real yahoo failure behind it.
+    let yahoo_ok = obs
+        .yahoo
+        .keys()
+        .filter(|k| !k.starts_with("S1_REGISTRATIONS"))
+        .count();
     let yahoo_fail = obs.failures.iter().filter(|x| x.source == "yahoo").count();
     out.push(SourceHealth {
         name: "yahoo".into(),
@@ -188,6 +210,24 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
                 if keyed { "" } else { " (no FRED_API_KEY set)" }
             )
         },
+    });
+
+    let ft_ok = obs
+        .yahoo
+        .keys()
+        .filter(|k| k.starts_with("S1_REGISTRATIONS"))
+        .count();
+    let ft_fail = obs
+        .failures
+        .iter()
+        .filter(|x| x.source == "sec-edgar-fulltext")
+        .count();
+    out.push(SourceHealth {
+        name: "sec-edgar-fulltext".into(),
+        status: status_for(ft_ok, ft_fail),
+        ok_count: ft_ok,
+        failed_count: ft_fail,
+        detail: "S-1 registration count, trailing 1 year (primary-market supply)".into(),
     });
 
     out

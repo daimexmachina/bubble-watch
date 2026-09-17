@@ -82,6 +82,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "funding_gap" => Some(Box::new(fundamentals::FundingGap)),
         "leverage" => Some(Box::new(fundamentals::Leverage)),
         "issuance" => Some(Box::new(fundamentals::Issuance)),
+        "primary_market_supply" => Some(Box::new(fundamentals::PrimaryMarketSupply)),
         _ => None,
     }
 }
@@ -99,6 +100,7 @@ pub const IMPLEMENTED: &[&str] = &[
     "funding_gap",
     "leverage",
     "issuance",
+    "primary_market_supply",
 ];
 
 #[cfg(test)]

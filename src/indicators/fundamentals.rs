@@ -436,6 +436,89 @@ impl Indicator for Issuance {
     }
 }
 
+/// Primary-market supply: SEC registration statements filed over the trailing
+/// year, annualised.
+///
+/// This measures the broad IPO wave that the `issuance` indicator explicitly
+/// cannot see, because that one looks only inside a five-name mega-cap cohort.
+/// Registrations are the closest free proxy for "how much new supply is being
+/// pushed at the market", and the historical record makes it genuinely
+/// informative: measured from this host, annual S-1 counts run 1,867 (2019),
+/// 2,890 (2020), 5,619 (2021), 2,715 (2022), 2,553 (2023), 2,663 (2024) and
+/// 2,824 (2025). The 2021 spike is the clearest primary-market mania in the
+/// window.
+///
+/// WHAT IT IS NOT. It counts FILINGS, not dollars and not outcomes. A
+/// registration is a stated intent to sell; many are withdrawn or priced far
+/// below the indicated range, and this cannot see offer price, first-day
+/// performance, or whether any of it was absorbed. It is also unadjusted for how
+/// many companies were simply eligible to file in a given year. So it is a
+/// supply-of-attempts measure, and the config's anchors treat it as such rather
+/// than as a valuation signal.
+pub struct PrimaryMarketSupply;
+
+impl Indicator for PrimaryMarketSupply {
+    fn id(&self) -> &'static str {
+        "primary_market_supply"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        let Some(series) = ctx.obs.yahoo.get("S1_REGISTRATIONS_1Y") else {
+            return Reading::Unavailable {
+                reason: "SEC full-text search returned no S-1 registration count for the trailing \
+                         year, so primary-market supply could not be measured"
+                    .into(),
+            };
+        };
+        let Some(n) = series.latest_value() else {
+            return Reading::Unavailable {
+                reason: "S-1 registration series arrived empty".into(),
+            };
+        };
+        if n <= 0.0 {
+            // A genuine zero over a year is not credible and would read as a
+            // collapsed primary market; treat it as a data problem to inspect.
+            return Reading::Unavailable {
+                reason: format!(
+                    "S-1 registration count came back as {} for a full trailing year, which is \
+                     not plausible; reported as a gap rather than as a frozen primary market",
+                    n
+                ),
+            };
+        }
+        // The window is a year by construction, so the count IS the annualised
+        // figure. Scale it to a rate per 365 days anyway so a partial window
+        // cannot silently understate.
+        let stress = crate::score::interpolate(n, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: n,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "{:.0} registration statements (form S-1) filed with the SEC in the trailing \
+                 twelve months. This counts ATTEMPTS to sell stock, not the money raised and not \
+                 whether the market absorbed it: no offer price, no first-day performance, and no \
+                 adjustment for how many companies were simply eligible to file. For scale, \
+                 measured annual counts: 2021 was the 5,619 peak, 2019 was 1,867, and 2023-2025 \
+                 sat at 2,553 / 2,663 / 2,824. A reading near the recent average therefore means \
+                 the primary market looks ordinary, NOT that no bubble exists — this is supply of \
+                 attempts, and it says nothing about prices.",
+                n
+            ),
+            provenance: series.provenance.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
