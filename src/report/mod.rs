@@ -14,11 +14,37 @@ ability to tell you if or when a market reversal will occur, and it should not b
 for any financial decision.";
 
 /// Assemble the final report from evaluated readings. Pure.
+///
+/// History is not consulted: the trend is reported as absent with a reason, so
+/// a caller that wants direction of travel must use `build_with_history`.
+/// Keeping this signature means every existing caller keeps working unchanged.
 pub fn build(
     readings: Vec<IndicatorReading>,
     obs: &Observations,
     cfg: &Config,
     generated_at: &str,
+) -> Report {
+    build_with_history(readings, obs, cfg, generated_at, &[], false)
+}
+
+/// Assemble the final report, including direction of travel against a baseline
+/// drawn from `archive`.
+///
+/// PURE — the caller loads the archive and appends the new run. `recorded`
+/// records whether this run was written to the archive, and `warnings` carries
+/// any non-fatal problems found while reading it.
+///
+/// The trend NEVER enters the composite. It is derived from the composite, so
+/// scoring it inside the composite would make the score partly a function of its
+/// own past; the composite is byte-identical with and without history, and
+/// `tests/integration_tests.rs` asserts that.
+pub fn build_with_history(
+    readings: Vec<IndicatorReading>,
+    obs: &Observations,
+    cfg: &Config,
+    generated_at: &str,
+    archive: &[TrendPoint],
+    recorded: bool,
 ) -> Report {
     let mut readings = readings;
     let (comp_opt, coverage) = crate::score::composite(&readings);
@@ -37,6 +63,21 @@ pub fn build(
     };
 
     let analog = crate::phase::analog_window(comp_opt, coverage, cfg);
+
+    // Direction of travel. Computed from the composite that was just produced,
+    // and deliberately NOT fed back into it.
+    let trend = {
+        let current =
+            crate::history::point_from(&readings, composite, coverage, phase.id(), generated_at);
+        crate::history::compute(
+            archive,
+            &current,
+            &readings,
+            &cfg.trend,
+            recorded,
+            Vec::new(),
+        )
+    };
 
     // Data quality: what is missing, and how much weight it carried.
     let total_weight = cfg.total_weight();
@@ -138,19 +179,49 @@ pub fn build(
             .into(),
     );
 
+    // Direction of travel: state the comparability rule when no delta could be
+    // produced, and state it as a REFUSAL rather than as missing data.
+    if trend.delta.is_none() {
+        if let Some(reason) = &trend.reason {
+            caveats.push(format!(
+                "DIRECTION OF TRAVEL NOT REPORTED: {}. This is deliberate — a change computed \
+                 across runs of unequal coverage would mix a real market move with the effect of \
+                 which sources happened to answer.",
+                reason
+            ));
+        }
+    }
+
     let headline = match comp_opt {
-        Some(c) => format!(
-            "Composite bubble-stress {:.1}/100 ({} phase) on {:.0}% weighted coverage, {} \
-             confidence. {} of {} weight available; {} indicator(s) unavailable and contributing \
-             nothing.",
-            c,
-            phase.id(),
-            coverage * 100.0,
-            confidence,
-            available_weight,
-            total_weight,
-            unavailable.len()
-        ),
+        Some(c) => {
+            // Append direction of travel only when it is actually available, so
+            // the headline never implies a trend that was refused.
+            let dir = match &trend.delta {
+                Some(d) => format!(
+                    " Direction of travel: {} {:+.1} over {:.0} day(s) against the {} baseline \
+                     ({}% coverage).",
+                    d.direction.as_str(),
+                    d.composite_delta,
+                    d.elapsed_days,
+                    d.baseline_date,
+                    d.baseline_coverage * 100.0
+                ),
+                None => String::new(),
+            };
+            format!(
+                "Composite bubble-stress {:.1}/100 ({} phase) on {:.0}% weighted coverage, {} \
+                 confidence. {} of {} weight available; {} indicator(s) unavailable and contributing \
+                 nothing.{}",
+                c,
+                phase.id(),
+                coverage * 100.0,
+                confidence,
+                available_weight,
+                total_weight,
+                unavailable.len(),
+                dir
+            )
+        }
         None => "NO COMPOSITE PRODUCED: no configured indicator could be measured from the \
                  available sources. This is reported as a total data failure rather than a score \
                  of zero, because zero would imply a measurement that was never taken."
@@ -176,9 +247,11 @@ pub fn build(
             what_is_calm: String::new(),
             what_we_cannot_measure: String::new(),
             about_timing: String::new(),
+            direction_of_travel: String::new(),
             bottom_line: String::new(),
         },
         analog,
+        trend,
         indicators: readings,
         data_quality: DataQuality {
             total_weight,

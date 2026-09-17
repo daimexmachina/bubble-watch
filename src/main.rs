@@ -60,11 +60,34 @@ enum Cmd {
         /// Base filename (without extension).
         #[arg(long, default_value = "bubble-report")]
         name: String,
+        /// Directory holding the run archive used for direction of travel.
+        #[arg(long, default_value = "data/history")]
+        history_dir: PathBuf,
+        /// Do not append this run to the archive.
+        #[arg(long)]
+        no_record: bool,
     },
     /// Show exactly how the composite was built, indicator by indicator.
     Explain,
     /// Probe each source and print its health.
     Sources,
+    /// Show direction of travel: the recorded run history and the delta against
+    /// the most recent comparable baseline.
+    Trend {
+        /// Directory holding the run archive.
+        #[arg(long, default_value = "data/history")]
+        history_dir: PathBuf,
+    },
+    /// Generate the self-contained site (dashboard + per-day reports + index)
+    /// into a directory that can be served with any static file server.
+    Site {
+        /// Output directory. Defaults to the configured site directory.
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Directory holding the run archive.
+        #[arg(long, default_value = "data/history")]
+        history_dir: PathBuf,
+    },
 }
 
 fn main() {
@@ -171,8 +194,19 @@ fn run(cli: &Cli) -> Result<(), String> {
             finish_code(&r);
             Ok(())
         }
-        Cmd::Report { out, name } => {
-            let (r, _) = bubble_watch::pipeline(&cfg, cli.offline, cache.clone());
+        Cmd::Report {
+            out,
+            name,
+            history_dir,
+            no_record,
+        } => {
+            let (r, _) = bubble_watch::pipeline_with_history(
+                &cfg,
+                cli.offline,
+                cache.clone(),
+                history_dir,
+                !*no_record,
+            );
             std::fs::create_dir_all(out).map_err(|e| e.to_string())?;
             let json_path = out.join(format!("{}.json", name));
             let html_path = out.join(format!("{}.html", name));
@@ -191,7 +225,204 @@ fn run(cli: &Cli) -> Result<(), String> {
             finish_code(&r);
             Ok(())
         }
+        Cmd::Trend { history_dir } => {
+            let (r, _) = bubble_watch::pipeline_with_history(
+                &cfg,
+                cli.offline,
+                cache.clone(),
+                history_dir,
+                false,
+            );
+            print_trend(&r);
+            finish_code(&r);
+            Ok(())
+        }
+        Cmd::Site { out, history_dir } => {
+            // Generate today's run and record it, then rebuild the whole site so
+            // the dashboard reflects this run immediately.
+            let (r, _) = bubble_watch::pipeline_with_history(
+                &cfg,
+                cli.offline,
+                cache.clone(),
+                history_dir,
+                true,
+            );
+            let dir = out.clone().unwrap_or_else(|| PathBuf::from("site"));
+            gen_site(&dir, history_dir, &r)?;
+            print_human(&r);
+            finish_code(&r);
+            Ok(())
+        }
     }
+}
+
+/// Write the servable site: a dashboard, an index, and one report per recorded
+/// run plus a `latest.html` alias.
+///
+/// Per-day reports are only written for dates present in the archive, so the
+/// site never links to a page that does not exist.
+fn gen_site(
+    dir: &std::path::Path,
+    history_dir: &std::path::Path,
+    latest: &bubble_watch::model::Report,
+) -> Result<(), String> {
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+
+    let (points, warnings) = bubble_watch::history::load(history_dir);
+    for w in &warnings {
+        eprintln!("warning: {}", w);
+    }
+    let series = bubble_watch::history::daily_series(&points);
+
+    // Publish the archived per-run report pages into the site, so any past date
+    // can be opened in full.
+    let archived = bubble_watch::history::reports_dir(history_dir);
+    let mut report_pages = std::collections::BTreeSet::new();
+    if let Ok(entries) = std::fs::read_dir(&archived) {
+        for e in entries.flatten() {
+            let name = e.file_name().to_string_lossy().to_string();
+            if let Some(date) = name.strip_suffix(".html") {
+                let dst = dir.join(&name);
+                if std::fs::copy(e.path(), &dst).is_ok() {
+                    report_pages.insert(date.to_string());
+                }
+            }
+        }
+    }
+
+    // The current run's own report, plus aliases for convenience.
+    std::fs::write(dir.join("latest.html"), report::html::render(latest))
+        .map_err(|e| e.to_string())?;
+    let today = bubble_watch::history::date_of(&latest.generated_at);
+    std::fs::write(
+        dir.join(format!("{}.html", today)),
+        report::html::render(latest),
+    )
+    .map_err(|e| e.to_string())?;
+    report_pages.insert(today.clone());
+
+    let have_page = |d: &str| report_pages.contains(d);
+
+    std::fs::write(
+        dir.join("dashboard.html"),
+        report::html::render_dashboard(&series, Some(latest), cfg_sparkline_points(), &have_page),
+    )
+    .map_err(|e| e.to_string())?;
+    std::fs::write(dir.join("index.html"), report::html::render_index())
+        .map_err(|e| e.to_string())?;
+
+    // A plain-text copy of the series, so the history is usable without a
+    // browser and diffable in git.
+    let mut csv = String::from("date,composite,coverage,phase\n");
+    for p in &series {
+        csv.push_str(&format!(
+            "{},{:.4},{:.4},{}\n",
+            p.date, p.composite, p.coverage, p.phase
+        ));
+    }
+    std::fs::write(dir.join("series.csv"), csv).map_err(|e| e.to_string())?;
+
+    println!("wrote {}", dir.join("dashboard.html").display());
+    println!("wrote {}", dir.join("index.html").display());
+    println!("wrote {}", dir.join("latest.html").display());
+    println!("wrote {}", dir.join("series.csv").display());
+    println!(
+        "site contains {} recorded run(s); {} full report page(s) published",
+        series.len(),
+        report_pages.len()
+    );
+    Ok(())
+}
+
+/// Sparkline length, read from the shipped config so the site and the report
+/// agree on how much history to draw.
+fn cfg_sparkline_points() -> usize {
+    Config::load(std::path::Path::new("config/indicators.toml"))
+        .map(|c| c.trend.sparkline_points)
+        .unwrap_or(30)
+}
+
+/// Direction of travel, in a form that makes the comparability rule visible
+/// rather than merely implied.
+fn print_trend(r: &bubble_watch::model::Report) {
+    println!("DIRECTION OF TRAVEL");
+    println!("{}", "=".repeat(72));
+    println!("{}", wrap(&r.layman.direction_of_travel, 72));
+    println!();
+
+    for w in &r.trend.warnings {
+        println!("  ! {}", w);
+    }
+
+    println!(
+        "recorded runs (one per date, newest last): {}",
+        r.trend.points.len()
+    );
+    if r.trend.points.is_empty() {
+        println!("  (no runs recorded yet)");
+    } else {
+        println!(
+            "  {:<12} {:>9} {:>9}  {}",
+            "DATE", "COMPOSITE", "COVERAGE", "PHASE"
+        );
+        for p in &r.trend.points {
+            println!(
+                "  {:<12} {:>9.2} {:>8.0}%  {}",
+                p.date,
+                p.composite,
+                p.coverage * 100.0,
+                p.phase
+            );
+        }
+    }
+    println!("{}", "-".repeat(72));
+
+    match &r.trend.delta {
+        Some(d) => {
+            println!(
+                "vs {} ({:.0} days): composite {:+.2} -> {}  [{} phase {} {} phase]",
+                d.baseline_date,
+                d.elapsed_days,
+                d.composite_delta,
+                d.direction.as_str(),
+                d.phase_then,
+                if d.phase_changed { "->" } else { "=" },
+                d.phase_now
+            );
+            println!(
+                "baseline coverage {:.0}% vs current {:.0}% (within tolerance)",
+                d.baseline_coverage * 100.0,
+                r.coverage * 100.0
+            );
+            if !d.indicators.is_empty() {
+                println!();
+                println!(
+                    "  {:<26} {:>9} {:>9} {:>8}  {}",
+                    "INDICATOR", "THEN", "NOW", "CHANGE", "DIRECTION"
+                );
+                for i in &d.indicators {
+                    println!(
+                        "  {:<26} {:>9.1} {:>9.1} {:>+8.1}  {}",
+                        i.id,
+                        i.baseline_stress,
+                        i.current_stress,
+                        i.delta,
+                        i.direction.as_str()
+                    );
+                }
+            }
+        }
+        None => {
+            println!("No delta reported.");
+            if let Some(reason) = &r.trend.reason {
+                println!("{}", wrap(reason, 72));
+            }
+        }
+    }
+    println!("{}", "=".repeat(72));
+    println!(
+        "The trend is CONTEXT only: it never enters the composite, which is derived above it."
+    );
 }
 
 fn finish_code(r: &bubble_watch::model::Report) {

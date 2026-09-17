@@ -23,6 +23,9 @@ pub struct LaymanSummary {
     pub what_is_calm: String,
     pub what_we_cannot_measure: String,
     pub about_timing: String,
+    /// Whether things are getting better or worse. This is the section that
+    /// answers the question the credit indicators were always meant to answer.
+    pub direction_of_travel: String,
     pub bottom_line: String,
 }
 
@@ -232,6 +235,79 @@ stages right now. That is not the same as being safe."
             .to_string(),
     };
 
+    // Direction of travel. Written in plain words, and it must never imply a
+    // trend the tool refused to compute — when there is no delta, this says so
+    // and explains why, rather than staying silent.
+    let direction_of_travel = match &r.trend.delta {
+        Some(d) => {
+            let change = match d.direction {
+                crate::model::Direction::Flat => {
+                    "barely changed, which is worth saying plainly: the numbers are stable, not \
+getting better or worse"
+                }
+                crate::model::Direction::Rising => {
+                    "has got worse, meaning more of the warning signs are showing than before"
+                }
+                crate::model::Direction::Falling => {
+                    "has got better, meaning fewer of the warning signs are showing than before"
+                }
+            };
+            // Name what moved most, but only when something moved meaningfully.
+            let mover = d
+                .indicators
+                .iter()
+                .find(|i| i.direction != crate::model::Direction::Flat)
+                .map(|i| {
+                    format!(
+                        " The biggest single change was in {} ({} points {}).",
+                        plain_name(&i.id),
+                        (i.delta.abs() * 10.0).round() / 10.0,
+                        if i.delta > 0.0 { "worse" } else { "better" }
+                    )
+                })
+                .unwrap_or_default();
+            let phase = if d.phase_changed {
+                format!(
+                    " The overall description also moved from '{}' to '{}', which is the kind of \
+change worth paying attention to.",
+                    plain_phase(&d.phase_then),
+                    plain_phase(&d.phase_now)
+                )
+            } else {
+                String::new()
+            };
+            format!(
+                "Comparing today with {} ({} days ago): the overall score {} ({} points).{} That \
+comparison is only made against a previous reading taken under the same conditions, so an \
+apples-to-apples comparison is guaranteed{}.",
+                d.baseline_date,
+                d.elapsed_days.round() as i64,
+                change,
+                format_args!("{:+.1}", d.composite_delta),
+                mover,
+                phase
+            )
+        }
+        None => {
+            // Say that it cannot be computed, and why. Silence here would look
+            // like "nothing has changed", which is a different claim entirely.
+            let why = r
+                .trend
+                .reason
+                .as_deref()
+                .unwrap_or("there is no earlier reading to compare against yet");
+            format!(
+                "This report cannot yet say whether things are getting better or worse, because \
+{}. It is worth knowing that the tool will not compare two readings taken under different \
+conditions: if some of the data was missing on one day, the difference between the two scores \
+would reflect the missing data rather than the market. Rather than show you a number that means \
+nothing, it says nothing and tells you why. Run it again on another day and a comparison will \
+appear.",
+                why
+            )
+        }
+    };
+
     LaymanSummary {
         what_this_is,
         the_score,
@@ -239,7 +315,19 @@ stages right now. That is not the same as being safe."
         what_is_calm,
         what_we_cannot_measure,
         about_timing,
+        direction_of_travel,
         bottom_line,
+    }
+}
+
+/// Plain wording for a phase id, so the summary never shows a raw label.
+fn plain_phase(id: &str) -> &'static str {
+    match id {
+        "early" => "early",
+        "mid" => "middle",
+        "late" => "late",
+        "critical" => "extreme",
+        _ => "unclear",
     }
 }
 
@@ -247,7 +335,8 @@ stages right now. That is not the same as being safe."
 mod tests {
     use super::*;
     use crate::model::{
-        AnalogWindow, DataQuality, IndicatorReading, Provenance, Reading, Report, UnavailableItem,
+        AnalogWindow, DataQuality, IndicatorReading, Provenance, Reading, Report, Trend,
+        UnavailableItem,
     };
 
     fn prov() -> Provenance {
@@ -312,6 +401,7 @@ mod tests {
                 band: months.map(|_| "early".to_string()),
                 band_note: None,
             },
+            trend: Trend::empty("no history in this test"),
             indicators: inds,
             data_quality: DataQuality {
                 total_weight: 100.0,
@@ -331,6 +421,7 @@ mod tests {
                 what_is_calm: String::new(),
                 what_we_cannot_measure: String::new(),
                 about_timing: String::new(),
+                direction_of_travel: String::new(),
                 bottom_line: String::new(),
             },
         }
@@ -397,13 +488,14 @@ mod tests {
         );
         let s = summarize(&r);
         let all = format!(
-            "{} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {}",
             s.what_this_is,
             s.the_score,
             s.what_is_stretched,
             s.what_is_calm,
             s.what_we_cannot_measure,
             s.about_timing,
+            s.direction_of_travel,
             s.bottom_line
         )
         .to_lowercase();
