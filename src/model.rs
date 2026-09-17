@@ -229,6 +229,118 @@ pub struct SourceHealth {
     pub detail: String,
 }
 
+/// One archived run, reduced to what trend computation needs. This is the
+/// record written to `data/history/runs.jsonl`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TrendPoint {
+    /// Calendar date of the run (YYYY-MM-DD). At most one point per date is
+    /// used, so intraday re-runs cannot masquerade as a longer history.
+    pub date: String,
+    /// Full timestamp of the run that produced this point.
+    pub generated_at: String,
+    pub composite: f64,
+    pub coverage: f64,
+    pub phase: String,
+    /// Per-indicator stress, keyed by indicator id. Empty entries are absent,
+    /// never zero-filled — a missing indicator is not a stress of zero.
+    #[serde(default)]
+    pub stresses: BTreeMap<String, f64>,
+}
+
+/// Direction of a measured change, with a dead-band so noise is not read as a
+/// signal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Direction {
+    Rising,
+    Falling,
+    Flat,
+}
+
+impl Direction {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Direction::Rising => "rising",
+            Direction::Falling => "falling",
+            Direction::Flat => "flat",
+        }
+    }
+    /// Classify a change against the configured dead-band.
+    pub fn classify(delta: f64, flat_band: f64) -> Direction {
+        if delta.abs() < flat_band {
+            Direction::Flat
+        } else if delta > 0.0 {
+            Direction::Rising
+        } else {
+            Direction::Falling
+        }
+    }
+}
+
+/// Change in one indicator since the baseline. Present only when BOTH runs
+/// scored that indicator — comparing against a gap would be comparing a number
+/// with a non-number.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct IndicatorTrend {
+    pub id: String,
+    pub label: String,
+    pub current_stress: f64,
+    pub baseline_stress: f64,
+    pub delta: f64,
+    pub direction: Direction,
+}
+
+/// A composite-level change against an eligible baseline.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TrendDelta {
+    pub baseline_date: String,
+    pub baseline_composite: f64,
+    pub baseline_coverage: f64,
+    pub composite_delta: f64,
+    /// Elapsed days. Always present: a +4 change over 3 days and a +4 change
+    /// over 400 days are different facts, so one is never reported without it.
+    pub elapsed_days: f64,
+    pub direction: Direction,
+    pub phase_now: String,
+    pub phase_then: String,
+    /// True when the phase label changed, which is the event worth noticing.
+    pub phase_changed: bool,
+    pub indicators: Vec<IndicatorTrend>,
+}
+
+/// Direction of travel, or an explicit statement of why it could not be
+/// computed. `delta: None` with a non-empty `reason` is the honest degraded
+/// state — never a silently absent field.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Trend {
+    /// Recorded daily points, oldest first, newest last.
+    pub points: Vec<TrendPoint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delta: Option<TrendDelta>,
+    /// Why no delta is available, when that is the case.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    /// Non-fatal problems found while reading the archive (e.g. a malformed
+    /// line). Reported rather than swallowed.
+    #[serde(default)]
+    pub warnings: Vec<String>,
+    /// True when the current run was appended to the archive.
+    pub recorded: bool,
+}
+
+impl Trend {
+    /// No history at all — used when history is disabled or unavailable.
+    pub fn empty(reason: &str) -> Trend {
+        Trend {
+            points: Vec::new(),
+            delta: None,
+            reason: Some(reason.to_string()),
+            warnings: Vec::new(),
+            recorded: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Report {
     pub tool: String,
@@ -244,6 +356,9 @@ pub struct Report {
     /// numbers as everything else, so it cannot drift out of sync.
     pub layman: crate::report::layman::LaymanSummary,
     pub analog: AnalogWindow,
+    /// Direction of travel since an eligible baseline. CONTEXT ONLY — it never
+    /// enters the composite.
+    pub trend: Trend,
     pub indicators: Vec<IndicatorReading>,
     pub data_quality: DataQuality,
     pub sources: Vec<SourceHealth>,
