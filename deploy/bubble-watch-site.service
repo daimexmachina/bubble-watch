@@ -1,0 +1,18 @@
+[Unit]
+Description=bubble-watch static site server (LAN)
+Documentation=file:/home/daim/workspace/bubble-watch/README.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/home/daim/workspace/bubble-watch
+ExecStart=/usr/bin/env bash /home/daim/workspace/bubble-watch/scripts/serve.sh /home/daim/workspace/bubble-watch/site 8770 0.0.0.0
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

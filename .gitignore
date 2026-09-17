@@ -2,3 +2,10 @@
 /out
 /data/cache
 *.log
+
+# The run archive is generated state, not source. It is reproduced by running
+# the tool, and committing it would make the repository grow daily.
+/data/history
+
+# The generated site is a build artifact.
+/site

@@ -1,0 +1,17 @@
+[Unit]
+Description=bubble-watch daily refresh timer
+Documentation=file:/home/daim/workspace/bubble-watch/README.md
+
+[Timer]
+# 13:30 local, well after the US market close (13:00 PT) so the day's final
+# prices and spreads are settled when the run is recorded.
+OnCalendar=*-*-* 13:30:00
+# If the host was asleep or off at 13:30, run shortly after boot rather than
+# skipping the day entirely.
+Persistent=true
+# Spread the load slightly: this is a Raspberry Pi with thermal headroom to
+# protect, and the run makes several network calls.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

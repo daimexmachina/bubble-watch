@@ -1,0 +1,16 @@
+[Unit]
+Description=bubble-watch daily refresh (fetch, record, regenerate site)
+Documentation=file:/home/daim/workspace/bubble-watch/README.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/daim/workspace/bubble-watch
+ExecStart=/usr/bin/env bash /home/daim/workspace/bubble-watch/scripts/daily-refresh.sh
+# A live run touches Yahoo, SEC EDGAR and optionally FRED. Give it room without
+# letting it hang forever.
+TimeoutStartSec=900
+StandardOutput=journal
+StandardError=journal
