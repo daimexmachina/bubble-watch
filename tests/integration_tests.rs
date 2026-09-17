@@ -187,6 +187,41 @@ fn the_report_states_its_own_methodology_version() {
 }
 
 #[test]
+fn the_report_discloses_the_concentration_breadth_double_counting() {
+    // Regression guard. These two indicators are algebraically the same quantity
+    // (equal-weight vs cap-weight) at measured r = -0.70 to -0.93. They were once
+    // carried at 22 combined weight as though they were two independent
+    // confirmations, which overstates how much evidence the composite actually
+    // aggregates. If the caveat or the reduced weight is ever removed, this fails.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-17T12:00:00Z");
+
+    assert!(
+        r.caveats.iter().any(|x| x.contains("NOT INDEPENDENT")),
+        "the correlation between concentration and breadth must be disclosed: {:?}",
+        r.caveats
+    );
+
+    // The combined weight must stay at roughly one indicator's worth, not two.
+    let conc = c
+        .indicator("concentration")
+        .expect("concentration configured")
+        .weight;
+    let brd = c.indicator("breadth").expect("breadth configured").weight;
+    assert!(
+        conc + brd <= 12.0,
+        "combined weight {} is too high for a pair with up to 86% shared variance",
+        conc + brd
+    );
+}
+
+#[test]
 fn history_never_changes_the_composite() {
     // THE load-bearing test for v1.1. The trend is derived FROM the composite,
     // so if it could also feed back into the composite, the score would partly
@@ -213,7 +248,7 @@ fn history_never_changes_the_composite() {
         composite: 90.0, // deliberately extreme: it must not drag the score
         coverage: without.coverage,
         phase: "critical".into(),
-        methodology_version: "1.1".into(),
+        methodology_version: c.meta.schema_version.clone(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let with = bubble_watch::report::build_with_history(
@@ -261,7 +296,7 @@ fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
         composite: 40.0,
         coverage: 0.50,
         phase: "mid".into(),
-        methodology_version: "1.1".into(),
+        methodology_version: c.meta.schema_version.clone(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let r = bubble_watch::report::build_with_history(
@@ -290,7 +325,7 @@ fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
         composite: 40.0,
         coverage: r.coverage,
         phase: "mid".into(),
-        methodology_version: "1.1".into(),
+        methodology_version: c.meta.schema_version.clone(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let r2 = bubble_watch::report::build_with_history(
@@ -329,7 +364,7 @@ fn the_html_trend_card_needs_no_javascript_and_loads_nothing() {
             .sum::<f64>()
             / c.total_weight(),
         phase: "early".into(),
-        methodology_version: "1.1".into(),
+        methodology_version: c.meta.schema_version.clone(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let r = bubble_watch::report::build_with_history(

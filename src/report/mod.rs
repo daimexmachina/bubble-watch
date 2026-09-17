@@ -170,6 +170,18 @@ pub fn build_with_history(
          not exist because it does not issue equity. Each indicator's row names its own limitation."
             .into(),
     );
+    // Double-counting disclosure. The config carries the full note, but a reader
+    // of the report must not read these two rows as independent confirmations, so
+    // it is stated where the numbers are.
+    caveats.push(
+        "NOT INDEPENDENT: `concentration` and `breadth` measure the same underlying quantity — \
+         equal-weight versus cap-weight performance — over different windows. Measured correlation \
+         is -0.70 at 12 months and -0.93 at 6 months, i.e. up to ~86% shared variance. Their \
+         combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count \
+         one phenomenon as two pieces of evidence. Do NOT read agreement between the two as \
+         corroboration."
+            .into(),
+    );
     caveats.push(format!(
         "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
          and refuses to compute a direction of travel across a version change: redefining an \

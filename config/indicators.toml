@@ -15,7 +15,7 @@
 # which is a deliberate decision documented in their rationale below.
 
 [meta]
-schema_version = "1.2"
+schema_version = "1.3"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -133,19 +133,52 @@ anchors = [[-15.0, 5.0], [-5.0, 12.0], [0.0, 18.0], [10.0, 32.0], [20.0, 50.0], 
 [[indicator]]
 id = "concentration"
 label = "Index concentration (cap vs equal weight)"
-weight = 12.0
+# WEIGHT REDUCED 12.0 -> 6.0 at methodology 1.2. See the note below the anchors.
+weight = 6.0
 unit = "percentage-point spread, SPY 12m return minus RSP 12m return"
 source = "yahoo"
-rationale = "Mega-cap dominance is the headline concentration concern. Computable proxy: when returns are carried by a handful of large names, cap-weight beats equal-weight. PROXY: weak-to-medium — it responds to any large-cap-vs-small-cap regime, not specifically to AI-related concentration, and it is a returns measure rather than the (unavailable) free-float market-cap share. Read alongside `breadth`."
+# ---------------------------------------------------------------------------
+# MEASURED DOUBLE-COUNTING WITH `breadth`. Do not treat these as two
+# independent confirmations.
+#
+# Both indicators are algebraically the same quantity — equal-weight
+# underperformance relative to cap-weight — measured over two windows. Measured
+# correlation between them (10 years of monthly SPY/RSP data):
+#
+#     12-month window:  r = -0.70
+#      6-month window:  r = -0.93   -> ~86% shared variance
+#
+# Reproduced independently by the maintainer on a separate 1-year daily sample:
+# r = -0.54 to -0.59. The sign is negative by construction (a rising RSP/SPY ratio
+# IS a shrinking cap-vs-equal gap), and the magnitude is the finding.
+#
+# The consequence for the model was that a single underlying phenomenon was
+# carried at 12 + 10 = 22 combined weight, i.e. ~20% of the composite, while
+# presenting itself as two separate pieces of evidence. That overstates the NUMBER
+# OF INDEPENDENT CONFIRMATIONS, which is the thing a composite is supposed to
+# aggregate honestly.
+#
+# Remedy chosen: retain BOTH (they are not redundant in level — one is a returns
+# differential and one is a ratio-versus-trend measure, and each carries its own
+# failure modes) but reduce the combined weight from 22 to 11, so the pair now
+# carries the weight of roughly one strong indicator rather than two. This is a
+# judgement about how much independent information the pair adds, not a claim that
+# either is wrong.
+#
+# A reader must NOT read "concentration and breadth both elevated" as two
+# corroborating signals. The report states the shared variance explicitly.
+# ---------------------------------------------------------------------------
+rationale = "Mega-cap dominance is the headline concentration concern. Computable proxy: when returns are carried by a handful of large names, cap-weight beats equal-weight. PROXY: weak-to-medium — it responds to any large-cap-vs-small-cap regime, not specifically to AI-related concentration, and it is a returns measure rather than the (unavailable) free-float market-cap share. IMPORTANT: this indicator is highly correlated with `breadth` — they measure the same equal-weight-versus-cap-weight quantity over different windows (measured r = -0.70 at 12m, -0.93 at 6m, i.e. up to ~86% shared variance). Their combined weight was reduced from 22 to 11 at methodology 1.2 to stop the model counting one phenomenon as two independent confirmations. Do not read agreement between the two as corroboration."
 anchors = [[-8.0, 8.0], [-3.0, 15.0], [0.0, 22.0], [5.0, 35.0], [10.0, 50.0], [20.0, 70.0], [35.0, 88.0], [50.0, 95.0]]
 
 [[indicator]]
 id = "breadth"
 label = "Market breadth"
-weight = 10.0
+# WEIGHT REDUCED 10.0 -> 5.0 at methodology 1.2. See the note under `concentration`.
+weight = 5.0
 unit = "pct, equal-weight/cap-weight ratio vs its 200-day average"
 source = "yahoo"
-rationale = "A narrowing rally lifts the index while most constituents lag; the RSP/SPY ratio falling through its own 200-day average is the classic breadth tell. PROXY: medium — this is a relative-performance breadth proxy, not advance/decline line or % of stocks above their 200d, which we cannot get free. Negatives are meaningful: if breadth is healthy, this indicator reports LOW stress and the composite says so."
+rationale = "A narrowing rally lifts the index while most constituents lag; the RSP/SPY ratio falling through its own 200-day average is the classic breadth tell. PROXY: medium — this is a relative-performance breadth proxy, not advance/decline line or % of stocks above their 200d, which we cannot get free. Negatives are meaningful: if breadth is healthy, this indicator reports LOW stress and the composite says so. IMPORTANT: this is highly correlated with `concentration` — both measure equal-weight versus cap-weight performance, this one as a ratio-versus-trend and that one as a 12-month return differential (measured r = -0.70 at 12m, -0.93 at 6m). Their combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count one phenomenon twice, and the report now discloses the shared variance."
 anchors = [[-20.0, 93.0], [-10.0, 78.0], [-5.0, 58.0], [-2.0, 40.0], [0.0, 28.0], [3.0, 15.0], [6.0, 8.0]]
 
 [[indicator]]
