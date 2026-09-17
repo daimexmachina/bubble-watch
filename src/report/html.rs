@@ -125,6 +125,15 @@ fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
     )
 }
 
+/// One block of the plain-English summary.
+fn layman_block(title: &str, body: &str) -> String {
+    format!(
+        "<div class='lm-block'><div class='lm-h'>{}</div><div class='lm-b'>{}</div></div>",
+        esc(title),
+        esc(body)
+    )
+}
+
 pub fn render(r: &Report) -> String {
     let mut rows = String::new();
     for i in &r.indicators {
@@ -164,6 +173,15 @@ pub fn render(r: &Report) -> String {
     for c in &r.caveats {
         caveats.push_str(&format!("<li>{}</li>", esc(c)));
     }
+
+    // Plain-English summary blocks, in reading order.
+    let lm_blocks = [
+        layman_block("What is stretched", &r.layman.what_is_stretched),
+        layman_block("What is calm", &r.layman.what_is_calm),
+        layman_block("What this cannot check", &r.layman.what_we_cannot_measure),
+        layman_block("About timing", &r.layman.about_timing),
+    ]
+    .join("");
 
     let analog = match (r.analog.range_months, &r.analog.band) {
         (Some(rg), Some(b)) => format!(
@@ -217,13 +235,36 @@ tr.ok td:nth-child(2) {{ color:#2e7d32; }}
 ul {{ margin:6px 0 0; padding-left:20px; }}
 li {{ margin-bottom:4px; font-size:13px; }}
 .note {{ background:#fff8e1; border-left:3px solid #f9a825; padding:10px 14px; border-radius:4px; font-size:13px; }}
+.card.lm {{ border-left:4px solid #1a73e8; }}
+.lm-intro {{ font-size:14px; margin:0 0 14px; color:#333; }}
+.lm-grid {{ display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }}
+.lm-block {{ background:#f5f8fd; border-radius:6px; padding:11px 13px; }}
+.lm-h {{ font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#1a73e8; margin-bottom:4px; }}
+.lm-b {{ font-size:13.5px; line-height:1.55; color:#222; }}
+.lm-bottom {{ margin-top:14px; padding:11px 13px; background:#eef3fb; border-radius:6px; font-size:13.5px; line-height:1.55; }}
+@media (prefers-color-scheme: dark) {{
+  .lm-intro {{ color:#ddd; }}
+  .lm-block {{ background:#1e2733; }}
+  .lm-b {{ color:#e8e8e8; }}
+  .lm-bottom {{ background:#1e2733; }}
+}}
 .disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
 </style></head><body>
 
 <h1>AI Bubble Watch</h1>
 <div class="sub">generated {gen} · bubble-watch {ver} · coverage {cov:.0}% · confidence {conf}</div>
 
+<div class="card lm">
+  <h3 style="margin-top:0;font-size:15px">Plain-English summary</h3>
+  <p class="lm-intro">{lm_what}</p>
+  <div class="lm-grid">
+    {lm_blocks}
+  </div>
+  <div class="lm-bottom"><b>Bottom line.</b> {lm_bottom}</div>
+</div>
+
 <div class="card">
+  <h3 style="margin-top:0;font-size:15px">The score</h3>
   <div class="score">{score:.1}<small>/100 stress</small></div>
   <div style="margin:10px 0 4px"><span class="phase" style="background:{pcol}">{phase}</span></div>
   <div class="note">{pdetail}</div>
@@ -268,6 +309,9 @@ li {{ margin-bottom:4px; font-size:13px; }}
         ver = esc(&r.version),
         cov = r.coverage * 100.0,
         conf = esc(&r.confidence),
+        lm_what = esc(&r.layman.what_this_is),
+        lm_blocks = lm_blocks,
+        lm_bottom = esc(&r.layman.bottom_line),
         score = r.composite,
         phase = esc(&r.phase),
         pcol = phase_color(&r.phase),

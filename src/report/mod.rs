@@ -1,5 +1,6 @@
 pub mod html;
 pub mod json;
+pub mod layman;
 
 use crate::config::Config;
 use crate::model::*;
@@ -156,7 +157,9 @@ pub fn build(
             .to_string(),
     };
 
-    Report {
+    // The plain-English summary is generated from the same numbers as the rest
+    // of the report, so it cannot drift out of sync with the data.
+    let placeholder = Report {
         tool: "bubble-watch".into(),
         version: VERSION.into(),
         generated_at: generated_at.into(),
@@ -166,6 +169,15 @@ pub fn build(
         phase: phase.id().to_string(),
         phase_label: phase.label().to_string(),
         phase_detail: phase.detail().to_string(),
+        layman: crate::report::layman::LaymanSummary {
+            what_this_is: String::new(),
+            the_score: String::new(),
+            what_is_stretched: String::new(),
+            what_is_calm: String::new(),
+            what_we_cannot_measure: String::new(),
+            about_timing: String::new(),
+            bottom_line: String::new(),
+        },
         analog,
         indicators: readings,
         data_quality: DataQuality {
@@ -184,6 +196,13 @@ pub fn build(
         headline,
         caveats,
         disclaimer: DISCLAIMER.into(),
+    };
+
+    let layman = crate::report::layman::summarize(&placeholder);
+
+    Report {
+        layman,
+        ..placeholder
     }
 }
 

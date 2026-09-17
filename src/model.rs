@@ -240,6 +240,9 @@ pub struct Report {
     pub phase: String,
     pub phase_label: String,
     pub phase_detail: String,
+    /// Plain-English summary for a non-specialist. Generated from the same
+    /// numbers as everything else, so it cannot drift out of sync.
+    pub layman: crate::report::layman::LaymanSummary,
     pub analog: AnalogWindow,
     pub indicators: Vec<IndicatorReading>,
     pub data_quality: DataQuality,

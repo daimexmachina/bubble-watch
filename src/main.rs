@@ -204,6 +204,28 @@ fn finish_code(r: &bubble_watch::model::Report) {
 }
 
 fn print_human(r: &bubble_watch::model::Report) {
+    // Plain-English summary first, so a non-specialist can read the top of the
+    // output and stop there if they want to.
+    println!("PLAIN-ENGLISH SUMMARY");
+    println!("{}", "=".repeat(72));
+    println!("{}", wrap(&r.layman.what_this_is, 72));
+    println!();
+    println!("{}", wrap(&r.layman.the_score, 72));
+    println!();
+    println!("{}", wrap(&r.layman.what_is_stretched, 72));
+    println!();
+    println!("{}", wrap(&r.layman.what_is_calm, 72));
+    println!();
+    println!("{}", wrap(&r.layman.what_we_cannot_measure, 72));
+    println!();
+    println!("{}", wrap(&r.layman.about_timing, 72));
+    println!();
+    println!("{}", wrap_block(&r.layman.bottom_line, 72));
+    println!();
+    println!("{}", "=".repeat(72));
+    println!("DETAIL (for reference)");
+    println!("{}", "=".repeat(72));
+
     println!(
         "AI Bubble Watch — composite {:.1}/100  [{}]",
         r.composite,
@@ -260,6 +282,41 @@ fn print_human(r: &bubble_watch::model::Report) {
         println!("  ! {}", c);
     }
     println!("\n{}", r.disclaimer);
+}
+
+fn wrap_block(text: &str, width: usize) -> String {
+    let mut out = String::new();
+    for (i, line) in wrap(text, width - 2).lines().enumerate() {
+        if i == 0 {
+            out.push_str(&format!("| {}\n", line));
+        } else {
+            out.push_str(&format!("  {}\n", line));
+        }
+    }
+    out.push_str(&format!("{}", "|".to_string()));
+    out
+}
+
+/// Greedy word wrap, so long plain-English sentences stay readable in a
+/// terminal instead of running off the edge.
+fn wrap(text: &str, width: usize) -> String {
+    let mut lines: Vec<String> = Vec::new();
+    let mut cur = String::new();
+    for word in text.split_whitespace() {
+        if cur.is_empty() {
+            cur.push_str(word);
+        } else if cur.len() + 1 + word.len() <= width {
+            cur.push(' ');
+            cur.push_str(word);
+        } else {
+            lines.push(std::mem::take(&mut cur));
+            cur.push_str(word);
+        }
+    }
+    if !cur.is_empty() {
+        lines.push(cur);
+    }
+    lines.join("\n")
 }
 
 fn explain(r: &bubble_watch::model::Report, obs: &bubble_watch::model::Observations) {
