@@ -128,6 +128,10 @@ pub struct Observations {
     pub yahoo: BTreeMap<String, Series>,
     /// Keyed by FRED series id.
     pub fred: BTreeMap<String, Series>,
+    /// Which transport supplied each FRED series, so the report can say whether
+    /// a reading came from the keyed API or the anonymous CSV fallback.
+    #[serde(default)]
+    pub fred_transports: BTreeMap<String, crate::sources::fred::Transport>,
     /// Keyed by ticker.
     pub edgar: BTreeMap<String, CompanyFacts>,
     pub failures: Vec<SourceFailure>,

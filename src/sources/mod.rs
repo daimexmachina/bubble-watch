@@ -85,8 +85,9 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
 
     for id in FRED_SPECS {
         match fred::series(f, id) {
-            Ok(s) => {
+            Ok((s, transport)) => {
                 obs.fred.insert(id.to_string(), s);
+                obs.fred_transports.insert(id.to_string(), transport);
             }
             Err(e) => obs.failures.push(SourceFailure {
                 source: "fred".into(),
@@ -154,6 +155,7 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
 
     let fred_ok = obs.fred.len();
     let fred_fail = obs.failures.iter().filter(|x| x.source == "fred").count();
+    let keyed = fred::key_configured();
     out.push(SourceHealth {
         name: "fred".into(),
         status: if fred_ok == 0 {
@@ -164,11 +166,27 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
         ok_count: fred_ok,
         failed_count: fred_fail,
         detail: if fred_ok == 0 {
-            "OPTIONAL source: not answering from this host (observed rate-limiting). \
-             Credit and macro indicators are reported as gaps."
-                .into()
+            format!(
+                "OPTIONAL source: {} of {} series retrieved. {} Credit and macro indicators \
+                 are reported as gaps, and the composite renormalizes over what remains.",
+                fred_ok,
+                FRED_SPECS.len(),
+                if keyed {
+                    "Key is configured, but requests are still failing."
+                } else {
+                    "No FRED_API_KEY set — the anonymous CSV endpoint is flaky from this host \
+                     (measured 0/9) while the keyed API host answered 5/5, so a key is the fix."
+                }
+            )
         } else {
-            format!("{} of {} series retrieved", fred_ok, FRED_SPECS.len())
+            let transports: Vec<&str> = obs.fred_transports.values().map(|t| t.as_str()).collect();
+            format!(
+                "{} of {} series retrieved via {}{}",
+                fred_ok,
+                FRED_SPECS.len(),
+                transports.join(", "),
+                if keyed { "" } else { " (no FRED_API_KEY set)" }
+            )
         },
     });
 

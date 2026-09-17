@@ -106,7 +106,7 @@ All of the following was established by probing the live endpoints from this hos
 |---|---|---|
 | Yahoo Finance chart API | works | Needs a browser-like UA. **Returns HTTP 429 under load** — the client throttles to ~3 req/s with backoff. |
 | SEC EDGAR XBRL `companyconcept` | works | **Requires a descriptive User-Agent.** Rate limit ~10 req/s. |
-| FRED `fredgraph.csv` | **optional, often down** | Began refusing this host entirely (HTTP/2 `INTERNAL_ERROR`, then read timeouts) after a burst of requests. May recover. Also serves only a ~3-year trailing window regardless of `cosd`/`coed`. |
+| FRED `fredgraph.csv` | **optional, flaky** | Began refusing this host entirely (HTTP/2 `INTERNAL_ERROR`, then read timeouts) after a burst of requests. May recover. **History window is per-series**, not a global ~3 years: `DGS10`/`VIXCLS`/`T10Y2Y`/`NFCI` serve full history and honour `cosd`/`coed`, while the ICE BofA credit spreads and `SP500` are restricted — and for those an impossible window is **silently ignored**, not rejected. |
 | multpl.com (Shiller CAPE) | **not usable** | Now JavaScript-gated; cannot be scraped over plain HTTP. |
 
 The tool is designed to run end-to-end on **Yahoo + EDGAR alone**; FRED only ever adds coverage.
