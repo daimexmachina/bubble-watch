@@ -281,6 +281,16 @@ pub fn compute(
         }
     }
 
+    // Deduplicate the reasons: several archived entries can be rejected for the
+    // identical cause (three runs recorded on one day all fail the gap test), and
+    // repeating the same sentence once per entry is noise, not information.
+    let mut unique: Vec<String> = Vec::new();
+    for r in rejections {
+        if !unique.contains(&r) {
+            unique.push(r);
+        }
+    }
+
     let reason = if candidates.is_empty() {
         "No previous run is recorded yet, so direction of travel cannot be computed. This is \
          expected on a first run. Run the tool again on a later day and a comparison will appear."
@@ -289,7 +299,7 @@ pub fn compute(
         format!(
             "No eligible baseline run: {}. A direction of travel is deliberately NOT reported \
              rather than computed against a run that is not comparable.",
-            rejections.join("; ")
+            unique.join("; ")
         )
     };
 
@@ -573,6 +583,38 @@ mod tests {
             r
         );
         assert!(r.contains("from today"), "must say why: {}", r);
+    }
+
+    #[test]
+    fn repeated_rejection_reasons_are_not_repeated_in_the_message() {
+        // Three runs on one day all fail the gap test for the SAME reason; the
+        // refusal must say it once. Repeating it per entry is noise.
+        let archive = vec![
+            point("2026-09-17", 30.0, 1.0, "early"),
+            point("2026-09-17", 31.0, 1.0, "early"),
+            point("2026-09-17", 32.0, 1.0, "early"),
+        ];
+        let current = point("2026-09-17", 34.0, 1.0, "early");
+        let tr = compute(
+            &archive,
+            &current,
+            &[scored("a", 10.0, 50.0)],
+            &t(),
+            true,
+            vec![],
+        );
+        let r = tr.reason.unwrap();
+        assert_eq!(
+            r.matches("below the 1 day minimum gap").count(),
+            1,
+            "the same rejection must be stated once: {}",
+            r
+        );
+        assert!(
+            !r.contains(".."),
+            "must not emit a doubled full stop: {}",
+            r
+        );
     }
 
     #[test]

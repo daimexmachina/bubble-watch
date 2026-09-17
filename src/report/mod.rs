@@ -184,11 +184,13 @@ pub fn build_with_history(
     // produced, and state it as a REFUSAL rather than as missing data.
     if trend.delta.is_none() {
         if let Some(reason) = &trend.reason {
+            // `trim_end_matches('.')`: reasons may end in a full stop, and
+            // "{}. ..." would otherwise emit a doubled stop.
             caveats.push(format!(
                 "DIRECTION OF TRAVEL NOT REPORTED: {}. This is deliberate — a change computed \
                  across runs of unequal coverage would mix a real market move with the effect of \
                  which sources happened to answer.",
-                reason
+                reason.trim_end_matches('.')
             ));
         }
     }

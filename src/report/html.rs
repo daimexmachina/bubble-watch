@@ -15,13 +15,27 @@ fn esc(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// Phase pill background. Amber and orange are LIGHT colours, so they get dark
+/// text (see `phase_text_color`) rather than white - white on amber measures
+/// 1.97:1, far below the 4.5:1 legibility threshold, and reads as a smear.
 fn phase_color(phase: &str) -> &'static str {
     match phase {
-        "early" => "#2e7d32",
+        "early" => "#1b5e20",
         "mid" => "#f9a825",
         "late" => "#ef6c00",
-        "critical" => "#c62828",
-        _ => "#616161",
+        "critical" => "#b3261e",
+        _ => "#5f5f5f",
+    }
+}
+
+/// Pill text colour, chosen per background so every combination clears 4.5:1.
+fn phase_text_color(phase: &str) -> &'static str {
+    match phase {
+        // Dark backgrounds take white text.
+        "early" | "critical" => "#ffffff",
+        // Light backgrounds take near-black text.
+        "mid" | "late" => "#3a2100",
+        _ => "#ffffff",
     }
 }
 
@@ -39,7 +53,7 @@ fn gauge(score: f64) -> String {
         let mx = v / 100.0 * w;
         marks.push_str(&format!(
             "<line x1='{mx:.1}' y1='0' x2='{mx:.1}' y2='46' stroke='#ffffff' stroke-width='2' stroke-dasharray='4 3'/>\
-             <text x='{mx:.1}' y='60' font-size='10' fill='#9e9e9e' text-anchor='middle'>{lbl}</text>",
+             <text class='ax' x='{mx:.1}' y='60' font-size='10' text-anchor='middle'>{lbl}</text>",
             mx = mx,
             lbl = label
         ));
@@ -195,7 +209,7 @@ fn sparkline_legacy(points: &[crate::model::TrendPoint], limit: usize) -> String
             let y = y_at(v);
             guides.push_str(&format!(
                 "<line x1='0' y1='{y:.1}' x2='{w:.1}' y2='{y:.1}' stroke='#ccc' stroke-width='1' \
-                 stroke-dasharray='3 4'/><text x='2' y='{ty:.1}' font-size='9' fill='#aaa'>{v:.0}</text>",
+                 stroke-dasharray='3 4'/><text class='ax' x='2' y='{ty:.1}' font-size='9'>{v:.0}</text>",
                 y = y,
                 w = w,
                 ty = y - 2.0,
@@ -283,7 +297,7 @@ pub fn render_dashboard(
         }
         rows.push_str(&format!(
             "<tr><td>{datelink}</td><td class='num'>{comp:.1}</td>\
-             <td class='num'>{cov:.0}%</td><td><span class='phase' style='background:{col}'>{ph}</span></td>\
+             <td class='num'>{cov:.0}%</td><td><span class='phase' style='background:{col};color:{tcol}'>{ph}</span></td>\
              <td class='chips'>{chips}</td></tr>",
             datelink = if have_page(&p.date) {
                 format!(
@@ -302,6 +316,7 @@ pub fn render_dashboard(
             comp = p.composite,
             cov = p.coverage * 100.0,
             col = phase_color(&p.phase),
+            tcol = phase_text_color(&p.phase),
             ph = esc(&p.phase),
             chips = chips
         ));
@@ -351,11 +366,12 @@ pub fn render_dashboard(
             format!(
                 "<div class='card'><h3 style='margin-top:0;font-size:15px'>Latest reading ({date})</h3>\
                  <div class='score'>{score:.1}<small>/100 stress</small></div>\
-                 <div style='margin:8px 0'><span class='phase' style='background:{col}'>{ph}</span></div>\
+                 <div style='margin:8px 0'><span class='phase' style='background:{col};color:{tcol}'>{ph}</span></div>\
                  <p class='lm-b' style='margin:10px 0 0'>{plain}</p></div>",
                 date = esc(&r.generated_at),
                 score = r.composite,
                 col = phase_color(&r.phase),
+                tcol = phase_text_color(&r.phase),
                 ph = esc(&r.phase),
                 plain = esc(&r.layman.direction_of_travel)
             )
@@ -381,8 +397,13 @@ body {{ margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"
   table {{ border-color:#333 !important; }} th {{ background:#1e1e1e !important; }}
   td, th {{ border-color:#2a2a2a !important; }} .card {{ background:#1a1a1a !important; border-color:#2e2e2e !important; }}
   .spark-empty {{ background:#1e1e1e !important; color:#aaa !important; }}
-  /* The chart band fills are light by design; dim them so the line stays legible. */
-  svg rect {{ opacity:.18; }} }}
+  /* Chart text and band fills. Scoped to the band class: an unscoped
+     `svg rect` rule here also dimmed the movement-chart bars to near-invisible. */
+  svg .band {{ opacity:.22; }}
+  svg .ax {{ fill:#bbbbbb; }}
+  svg .barlab {{ fill:#dddddd; }}
+  svg .gapnote {{ fill:#d7a98c; }}
+  svg .latest {{ fill:#c9a7e0; }} }}
 h1 {{ font-size:20px; margin:0 0 2px; }}
 .sub {{ color:#777; font-size:12px; margin-bottom:20px; }}
 .card {{ background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:18px; margin-bottom:18px; }}
@@ -393,7 +414,10 @@ table {{ border-collapse:collapse; width:100%; font-size:13px; }}
 th {{ text-align:left; background:#f2f2f2; padding:8px; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#666; }}
 td {{ padding:8px; border-bottom:1px solid #eee; vertical-align:middle; }}
 td.num {{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }}
-td.dt {{ color:#555; font-size:12px; }}
+td.dt {{ color:#555; font-size:12px; overflow-wrap:anywhere; }}
+/* Provenance endpoints are long unbroken URLs; without this the table is forced
+   wider than the page and clips instead of wrapping. */
+.prov {{ overflow-wrap:anywhere; }}
 td.chips {{ font-size:11.5px; }}
 .chip {{ display:inline-block; margin-right:7px; white-space:nowrap; font-variant-numeric:tabular-nums; }}
 a {{ color:#1a73e8; text-decoration:none; font-weight:600; }}
@@ -402,11 +426,16 @@ a:hover {{ text-decoration:underline; }}
 .spark-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
 code {{ background:#f1f1f1; padding:1px 5px; border-radius:3px; font-size:12.5px; }}
 .disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
+svg .ax {{ fill:#5f5f5f; }}
+svg .band {{ opacity:1; }}
+svg .barlab {{ fill:#3c3c3c; }}
+svg .gapnote {{ fill:#7a5c4a; }}
+svg .latest {{ fill:#6a1b9a; }}
 .chart-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
 .ind-chart {{ border-top:1px solid #eee; padding-top:10px; margin-top:12px; }}
 .ind-chart:first-child {{ border-top:0; margin-top:0; padding-top:0; }}
 .ind-h {{ font-size:12.5px; font-weight:600; color:#333; }}
-.ind-id {{ font-size:10.5px; color:#aaa; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-bottom:2px; }}
+.ind-id {{ font-size:10.5px; color:#6b6b6b; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-bottom:2px; }}
 @media (prefers-color-scheme: dark) {{
   .ind-chart {{ border-color:#2a2a2a; }}
   .ind-h {{ color:#ddd; }}
@@ -666,7 +695,7 @@ pub fn render(r: &Report) -> String {
 :root {{ color-scheme: light dark; }}
 * {{ box-sizing: border-box; }}
 body {{ margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  background:#fafafa; color:#1a1a1a; }}
+  background:#fafafa; color:#1a1a1a; max-width:1240px; }}
 @media (prefers-color-scheme: dark) {{ body {{ background:#121212; color:#e8e8e8; }}
   table {{ border-color:#333 !important; }} th {{ background:#1e1e1e !important; }}
   td, th {{ border-color:#2a2a2a !important; }} .card {{ background:#1a1a1a !important; border-color:#2e2e2e !important; }} }}
@@ -687,8 +716,8 @@ td.val {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12p
 td.dt {{ color:#555; font-size:12px; }}
 .prov {{ color:#999; font-size:11px; }}
 tr.gap {{ background:rgba(198,40,40,.06); }}
-tr.gap td.stress {{ color:#c62828; }}
-tr.warn td:nth-child(2) {{ color:#ef6c00; font-weight:600; }}
+tr.gap td.stress {{ color:#b3261e; }}
+tr.warn td:nth-child(2) {{ color:#a84800; font-weight:600; }}
 tr.ok td:nth-child(2) {{ color:#2e7d32; }}
 ul {{ margin:6px 0 0; padding-left:20px; }}
 li {{ margin-bottom:4px; font-size:13px; }}
@@ -726,7 +755,7 @@ li {{ margin-bottom:4px; font-size:13px; }}
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">The score</h3>
   <div class="score">{score:.1}<small>/100 stress</small></div>
-  <div style="margin:10px 0 4px"><span class="phase" style="background:{pcol}">{phase}</span></div>
+  <div style="margin:10px 0 4px"><span class="phase" style="background:{pcol};color:{ptxt}">{phase}</span></div>
   <div class="note">{pdetail}</div>
   <div style="margin-top:16px">{gauge}</div>
   <div style="margin-top:6px;font-size:13px">{analog}</div>
@@ -777,6 +806,7 @@ li {{ margin-bottom:4px; font-size:13px; }}
         score = r.composite,
         phase = esc(&r.phase),
         pcol = phase_color(&r.phase),
+        ptxt = phase_text_color(&r.phase),
         pdetail = esc(&r.phase_detail),
         gauge = gauge(r.composite),
         analog = analog,
@@ -854,6 +884,58 @@ mod tests {
         assert!(s.contains("polyline"));
         assert!(!s.contains("NaN"), "a constant series must not emit NaN");
         assert!(!s.contains("inf"));
+    }
+
+    /// WCAG relative luminance and contrast ratio, so the colour rules are
+    /// enforced by a test rather than by eye.
+    fn luminance(hex: &str) -> f64 {
+        let h = hex.trim_start_matches('#');
+        let chan = |i: usize| -> f64 {
+            let c = u8::from_str_radix(&h[i..i + 2], 16).unwrap() as f64 / 255.0;
+            if c <= 0.03928 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * chan(0) + 0.7152 * chan(2) + 0.0722 * chan(4)
+    }
+
+    fn contrast(a: &str, b: &str) -> f64 {
+        let (l1, l2) = (luminance(a), luminance(b));
+        let (hi, lo) = if l1 > l2 { (l1, l2) } else { (l2, l1) };
+        (hi + 0.05) / (lo + 0.05)
+    }
+
+    #[test]
+    fn every_phase_pill_meets_the_contrast_threshold() {
+        // Regression guard. The original palette put WHITE text on the amber
+        // "mid" pill: 1.97:1, which is unreadable, and on orange "late": 3.08:1.
+        // Amber and orange are light colours and need dark text.
+        for phase in ["early", "mid", "late", "critical", "unknown"] {
+            let bg = phase_color(phase);
+            let fg = phase_text_color(phase);
+            let ratio = contrast(fg, bg);
+            assert!(
+                ratio >= 4.5,
+                "phase '{}': {} on {} is only {:.2}:1, below the 4.5:1 threshold",
+                phase,
+                fg,
+                bg,
+                ratio
+            );
+        }
+    }
+
+    #[test]
+    fn phase_colours_are_distinguishable_from_each_other() {
+        // A palette is useless if two phases render identically.
+        let mut seen: Vec<&str> = Vec::new();
+        for p in ["early", "mid", "late", "critical"] {
+            let c = phase_color(p);
+            assert!(!seen.contains(&c), "phase colour {} is reused", c);
+            seen.push(c);
+        }
     }
 
     #[test]

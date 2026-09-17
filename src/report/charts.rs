@@ -23,9 +23,13 @@ use crate::model::TrendPoint;
 
 /// Chart canvas height, in viewBox units.
 const H: f64 = 150.0;
-/// Plot width. Charts are drawn at a fixed logical width and scaled by the
-/// container, so they are legible on a phone without a resize script.
+/// Full logical width. Charts are drawn at a fixed logical width and scaled by
+/// the container, so they are legible on a phone without a resize script.
 const W: f64 = 900.0;
+/// The plot itself stops short of `W` to reserve a margin for the phase-band
+/// labels on the right. Without this the newest data point lands directly under
+/// the "mid"/"early" labels and collides with them.
+const PLOT_RIGHT: f64 = 842.0;
 /// Room under the plot for date labels.
 const AXIS_H: f64 = 18.0;
 
@@ -94,14 +98,14 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
     for (lo, hi, colour, label) in bands {
         let (y_top, y_bot) = (y(hi), y(lo));
         band_svg.push_str(&format!(
-            "<rect x='0' y='{y:.1}' width='{w:.1}' height='{h:.1}' fill='{c}'/>",
+            "<rect class='band' x='0' y='{y:.1}' width='{w:.1}' height='{h:.1}' fill='{c}'/>",
             y = y_top,
             w = W,
             h = (y_bot - y_top).max(0.0),
             c = colour
         ));
         band_labels.push_str(&format!(
-            "<text x='{x:.1}' y='{ty:.1}' font-size='9' fill='#999'>{l}</text>",
+            "<text class='ax band' x='{x:.1}' y='{ty:.1}' text-anchor='end'>{l}</text>",
             x = W - 2.0,
             ty = (y_top + y_bot) / 2.0 + 3.0,
             l = label
@@ -113,9 +117,9 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
     for v in [25.0f64, 50.0, 75.0] {
         grid.push_str(&format!(
             "<line x1='0' y1='{yy:.1}' x2='{w:.1}' y2='{yy:.1}' stroke='#00000012' stroke-width='1'/>\
-             <text x='3' y='{ty:.1}' font-size='9' fill='#aaa'>{v:.0}</text>",
+             <text class='ax' x='3' y='{ty:.1}' font-size='9'>{v:.0}</text>",
             yy = y(v),
-            w = W,
+            w = PLOT_RIGHT,
             ty = y(v) - 2.0,
             v = v
         ));
@@ -126,7 +130,7 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
             "<svg viewBox='-2 -2 904 {vh}' width='100%' height='{vh}' role='img' \
              aria-label='composite score over recorded runs'>\
              {bands}{grid}{labels}\
-             <text x='{cx:.1}' y='{cy:.1}' font-size='12' fill='#777' text-anchor='middle'>\
+             <text class='ax' x='{cx:.1}' y='{cy:.1}' font-size='12' text-anchor='middle'>\
              Not enough recorded runs to chart a trend yet — a line needs at least two dated runs.\
              </text></svg>",
             vh = H + AXIS_H + 4.0,
@@ -141,9 +145,9 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
     let n = points.len();
     let x_at = |i: usize| -> f64 {
         if n == 1 {
-            W / 2.0
+            PLOT_RIGHT / 2.0
         } else {
-            i as f64 / (n - 1) as f64 * W
+            i as f64 / (n - 1) as f64 * PLOT_RIGHT
         }
     };
 
@@ -157,7 +161,7 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
     let mut ticks = String::new();
     for i in tick_indices(n, 6) {
         ticks.push_str(&format!(
-            "<text x='{x:.1}' y='{ty:.1}' font-size='9.5' fill='#888' text-anchor='middle'>{d}</text>",
+            "<text class='ax' x='{x:.1}' y='{ty:.1}' font-size='9.5' text-anchor='middle'>{d}</text>",
             x = x_at(i),
             ty = H + 13.0,
             d = esc(&short_date(&points[i].date))
@@ -193,7 +197,7 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
          {dots}\
          <circle cx='{lx:.1}' cy='{ly:.1}' r='5' fill='#1a73e8' stroke='#fff' stroke-width='1.5'/>\
          <text x='{tx:.1}' y='{ty:.1}' font-size='11' fill='#1a73e8' text-anchor='end'>{val:.1}</text>\
-         <text x='-1' y='-6' font-size='10' fill='#777'>0-100 fixed scale · {d}</text>\
+         <text class='ax' x='-1' y='-6' font-size='10'>0-100 fixed scale · {d}</text>\
          </svg>",
         vh = H + AXIS_H + 4.0,
         bands = band_svg,
@@ -239,9 +243,9 @@ pub fn indicator_chart(points: &[TrendPoint], id: &str, label: &str) -> String {
     let n = points.len();
     let x_at = |i: usize| -> f64 {
         if n == 1 {
-            W / 2.0
+            PLOT_RIGHT / 2.0
         } else {
-            i as f64 / (n - 1) as f64 * W
+            i as f64 / (n - 1) as f64 * PLOT_RIGHT
         }
     };
 
@@ -283,7 +287,7 @@ pub fn indicator_chart(points: &[TrendPoint], id: &str, label: &str) -> String {
         String::new()
     } else {
         format!(
-            "<text x='0' y='-6' font-size='10' fill='#a1887f' text-anchor='start'>\
+            "<text class='ax gapnote' x='0' y='-6' font-size='10' text-anchor='start'>\
              {m} day(s) with no reading — the line breaks there</text>",
             m = missing
         )
@@ -292,7 +296,7 @@ pub fn indicator_chart(points: &[TrendPoint], id: &str, label: &str) -> String {
     let mut ticks = String::new();
     for i in tick_indices(n, 6) {
         ticks.push_str(&format!(
-            "<text x='{x:.1}' y='{ty:.1}' font-size='9.5' fill='#888' text-anchor='middle'>{d}</text>",
+            "<text class='ax' x='{x:.1}' y='{ty:.1}' font-size='9.5' text-anchor='middle'>{d}</text>",
             x = x_at(i),
             ty = H + 13.0,
             d = esc(&short_date(&points[i].date))
@@ -307,16 +311,17 @@ pub fn indicator_chart(points: &[TrendPoint], id: &str, label: &str) -> String {
          aria-label='{lbl} stress over recorded runs'>{defs}\
          <line x1='0' y1='{ymid:.1}' x2='{w:.1}' y2='{ymid:.1}' stroke='#00000010' stroke-width='1'/>\
          <line x1='0' y1='{ytop:.1}' x2='{w:.1}' y2='{ytop:.1}' stroke='#00000008' stroke-width='1'/>\
-         <text x='3' y='{ty1:.1}' font-size='9' fill='#aaa'>0</text>\
-         <text x='3' y='{ty2:.1}' font-size='9' fill='#aaa'>50</text>\
-         <text x='3' y='{ty3:.1}' font-size='9' fill='#aaa'>100</text>\
+         <text class='ax' x='3' y='{ty1:.1}' font-size='9'>0</text>\
+         <text class='ax' x='3' y='{ty2:.1}' font-size='9'>50</text>\
+         <text class='ax' x='3' y='{ty3:.1}' font-size='9'>100</text>\
          {lines}{dots}{ticks}{gap}\
-         <text x='{w:.1}' y='-6' font-size='10' fill='#6a1b9a' text-anchor='end' \
-         opacity='0.85'>latest {lv:.1} ({d:+.1} over the recorded span)</text>\
+         <text class='latest' x='{wfull:.1}' y='-6' font-size='10' text-anchor='end' \
+         >latest {lv:.1} ({d:+.1} over the recorded span)</text>\
          </svg>",
         vh = H + AXIS_H + 16.0,
         defs = defs(),
-        w = W,
+        w = PLOT_RIGHT,
+        wfull = W,
         ymid = y(50.0),
         ytop = y(100.0),
         ty1 = y(0.0) - 2.0,
@@ -366,10 +371,13 @@ pub fn movement_chart(deltas: &[(String, String, f64, f64)], days: f64) -> Strin
     }
     let row_h = 26.0;
     let h = (deltas.len() as f64 * row_h).max(row_h) + 8.0;
-    // Two columns of labels, then a symmetric axis around x=0.
-    let label_w = 190.0;
-    let axis_x = label_w + 250.0;
-    let half = 230.0;
+    // Layout, left to right: indicator name column, clear gutter, a symmetric
+    // axis around x=0 with room for the longest bar AND its value label on
+    // either side. The gutter matters because a full-length negative bar puts
+    // its value text left of the bar, where it would otherwise collide with the
+    // indicator name.
+    let axis_x = 620.0;
+    let half = 200.0;
     // Scale to the largest absolute change in this run, so a small week still
     // reads clearly - but print the range, because this axis IS data-scaled and
     // the reader must be told that (unlike the composite chart, which is fixed).
@@ -388,16 +396,18 @@ pub fn movement_chart(deltas: &[(String, String, f64, f64)], days: f64) -> Strin
         } else {
             (axis_x - len, len, "#2e7d32")
         };
-        let text_x = if *delta >= 0.0 {
-            axis_x + 6.0
+        // Place the value OUTSIDE its own bar. Anchoring it to the axis instead
+        // put the label on top of the bar for every negative change, i.e. dark
+        // grey text on a green bar.
+        let (text_x, anchor) = if *delta >= 0.0 {
+            (axis_x + len + 6.0, "start")
         } else {
-            axis_x - 6.0
+            (axis_x - len - 6.0, "end")
         };
-        let anchor = if *delta >= 0.0 { "start" } else { "end" };
         bars.push_str(&format!(
-            "<text x='{lx:.1}' y='{ty:.1}' font-size='11' fill='#555'>{lbl}</text>\
+            "<text class='barlab' x='{lx:.1}' y='{ty:.1}' font-size='11'>{lbl}</text>\
              <rect x='{x:.1}' y='{y:.1}' width='{w:.1}' height='13' fill='{c}' rx='2'/>\
-             <text x='{tx:.1}' y='{ty:.1}' font-size='10' fill='#777' text-anchor='{a}'>\
+             <text class='ax' x='{tx:.1}' y='{ty:.1}' font-size='10' text-anchor='{a}'>\
              {d:+.1} → {n:.1}</text>",
             lx = 0.0,
             ty = cy + 4.0,
@@ -417,16 +427,16 @@ pub fn movement_chart(deltas: &[(String, String, f64, f64)], days: f64) -> Strin
         "<svg viewBox='-2 -2 {vw} {vh}' width='100%' height='{vh}' role='img' \
          aria-label='change per indicator since the previous run'>{defs}\
          <line x1='{ax:.1}' y1='0' x2='{ax:.1}' y2='{h:.1}' stroke='#bbb' stroke-width='1'/>\
-         <text x='{ax:.1}' y='-4' font-size='9.5' fill='#999' text-anchor='middle'>no change</text>\
-         <text x='{ax2:.1}' y='-4' font-size='9.5' fill='#bbb' text-anchor='end'>← better · worse →</text>\
-         <text x='{lx:.1}' y='{h2:.1}' font-size='9.5' fill='#aaa'>axis scaled to the largest \
+         <text class='ax' x='{ax:.1}' y='-4' font-size='9.5' text-anchor='middle'>no change</text>\
+         <text class='ax' x='{ax2:.1}' y='-4' font-size='9.5' text-anchor='end'>← better · worse →</text>\
+         <text class='ax' x='{lx:.1}' y='{h2:.1}' font-size='9.5'>axis scaled to the largest \
          change this run: ±{m:.1} points over {dd:.0} day(s)</text>\
          {bars}</svg>",
-        vw = axis_x + half + 130.0,
+        vw = axis_x + half + 140.0,
         vh = h + 16.0,
         defs = defs(),
         ax = axis_x,
-        ax2 = axis_x + half + 120.0,
+        ax2 = axis_x + half + 130.0,
         h = h,
         h2 = h + 12.0,
         lx = 0.0,
@@ -440,10 +450,10 @@ pub fn movement_chart(deltas: &[(String, String, f64, f64)], days: f64) -> Strin
 /// sell"); chart axes need something that fits. Falls back to the id.
 fn short_label(label: &str, id: &str) -> String {
     let l = if label.is_empty() { id } else { label };
-    if l.chars().count() <= 34 {
+    if l.chars().count() <= 26 {
         return l.to_string();
     }
-    let cut: String = l.chars().take(31).collect();
+    let cut: String = l.chars().take(25).collect();
     format!("{}…", cut)
 }
 

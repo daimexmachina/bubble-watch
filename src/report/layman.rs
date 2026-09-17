@@ -303,7 +303,7 @@ conditions: if some of the data was missing on one day, the difference between t
 would reflect the missing data rather than the market. Rather than show you a number that means \
 nothing, it says nothing and tells you why. Run it again on another day and a comparison will \
 appear.",
-                why
+                why.trim_end_matches('.')
             )
         }
     };
