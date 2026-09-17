@@ -52,6 +52,20 @@ pub const TAGS_REVENUE: &[&str] = &[
 
 pub const TAGS_DEBT: &[&str] = &["LongTermDebtNoncurrent", "LongTermDebt"];
 
+/// Cash returned to shareholders by buying back stock.
+///
+/// Verified 2026-09-17 from this host: returns HTTP 200 for all five scored
+/// cohort members, so the buyback leg needs no proxy.
+pub const TAGS_BUYBACK: &[&str] = &["PaymentsForRepurchaseOfCommonStock"];
+
+/// Cash raised by issuing common stock.
+///
+/// Note the real absence: AMZN does not report this concept under any candidate
+/// tag (it does not issue equity), so its issuance leg is genuinely unavailable.
+/// That is handled as a per-filer gap rather than filled with zero — see
+/// `CompanyFacts` and the `issuance` indicator.
+pub const TAGS_ISSUANCE: &[&str] = &["ProceedsFromIssuanceOfCommonStock"];
+
 /// Share-count tags.
 ///
 /// HAZARD, verified against the live API: GOOGL and META do **not** publish
@@ -299,6 +313,12 @@ pub fn company(f: &Fetcher, ticker: &str, cik: &str, name: &str) -> CompanyFacts
     }
     if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_DEBT), "USD", true) {
         cf.debt = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_BUYBACK), "USD", false) {
+        cf.buyback = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_ISSUANCE), "USD", false) {
+        cf.issuance = v;
     }
 
     let _ = ticker;

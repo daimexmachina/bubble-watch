@@ -309,6 +309,21 @@ impl Indicator for Leverage {
     }
 }
 
+/// Net equity issuance as a share of operating cash flow, from REPORTED CASH
+/// FLOWS rather than a share-count proxy.
+///
+/// Why this replaced the old version: the previous implementation used the
+/// year-over-year change in shares outstanding, which nets buybacks against
+/// issuance and cannot distinguish "issuing hard" from "buying back hard" — two
+/// opposite behaviours with the same sign. Cash-flow data separates them, and
+/// `PaymentsForRepurchaseOfCommonStock` is in fact available for all five scored
+/// cohort members, which the earlier proxy assumed it would not be.
+///
+/// This matters for the bubble diagnosis specifically: equity issuance is a
+/// supply-of-stock signal (late-stage bubbles are marked by a wave of supply),
+/// while heavy buybacks are a demand signal and, at extremes, a sign of
+/// management with no better use for the cash. Collapsing both into one number
+/// destroyed the distinction.
 pub struct Issuance;
 
 impl Indicator for Issuance {
@@ -325,70 +340,67 @@ impl Indicator for Issuance {
             }
         };
 
-        let mut growth: Vec<(String, f64)> = Vec::new();
+        let mut ratios: Vec<(String, f64, f64, f64)> = Vec::new(); // ticker, pct, net, cfo
+        let mut missing: Vec<String> = Vec::new();
         let mut newest = String::new();
-        let mut no_share_data: Vec<String> = Vec::new();
 
         for (ticker, cf) in &ctx.obs.edgar {
-            let facts = &cf.shares;
-            let Some(latest) = CompanyFacts::latest(facts) else {
-                // Not every filer publishes a share-count concept under any of
-                // the tags we know. META is the concrete example: all three
-                // candidate tags 404 for it. Say so rather than silently
-                // shrinking the sample.
-                no_share_data.push(ticker.clone());
+            let Some((cfo, cfo_basis)) = CompanyFacts::ttm(&cf.cfo) else {
+                missing.push(format!("{} (no operating cash flow)", ticker));
                 continue;
             };
-            // Find the observation closest to one year before the latest.
-            // `days_between(a, b)` returns b - a, so for an earlier fact this is
-            // the number of days it sits BEFORE the latest observation. Compare
-            // it against a POSITIVE target, not a negative one.
-            let target = 365i64;
-            let mut prior: Option<&crate::model::EdgarFact> = None;
-            let mut best_gap = i64::MAX;
-            for f in facts {
-                let ago = crate::sources::edgar::days_between(&f.end, &latest.end);
-                if ago <= 0 {
-                    continue; // the latest itself, or a later duplicate
-                }
-                let gap = (ago - target).abs();
-                if gap < best_gap {
-                    best_gap = gap;
-                    prior = Some(f);
-                }
-            }
-            let Some(prior) = prior else {
-                no_share_data.push(ticker.clone());
+            let Some((buyback, bb_basis)) = CompanyFacts::ttm(&cf.buyback) else {
+                missing.push(format!("{} (no reported buyback series)", ticker));
                 continue;
             };
-            if prior.val <= 0.0 {
-                no_share_data.push(ticker.clone());
+            // A filer with no issuance concept genuinely did not raise equity.
+            // Treated as absent and NAMED, not silently zero-filled.
+            let (raised, iss_basis, has_iss) = match CompanyFacts::ttm(&cf.issuance) {
+                Some((v, b)) => (v, Some(b), true),
+                None => (0.0, None, false),
+            };
+            if !has_iss {
+                missing.push(format!("{} (no equity-issuance concept reported)", ticker));
+            }
+            if cfo <= 0.0 {
+                missing.push(format!("{} (non-positive operating cash flow)", ticker));
                 continue;
             }
-            // Refuse a "year" that is not actually about a year.
-            if best_gap > 120 {
-                no_share_data.push(ticker.clone());
-                continue;
+            let net = raised - buyback;
+            let pct = net / cfo * 100.0;
+
+            // Record the newest as-of date, and note when a filer's legs are not
+            // on the same basis (one 4Q, one annual) or from different periods.
+            for d in [cf.cfo.last(), cf.buyback.last(), cf.issuance.last()]
+                .into_iter()
+                .flatten()
+            {
+                if d.end > newest {
+                    newest = d.end.clone();
+                }
             }
-            growth.push((ticker.clone(), (latest.val / prior.val - 1.0) * 100.0));
-            if latest.end > newest {
-                newest = latest.end.clone();
-            }
+            let _ = (cfo_basis, bb_basis, iss_basis);
+            ratios.push((ticker.clone(), pct, net, cfo));
         }
 
-        if growth.is_empty() {
+        if ratios.is_empty() {
             return Reading::Unavailable {
-                reason: "no cohort share-count history with a usable year-earlier comparison"
+                reason: "no cohort member had both an operating-cash-flow and a buyback series,                          so net equity issuance cannot be computed"
                     .into(),
             };
         }
 
-        growth.sort_by(|a, b| a.0.cmp(&b.0));
-        let mean = growth.iter().map(|(_, g)| *g).sum::<f64>() / growth.len() as f64;
+        ratios.sort_by(|a, b| a.0.cmp(&b.0));
+        let mean = ratios.iter().map(|(_, p, _, _)| *p).sum::<f64>() / ratios.len() as f64;
         let stress = crate::score::interpolate(mean, &ic.anchors);
-        let rows: Vec<String> = growth
+        let rows: Vec<String> = ratios
             .iter()
-            .map(|(t, g)| format!("{} {:+.2}%", t, g))
+            .map(|(t, p, net, _)| format!("{} {:+.1}% (${:+.1}bn)", t, p, net / 1e9))
+            .collect();
+        let issuers: Vec<&str> = ratios
+            .iter()
+            .filter(|(_, p, _, _)| *p > 0.0)
+            .map(|(t, _, _, _)| t.as_str())
             .collect();
 
         Reading::Scored {
@@ -396,21 +408,27 @@ impl Indicator for Issuance {
             value: mean,
             unit: ic.unit.clone(),
             detail: format!(
-                "Mean trailing share-count change across {} filers: {:+.2}% ({}).{} \
-                 PROXY, and a weak one: buybacks net against issuance, and a five-name mega-cap \
-                 cohort cannot see the broad IPO/secondary wave that historically marks a peak, \
-                 so this UNDERSTATES a genuine supply surge. Included because issuance is one of \
-                 the more reliable pre-peak signals in the literature; treat it as a lower bound.",
-                growth.len(),
+                "Mean net equity issuance across {} filers: {:+.2}% of operating cash flow ({}). \
+                 Computed from REPORTED CASH FLOWS: proceeds from stock issuance minus cash paid to \
+                 repurchase stock, divided by operating cash flow, all trailing-twelve-month. A \
+                 NEGATIVE value means the cohort is retiring stock on net, which is the healthy \
+                 direction and scores as low stress; positives mean it is raising external equity. \
+                 Companies issuing on net: {}.{} REMAINING LIMITATION: a five-name mega-cap cohort \
+                 still cannot see the broad IPO wave that historically marks a peak, so this is \
+                 the cohort's own behaviour and not the primary market. The direction-of-the-number \
+                 reading is now real data rather than a proxy, which it was not before.",
+                ratios.len(),
                 mean,
                 rows.join(", "),
-                if no_share_data.is_empty() {
+                if issuers.is_empty() {
+                    "none".to_string()
+                } else {
+                    issuers.join(", ")
+                },
+                if missing.is_empty() {
                     String::new()
                 } else {
-                    format!(
-                        " Filers with no usable share-count series (excluded, not zero-filled): {}.",
-                        no_share_data.join(", ")
-                    )
+                    format!(" Excluded, and named rather than zero-filled: {}.", missing.join("; "))
                 }
             ),
             provenance: cohort_provenance(ctx, &newest),

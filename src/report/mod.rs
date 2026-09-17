@@ -68,8 +68,14 @@ pub fn build_with_history(
     // Direction of travel. Computed from the composite that was just produced,
     // and deliberately NOT fed back into it.
     let trend = {
-        let current =
-            crate::history::point_from(&readings, composite, coverage, phase.id(), generated_at);
+        let current = crate::history::point_from(
+            &readings,
+            composite,
+            coverage,
+            phase.id(),
+            generated_at,
+            &cfg.meta.schema_version,
+        );
         crate::history::compute(
             archive,
             &current,
@@ -158,8 +164,10 @@ pub fn build_with_history(
     caveats.push(
         "PROXIES IN USE: valuation is price-stretch versus trend (no free earnings series); \
          concentration and breadth use cap-weight versus equal-weight returns (not a free-float \
-         share); issuance uses reported share counts (net of buybacks, and blind to IPOs outside \
-         the cohort). Each indicator's row names its own limitation."
+         share). Issuance is no longer a proxy: it is computed from reported cash flows (cash \
+         raised from stock issuance minus cash paid to repurchase stock, over operating cash flow), \
+         which are available for every scored filer except AMZN, whose equity-issuance concept does \
+         not exist because it does not issue equity. Each indicator's row names its own limitation."
             .into(),
     );
     caveats.push(

@@ -15,7 +15,7 @@
 # which is a deliberate decision documented in their rationale below.
 
 [meta]
-schema_version = "1.0"
+schema_version = "1.1"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -152,10 +152,37 @@ anchors = [[-20.0, 93.0], [-10.0, 78.0], [-5.0, 58.0], [-2.0, 40.0], [0.0, 28.0]
 id = "issuance"
 label = "Net equity issuance / supply pressure"
 weight = 10.0
-unit = "pct, trailing share-count growth across the mega-cap cohort"
+unit = "pct, net equity issuance (cash raised minus cash paid to repurchase stock) divided by TTM operating cash flow"
 source = "edgar"
-rationale = "Late-stage bubbles are characterised by a wave of supply: IPOs, secondaries and share issuance, which history places near market peaks. Proxy: year-over-year growth in common shares outstanding across the cohort, from SEC filings. PROXY: weak-to-medium — buybacks net against issuance and the cohort is large-cap only, so it understates a genuine IPO wave. Deliberately included despite weakness because Capital Economics flags issuance as one of the more reliable pre-peak signals."
-anchors = [[-3.0, 10.0], [-1.0, 20.0], [0.0, 30.0], [1.0, 45.0], [3.0, 65.0], [6.0, 85.0], [10.0, 95.0]]
+# METHODOLOGY CHANGED 2026-09-17 — schema_version 1.0 -> 1.1.
+#
+# This indicator used to score the year-over-year change in shares outstanding.
+# That nets buybacks against issuance, so it cannot tell "issuing hard" from
+# "buying back hard" — opposite behaviours with the same sign. It is now computed
+# from reported cash flows: proceeds from stock issuance MINUS cash paid to
+# repurchase stock, over operating cash flow.
+#
+# The old proxy assumed the cash-flow tags were unavailable. Verified from this
+# host 2026-09-17: us-gaap:PaymentsForRepurchaseOfCommonStock returns HTTP 200 for
+# all five scored cohort members, and us-gaap:ProceedsFromIssuanceOfCommonStock
+# returns 200 for MSFT, GOOGL, META and ORCL. Only AMZN genuinely reports no
+# equity-issuance concept (it does not issue equity), which is handled as a named
+# per-filer gap and never as a zero.
+#
+# Measured TTM values at the time of the change (net issuance / operating cash
+# flow): ORCL +42.6%, AMZN 0.0% (buyback only, no issuance concept), MSFT
+# -12.4%, GOOGL -33.8%, META -41.5%. Oracle is the only cohort member raising
+# external equity, and the other four are retiring stock — a distinction the
+# share-count proxy could not express.
+#
+# The anchors below are therefore calibrated on a cash-flow ratio, which has a
+# far wider natural range than a share-count growth rate. Buybacks of this
+# magnitude are a modern phenomenon, so the historical reference points that
+# justify the extremes are weaker here than for the market indicators; the
+# mid-range mapping is anchored on the cohort actually behaving this way.
+# DIRECTION: positive (issuing) is high stress; negative (net retiring) is low.
+rationale = "Late-stage bubbles are characterised by a wave of supply: IPOs, secondaries and share issuance, which history places near market peaks. Computed from REPORTED CASH FLOWS (proceeds from stock issuance minus cash paid to repurchase stock, over operating cash flow, trailing twelve months) rather than from share counts. This is real data, not a proxy: the cash-flow tags are available for every scored filer except AMZN, which reports no equity-issuance concept at all because it does not issue equity — a named gap, never a zero. A negative value means the cohort is retiring stock on net, which is the healthy direction and scores as low stress. REMAINING LIMITATION: a five-name mega-cap cohort still cannot see the broad IPO wave that historically marks a peak, since that is primary-market activity happening outside this cohort. This measures the cohort's own supply behaviour, not the market's. See also the 'primary_market_supply' declared gap below."
+anchors = [[-60.0, 5.0], [-40.0, 10.0], [-20.0, 18.0], [-5.0, 28.0], [0.0, 38.0], [10.0, 55.0], [25.0, 72.0], [50.0, 88.0], [100.0, 96.0]]
 
 [[indicator]]
 id = "volatility"

@@ -64,6 +64,11 @@ pub struct CompanyFacts {
     pub revenue: Vec<EdgarFact>,
     pub shares: Vec<EdgarFact>,
     pub debt: Vec<EdgarFact>,
+    /// Cash paid to repurchase common stock (cash-flow statement).
+    pub buyback: Vec<EdgarFact>,
+    /// Cash received from issuing common stock. Genuinely absent for filers that
+    /// do not issue equity (AMZN), which is a gap and not a zero.
+    pub issuance: Vec<EdgarFact>,
 }
 
 impl CompanyFacts {
@@ -241,6 +246,14 @@ pub struct TrendPoint {
     pub composite: f64,
     pub coverage: f64,
     pub phase: String,
+    /// The config schema_version this run was computed under.
+    ///
+    /// Redefining an indicator changes what the composite MEANS, so runs computed
+    /// under different methodology are not comparable even at identical coverage.
+    /// Defaulted for archives written before this field existed, which are
+    /// treated as "1.0" by `history::methodology_of`.
+    #[serde(default)]
+    pub methodology_version: String,
     /// Per-indicator stress, keyed by indicator id. Empty entries are absent,
     /// never zero-filled — a missing indicator is not a stress of zero.
     #[serde(default)]

@@ -72,6 +72,7 @@ pub fn point_from(
     coverage: f64,
     phase: &str,
     generated_at: &str,
+    methodology_version: &str,
 ) -> TrendPoint {
     let mut stresses = BTreeMap::new();
     for r in readings {
@@ -88,7 +89,19 @@ pub fn point_from(
         composite,
         coverage,
         phase: phase.to_string(),
+        methodology_version: methodology_version.to_string(),
         stresses,
+    }
+}
+
+/// Methodology version of an archived point, treating a missing field as "1.0"
+/// so an archive written before the field existed is still classifiable rather
+/// than silently unusable.
+pub fn methodology_of(p: &TrendPoint) -> &str {
+    if p.methodology_version.is_empty() {
+        "1.0"
+    } else {
+        &p.methodology_version
     }
 }
 
@@ -192,6 +205,7 @@ fn parse_date(s: &str) -> Option<chrono::NaiveDate> {
 pub fn is_eligible(
     candidate: &TrendPoint,
     current_coverage: f64,
+    current_methodology: &str,
     today: &str,
     t: &TrendCfg,
 ) -> Result<f64, String> {
@@ -213,6 +227,20 @@ pub fn is_eligible(
             fmt_days(t.min_gap_days)
         ));
     }
+    // Methodology must match. Redefining an indicator changes what the composite
+    // measures, so a difference across methodology changes is a difference in the
+    // model, not in the market. This is a REFUSAL with a stated reason, not a
+    // silent fallback: the alternative would be to report a market move that is
+    // really an accounting change.
+    let cm = methodology_of(candidate);
+    if cm != current_methodology {
+        return Err(format!(
+            "baseline was computed under methodology {} and this run under {} — the composite \
+             means something different across that change, so the two are not comparable",
+            cm, current_methodology
+        ));
+    }
+
     let diff_pp = (candidate.coverage - current_coverage).abs() * 100.0;
     if diff_pp > t.coverage_tolerance_pp {
         return Err(format!(
@@ -248,6 +276,7 @@ pub fn compute(
     recorded: bool,
     warnings: Vec<String>,
 ) -> Trend {
+    let current_methodology = methodology_of(current).to_string();
     // The displayed series includes today's run.
     let mut all = archive.to_vec();
     all.push(current.clone());
@@ -266,7 +295,7 @@ pub fn compute(
     // but each one still has to pass the coverage test to be used.
     let mut rejections: Vec<String> = Vec::new();
     for c in candidates.iter().rev() {
-        match is_eligible(c, current.coverage, &current.date, t) {
+        match is_eligible(c, current.coverage, &current_methodology, &current.date, t) {
             Ok(gap) => {
                 let delta = build_delta(c, current, readings, gap, t);
                 return Trend {
@@ -382,13 +411,20 @@ mod tests {
         TrendCfg::defaults()
     }
 
+    const METHOD: &str = "1.1";
+
     fn point(date: &str, composite: f64, coverage: f64, phase: &str) -> TrendPoint {
+        point_v(date, composite, coverage, phase, METHOD)
+    }
+
+    fn point_v(date: &str, composite: f64, coverage: f64, phase: &str, method: &str) -> TrendPoint {
         TrendPoint {
             date: date.into(),
             generated_at: format!("{}T12:00:00Z", date),
             composite,
             coverage,
             phase: phase.into(),
+            methodology_version: method.into(),
             stresses: BTreeMap::new(),
         }
     }
@@ -618,6 +654,41 @@ mod tests {
     }
 
     #[test]
+    fn baseline_is_refused_across_a_methodology_change() {
+        // Redefining an indicator changes what the composite MEANS. Comparing
+        // across that change would report a model change as a market move.
+        let archive = vec![point_v("2026-09-10", 30.0, 1.0, "early", "1.0")];
+        let current = point_v("2026-09-17", 34.0, 1.0, "early", "1.1");
+        let tr = compute(
+            &archive,
+            &current,
+            &[scored("a", 10.0, 50.0)],
+            &t(),
+            true,
+            vec![],
+        );
+        assert!(
+            tr.delta.is_none(),
+            "must refuse to compare across a methodology change"
+        );
+        let r = tr.reason.unwrap();
+        assert!(r.contains("methodology 1.0"), "must name both: {}", r);
+        assert!(r.contains("1.1"));
+        assert!(r.contains("not comparable"));
+    }
+
+    #[test]
+    fn a_missing_methodology_field_is_treated_as_the_original_schema() {
+        // Archives written before the field existed must still load, defaulting
+        // to 1.0 rather than being silently unusable.
+        let json = r#"{"date":"2026-01-01","generated_at":"2026-01-01T00:00:00Z",
+                       "composite":20.0,"coverage":1.0,"phase":"early","stresses":{}}"#;
+        let p: TrendPoint = serde_json::from_str(json).unwrap();
+        assert_eq!(methodology_of(&p), "1.0");
+        assert!(p.methodology_version.is_empty());
+    }
+
+    #[test]
     fn direction_uses_a_dead_band_so_noise_is_not_a_signal() {
         assert_eq!(Direction::classify(0.4, 1.0), Direction::Flat);
         assert_eq!(Direction::classify(-0.4, 1.0), Direction::Flat);
@@ -666,6 +737,7 @@ mod tests {
             1.0,
             "early",
             "2026-09-17T00:00:00Z",
+            METHOD,
         );
         assert!(p.stresses.contains_key("a"));
         assert!(

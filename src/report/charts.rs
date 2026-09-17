@@ -473,6 +473,7 @@ mod tests {
             composite,
             coverage: 1.0,
             phase: "early".into(),
+            methodology_version: "1.1".into(),
             stresses: m,
         }
     }

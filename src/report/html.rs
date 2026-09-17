@@ -876,6 +876,7 @@ mod tests {
             composite: 32.0,
             coverage: 1.0,
             phase: "early".into(),
+            methodology_version: "1.1".into(),
             stresses: Default::default(),
         }];
         let s = sparkline(&one, 30);
@@ -894,6 +895,7 @@ mod tests {
             composite: c,
             coverage: 1.0,
             phase: "early".into(),
+            methodology_version: "1.1".into(),
             stresses: Default::default(),
         };
         let s = sparkline(&[mk(30.0), mk(30.0), mk(30.0)], 30);
@@ -966,6 +968,7 @@ mod tests {
             composite: 30.0,
             coverage: 1.0,
             phase: "early".into(),
+            methodology_version: "1.1".into(),
             stresses: Default::default(),
         };
         let pts = vec![mk("2026-09-10"), mk("2026-09-11"), mk("2026-09-12")];

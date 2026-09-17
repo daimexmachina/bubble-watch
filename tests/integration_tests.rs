@@ -131,6 +131,36 @@ fn every_unavailable_weight_is_documented_in_caveats_or_quality() {
 }
 
 #[test]
+fn the_proxy_disclosure_matches_what_is_actually_a_proxy() {
+    // Regression guard: the caveat used to claim issuance "uses reported share
+    // counts". When issuance was rebuilt on cash-flow data, that sentence became
+    // false — a report that misdescribes its own method is worse than no caveat.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-17T12:00:00Z");
+    let proxies = r
+        .caveats
+        .iter()
+        .find(|x| x.contains("PROXIES IN USE"))
+        .expect("a proxy disclosure must exist");
+    assert!(
+        !proxies.contains("issuance uses reported share counts"),
+        "issuance is no longer share-count based; the disclosure must say so: {}",
+        proxies
+    );
+    assert!(
+        proxies.contains("cash flows"),
+        "the disclosure must describe the current method: {}",
+        proxies
+    );
+}
+
+#[test]
 fn history_never_changes_the_composite() {
     // THE load-bearing test for v1.1. The trend is derived FROM the composite,
     // so if it could also feed back into the composite, the score would partly
@@ -157,6 +187,7 @@ fn history_never_changes_the_composite() {
         composite: 90.0, // deliberately extreme: it must not drag the score
         coverage: without.coverage,
         phase: "critical".into(),
+        methodology_version: "1.1".into(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let with = bubble_watch::report::build_with_history(
@@ -204,6 +235,7 @@ fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
         composite: 40.0,
         coverage: 0.50,
         phase: "mid".into(),
+        methodology_version: "1.1".into(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let r = bubble_watch::report::build_with_history(
@@ -232,6 +264,7 @@ fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
         composite: 40.0,
         coverage: r.coverage,
         phase: "mid".into(),
+        methodology_version: "1.1".into(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let r2 = bubble_watch::report::build_with_history(
@@ -270,6 +303,7 @@ fn the_html_trend_card_needs_no_javascript_and_loads_nothing() {
             .sum::<f64>()
             / c.total_weight(),
         phase: "early".into(),
+        methodology_version: "1.1".into(),
         stresses: std::collections::BTreeMap::new(),
     }];
     let r = bubble_watch::report::build_with_history(

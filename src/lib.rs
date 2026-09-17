@@ -83,6 +83,7 @@ pub fn pipeline_with_history(
             report.coverage,
             &report.phase,
             &generated_at,
+            &cfg.meta.schema_version,
         );
         // Persist the full report page for this date BEFORE appending the
         // archive entry, so the archive never contains a date whose page is
