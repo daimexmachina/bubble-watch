@@ -5,16 +5,16 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/RSP?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:03Z"
+        "retrieved_at": "2026-09-17T23:47:48Z"
       },
       "points": [
         {
           "date": "2025-09-18",
-          "value": 186.4476623535156
+          "value": 186.4476776123047
         },
         {
           "date": "2025-09-19",
-          "value": 186.12306213378903
+          "value": 186.123046875
         },
         {
           "date": "2025-09-22",
@@ -26,7 +26,7 @@
         },
         {
           "date": "2025-09-24",
-          "value": 186.0045166015625
+          "value": 186.00450134277344
         },
         {
           "date": "2025-09-25",
@@ -42,7 +42,7 @@
         },
         {
           "date": "2025-09-30",
-          "value": 187.4172821044922
+          "value": 187.41729736328125
         },
         {
           "date": "2025-10-01",
@@ -54,7 +54,7 @@
         },
         {
           "date": "2025-10-03",
-          "value": 188.94862365722656
+          "value": 188.9486541748047
         },
         {
           "date": "2025-10-06",
@@ -74,7 +74,7 @@
         },
         {
           "date": "2025-10-10",
-          "value": 182.8924102783203
+          "value": 182.89239501953125
         },
         {
           "date": "2025-10-13",
@@ -90,11 +90,11 @@
         },
         {
           "date": "2025-10-16",
-          "value": 184.80905151367188
+          "value": 184.80906677246097
         },
         {
           "date": "2025-10-17",
-          "value": 185.7476348876953
+          "value": 185.74761962890625
         },
         {
           "date": "2025-10-20",
@@ -106,7 +106,7 @@
         },
         {
           "date": "2025-10-22",
-          "value": 187.5555877685547
+          "value": 187.55560302734375
         },
         {
           "date": "2025-10-23",
@@ -114,11 +114,11 @@
         },
         {
           "date": "2025-10-24",
-          "value": 188.95852661132812
+          "value": 188.95851135253903
         },
         {
           "date": "2025-10-27",
-          "value": 189.7982940673828
+          "value": 189.79827880859375
         },
         {
           "date": "2025-10-28",
@@ -126,15 +126,15 @@
         },
         {
           "date": "2025-10-29",
-          "value": 186.0637664794922
+          "value": 186.06378173828125
         },
         {
           "date": "2025-10-30",
-          "value": 185.26351928710935
+          "value": 185.26353454589844
         },
         {
           "date": "2025-10-31",
-          "value": 185.6685791015625
+          "value": 185.66859436035156
         },
         {
           "date": "2025-11-03",
@@ -146,19 +146,19 @@
         },
         {
           "date": "2025-11-05",
-          "value": 185.06594848632812
+          "value": 185.06593322753903
         },
         {
           "date": "2025-11-06",
-          "value": 183.7618103027344
+          "value": 183.76182556152344
         },
         {
           "date": "2025-11-07",
-          "value": 185.3030242919922
+          "value": 185.3030548095703
         },
         {
           "date": "2025-11-10",
-          "value": 186.3700408935547
+          "value": 186.37005615234375
         },
         {
           "date": "2025-11-11",
@@ -166,15 +166,15 @@
         },
         {
           "date": "2025-11-12",
-          "value": 187.8915100097656
+          "value": 187.89149475097656
         },
         {
           "date": "2025-11-13",
-          "value": 185.7673797607422
+          "value": 185.76739501953125
         },
         {
           "date": "2025-11-14",
-          "value": 185.0856781005859
+          "value": 185.085693359375
         },
         {
           "date": "2025-11-17",
@@ -198,11 +198,11 @@
         },
         {
           "date": "2025-11-24",
-          "value": 184.2854461669922
+          "value": 184.28543090820312
         },
         {
           "date": "2025-11-25",
-          "value": 186.90353393554688
+          "value": 186.9035491943359
         },
         {
           "date": "2025-11-26",
@@ -214,11 +214,11 @@
         },
         {
           "date": "2025-12-01",
-          "value": 187.93104553222656
+          "value": 187.9310302734375
         },
         {
           "date": "2025-12-02",
-          "value": 187.75320434570312
+          "value": 187.7531890869141
         },
         {
           "date": "2025-12-03",
@@ -234,15 +234,15 @@
         },
         {
           "date": "2025-12-08",
-          "value": 188.5534515380859
+          "value": 188.553466796875
         },
         {
           "date": "2025-12-09",
-          "value": 188.1977996826172
+          "value": 188.19778442382812
         },
         {
           "date": "2025-12-10",
-          "value": 190.8455352783203
+          "value": 190.84552001953125
         },
         {
           "date": "2025-12-11",
@@ -250,23 +250,23 @@
         },
         {
           "date": "2025-12-12",
-          "value": 191.08265686035156
+          "value": 191.08267211914065
         },
         {
           "date": "2025-12-15",
-          "value": 191.3197479248047
+          "value": 191.31976318359375
         },
         {
           "date": "2025-12-16",
-          "value": 189.97610473632812
+          "value": 189.9761199951172
         },
         {
           "date": "2025-12-17",
-          "value": 189.46237182617188
+          "value": 189.46238708496097
         },
         {
           "date": "2025-12-18",
-          "value": 189.8674468994141
+          "value": 189.867431640625
         },
         {
           "date": "2025-12-19",
@@ -1019,7 +1019,7 @@
         "source": "sec-edgar-fulltext",
         "endpoint": "efts.sec.gov/LATEST/search-index forms=S-1 window=2025-09-17..=2026-09-17",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:07Z"
+        "retrieved_at": "2026-09-17T23:47:51Z"
       },
       "points": [
         {
@@ -1033,7 +1033,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:03Z"
+        "retrieved_at": "2026-09-17T23:47:48Z"
       },
       "points": [
         {
@@ -2047,7 +2047,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=5y&interval=1mo",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:03Z"
+        "retrieved_at": "2026-09-17T23:47:48Z"
       },
       "points": [
         {
@@ -2301,7 +2301,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:04Z"
+        "retrieved_at": "2026-09-17T23:47:49Z"
       },
       "points": [
         {
@@ -2314,7 +2314,7 @@
         },
         {
           "date": "2025-09-22",
-          "value": 661.3607177734375
+          "value": 661.3607788085938
         },
         {
           "date": "2025-09-23",
@@ -2330,7 +2330,7 @@
         },
         {
           "date": "2025-09-26",
-          "value": 656.3819580078125
+          "value": 656.3820190429688
         },
         {
           "date": "2025-09-29",
@@ -2342,7 +2342,7 @@
         },
         {
           "date": "2025-10-01",
-          "value": 662.95751953125
+          "value": 662.9574584960938
         },
         {
           "date": "2025-10-02",
@@ -2350,7 +2350,7 @@
         },
         {
           "date": "2025-10-03",
-          "value": 663.7113037109375
+          "value": 663.7112426757812
         },
         {
           "date": "2025-10-06",
@@ -2414,7 +2414,7 @@
         },
         {
           "date": "2025-10-27",
-          "value": 679.6095581054688
+          "value": 679.6094970703125
         },
         {
           "date": "2025-10-28",
@@ -2430,15 +2430,15 @@
         },
         {
           "date": "2025-10-31",
-          "value": 676.4556274414062
+          "value": 676.45556640625
         },
         {
           "date": "2025-11-03",
-          "value": 677.72509765625
+          "value": 677.7251586914062
         },
         {
           "date": "2025-11-04",
-          "value": 669.691650390625
+          "value": 669.6917114257812
         },
         {
           "date": "2025-11-05",
@@ -2458,7 +2458,7 @@
         },
         {
           "date": "2025-11-11",
-          "value": 677.387939453125
+          "value": 677.3878784179688
         },
         {
           "date": "2025-11-12",
@@ -2470,7 +2470,7 @@
         },
         {
           "date": "2025-11-14",
-          "value": 666.4088134765625
+          "value": 666.4088745117188
         },
         {
           "date": "2025-11-17",
@@ -2490,15 +2490,15 @@
         },
         {
           "date": "2025-11-21",
-          "value": 653.6148681640625
+          "value": 653.6149291992188
         },
         {
           "date": "2025-11-24",
-          "value": 663.2351684570312
+          "value": 663.235107421875
         },
         {
           "date": "2025-11-25",
-          "value": 669.4735717773438
+          "value": 669.4735107421875
         },
         {
           "date": "2025-11-26",
@@ -2510,11 +2510,11 @@
         },
         {
           "date": "2025-12-01",
-          "value": 674.6803588867188
+          "value": 674.6802978515625
         },
         {
           "date": "2025-12-02",
-          "value": 675.9299926757812
+          "value": 675.9300537109375
         },
         {
           "date": "2025-12-03",
@@ -2530,11 +2530,11 @@
         },
         {
           "date": "2025-12-08",
-          "value": 678.0126953125
+          "value": 678.0127563476562
         },
         {
           "date": "2025-12-09",
-          "value": 677.4276123046875
+          "value": 677.4275512695312
         },
         {
           "date": "2025-12-10",
@@ -2550,7 +2550,7 @@
         },
         {
           "date": "2025-12-15",
-          "value": 675.1365966796875
+          "value": 675.1365356445312
         },
         {
           "date": "2025-12-16",
@@ -2562,7 +2562,7 @@
         },
         {
           "date": "2025-12-18",
-          "value": 670.9115600585938
+          "value": 670.9114990234375
         },
         {
           "date": "2025-12-19",
@@ -3315,7 +3315,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:04Z"
+        "retrieved_at": "2026-09-17T23:47:49Z"
       },
       "points": [
         {
@@ -4333,7 +4333,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-17T23:35:04Z"
+        "retrieved_at": "2026-09-17T23:47:49Z"
       },
       "points": [
         {
@@ -5361,7 +5361,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLC0A0CM&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-17T23:35:05Z"
+        "retrieved_at": "2026-09-17T23:47:50Z"
       },
       "points": [
         {
@@ -8515,7 +8515,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-17T23:35:05Z"
+        "retrieved_at": "2026-09-17T23:47:50Z"
       },
       "points": [
         {
@@ -11673,7 +11673,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-17T23:35:06Z"
+        "retrieved_at": "2026-09-17T23:47:51Z"
       },
       "points": [
         {
@@ -85298,6 +85298,676 @@
           "filed": "2024-08-02",
           "days": 0
         }
+      ],
+      "rpo": [
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-03-31",
+          "end": "2018-03-31",
+          "val": 12400000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 16000000000.0,
+          "form": "10-Q",
+          "filed": "2018-07-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 17800000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 19300000000.0,
+          "form": "10-K",
+          "filed": "2019-02-01",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 21600000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 25100000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 27400000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 29800000000.0,
+          "form": "10-K",
+          "filed": "2020-01-31",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 34100000000.0,
+          "form": "10-Q",
+          "filed": "2020-05-01",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 41000000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        }
+      ],
+      "deferred_revenue": [
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 5097000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 5097000000.0,
+          "form": "10-K",
+          "filed": "2019-02-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 6000000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 6536000000.0,
+          "form": "10-K",
+          "filed": "2019-02-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 6536000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 6536000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 6536000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 6536000000.0,
+          "form": "10-K",
+          "filed": "2020-01-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 7298000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 7475000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 7381000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 8190000000.0,
+          "form": "10-K",
+          "filed": "2020-01-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 8190000000.0,
+          "form": "10-Q",
+          "filed": "2020-05-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 8190000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 8190000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 8190000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 8864000000.0,
+          "form": "10-Q",
+          "filed": "2020-05-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 8997000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 9251000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9708000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9708000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9708000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9708000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 9708000000.0,
+          "form": "10-K",
+          "filed": "2022-02-04",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 10539000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 10695000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 10974000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 11827000000.0,
+          "form": "10-K",
+          "filed": "2022-02-04",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 11827000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 11827000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 11827000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 11827000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 12820000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 12818000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 12629000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 13227000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 13227000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 13227000000.0,
+          "form": "10-Q",
+          "filed": "2023-08-04",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 13227000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 13227000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 14281000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 14522000000.0,
+          "form": "10-Q",
+          "filed": "2023-08-04",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 14398000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15227000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15227000000.0,
+          "form": "10-Q",
+          "filed": "2024-05-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15227000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15227000000.0,
+          "form": "10-Q",
+          "filed": "2024-11-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 15227000000.0,
+          "form": "10-K",
+          "filed": "2025-02-07",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 15927000000.0,
+          "form": "10-Q",
+          "filed": "2024-05-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 16004000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 16305000000.0,
+          "form": "10-Q",
+          "filed": "2024-11-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18103000000.0,
+          "form": "10-K",
+          "filed": "2025-02-07",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18103000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18103000000.0,
+          "form": "10-Q",
+          "filed": "2025-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18103000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 18103000000.0,
+          "form": "10-K",
+          "filed": "2026-02-06",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 20599000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 21662000000.0,
+          "form": "10-Q",
+          "filed": "2025-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 21113000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 20576000000.0,
+          "form": "10-K",
+          "filed": "2026-02-06",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 20576000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 20576000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 20887000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiabilityCurrent",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 20428000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-31",
+          "days": 0
+        }
       ]
     },
     "GOOGL": {
@@ -90511,6 +91181,541 @@
           "val": 75600000000.0,
           "form": "10-Q",
           "filed": "2026-04-30",
+          "days": 0
+        }
+      ],
+      "rpo": [
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 11400000000.0,
+          "form": "10-K",
+          "filed": "2020-02-04",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 12800000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 14800000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 19000000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 29800000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 30700000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-28",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 35300000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-28",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 37100000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 51000000000.0,
+          "form": "10-K",
+          "filed": "2022-02-02",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 50500000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 51200000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 52400000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 64300000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 61700000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 60600000000.0,
+          "form": "10-Q",
+          "filed": "2023-07-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 64900000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 74100000000.0,
+          "form": "10-K",
+          "filed": "2024-01-31",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 72500000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 78800000000.0,
+          "form": "10-Q",
+          "filed": "2024-07-24",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 86800000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 93200000000.0,
+          "form": "10-K",
+          "filed": "2025-02-05",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 92400000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 108200000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-24",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 157700000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 242800000000.0,
+          "form": "10-K",
+          "filed": "2026-02-05",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 467600000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 519500000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-23",
+          "days": 0
+        }
+      ],
+      "deferred_revenue": [
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 2300000000.0,
+          "form": "10-K",
+          "filed": "2021-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 3000000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 3000000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 3000000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 3000000000.0,
+          "form": "10-K",
+          "filed": "2022-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 3200000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 3500000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 3800000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 3800000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 3800000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 3800000000.0,
+          "form": "10-K",
+          "filed": "2023-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 4500000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 4500000000.0,
+          "form": "10-Q",
+          "filed": "2023-07-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 4500000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 4500000000.0,
+          "form": "10-K",
+          "filed": "2024-01-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 5000000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 5000000000.0,
+          "form": "10-Q",
+          "filed": "2024-07-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 5000000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 5000000000.0,
+          "form": "10-K",
+          "filed": "2025-02-05",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 6000000000.0,
+          "form": "10-K",
+          "filed": "2025-02-05",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 6000000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 6000000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 6000000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 6000000000.0,
+          "form": "10-K",
+          "filed": "2026-02-05",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 6600000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 6800000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 7400000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 8600000000.0,
+          "form": "10-K",
+          "filed": "2026-02-05",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 8600000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 8600000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-23",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 9800000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 10100000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-23",
           "days": 0
         }
       ]
@@ -97488,6 +98693,621 @@
           "start": "2026-06-30",
           "end": "2026-06-30",
           "val": 278990000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-30",
+          "days": 0
+        }
+      ],
+      "rpo": [],
+      "deferred_revenue": [
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 68000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 68000000.0,
+          "form": "10-Q",
+          "filed": "2018-07-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 68000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 68000000.0,
+          "form": "10-K",
+          "filed": "2019-01-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-03-31",
+          "end": "2018-03-31",
+          "val": 64000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 62000000.0,
+          "form": "10-Q",
+          "filed": "2018-07-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 85000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 117000000.0,
+          "form": "10-K",
+          "filed": "2019-01-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 117000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 117000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 117000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 117000000.0,
+          "form": "10-K",
+          "filed": "2020-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 111000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 164000000.0,
+          "form": "10-Q",
+          "filed": "2019-07-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 192000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 234000000.0,
+          "form": "10-K",
+          "filed": "2020-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 234000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 234000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 234000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 234000000.0,
+          "form": "10-K",
+          "filed": "2021-01-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 210000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 222000000.0,
+          "form": "10-Q",
+          "filed": "2020-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 332000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 335000000.0,
+          "form": "10-K",
+          "filed": "2021-01-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 371000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 371000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 371000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 371000000.0,
+          "form": "10-K",
+          "filed": "2022-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 378000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 386000000.0,
+          "form": "10-Q",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 463000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 596000000.0,
+          "form": "10-K",
+          "filed": "2022-02-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 596000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 596000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 596000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 596000000.0,
+          "form": "10-K",
+          "filed": "2023-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 565000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 549000000.0,
+          "form": "10-Q",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 513000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 526000000.0,
+          "form": "10-K",
+          "filed": "2023-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 526000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 526000000.0,
+          "form": "10-Q",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 526000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 526000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 492000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 520000000.0,
+          "form": "10-Q",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 526000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 675000000.0,
+          "form": "10-K",
+          "filed": "2024-02-02",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 675000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 675000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 675000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 675000000.0,
+          "form": "10-K",
+          "filed": "2025-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 645000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 675000000.0,
+          "form": "10-Q",
+          "filed": "2024-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 732000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 772000000.0,
+          "form": "10-K",
+          "filed": "2025-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 772000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 772000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 772000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 772000000.0,
+          "form": "10-K",
+          "filed": "2026-01-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 778000000.0,
+          "form": "10-Q",
+          "filed": "2025-05-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 876000000.0,
+          "form": "10-Q",
+          "filed": "2025-07-31",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 924000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 1080000000.0,
+          "form": "10-K",
+          "filed": "2026-01-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 1080000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 1080000000.0,
+          "form": "10-Q",
+          "filed": "2026-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 1120000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 1160000000.0,
           "form": "10-Q",
           "filed": "2026-07-30",
           "days": 0
@@ -109024,7 +110844,974 @@
           "days": 0
         }
       ],
-      "purchase_obligation": []
+      "purchase_obligation": [],
+      "rpo": [
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2017-09-30",
+          "end": "2017-09-30",
+          "val": 59000000000.0,
+          "form": "10-Q",
+          "filed": "2017-10-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2017-12-31",
+          "end": "2017-12-31",
+          "val": 61000000000.0,
+          "form": "10-Q",
+          "filed": "2018-01-31",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-03-31",
+          "end": "2018-03-31",
+          "val": 61000000000.0,
+          "form": "10-Q",
+          "filed": "2018-04-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 73000000000.0,
+          "form": "10-K",
+          "filed": "2018-08-03",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 71000000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-24",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 72000000000.0,
+          "form": "10-Q",
+          "filed": "2019-01-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 75000000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-24",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 91000000000.0,
+          "form": "10-K",
+          "filed": "2019-08-01",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 89000000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-23",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 93000000000.0,
+          "form": "10-Q",
+          "filed": "2020-01-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 93000000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 111000000000.0,
+          "form": "10-K",
+          "filed": "2020-07-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 111000000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 117000000000.0,
+          "form": "10-Q",
+          "filed": "2021-01-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 121000000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 146000000000.0,
+          "form": "10-K",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 142000000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 152000000000.0,
+          "form": "10-Q",
+          "filed": "2022-01-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 160000000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-26",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 193000000000.0,
+          "form": "10-K",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 183000000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 193000000000.0,
+          "form": "10-Q",
+          "filed": "2023-01-24",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 201000000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 229000000000.0,
+          "form": "10-K",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 216000000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-24",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 229000000000.0,
+          "form": "10-Q",
+          "filed": "2024-01-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 242000000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 275000000000.0,
+          "form": "10-K",
+          "filed": "2024-07-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 275000000000.0,
+          "form": "8-K",
+          "filed": "2024-12-03",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 266000000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 304000000000.0,
+          "form": "10-Q",
+          "filed": "2025-01-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 321000000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 375000000000.0,
+          "form": "10-K",
+          "filed": "2025-07-30",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 398000000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 631000000000.0,
+          "form": "10-Q",
+          "filed": "2026-01-28",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 633000000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-29",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 684000000000.0,
+          "form": "10-K",
+          "filed": "2026-07-29",
+          "days": 0
+        }
+      ],
+      "deferred_revenue": [
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2016-07-01",
+          "end": "2016-07-01",
+          "val": 22200000000.0,
+          "form": "10-K",
+          "filed": "2018-08-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2017-06-30",
+          "end": "2017-06-30",
+          "val": 26656000000.0,
+          "form": "10-K",
+          "filed": "2018-08-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 32720000000.0,
+          "form": "10-K",
+          "filed": "2018-08-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 32720000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 32720000000.0,
+          "form": "10-Q",
+          "filed": "2019-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 32720000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-06-30",
+          "end": "2018-06-30",
+          "val": 32720000000.0,
+          "form": "10-K",
+          "filed": "2019-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-09-30",
+          "end": "2018-09-30",
+          "val": 30242000000.0,
+          "form": "10-Q",
+          "filed": "2018-10-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 28084000000.0,
+          "form": "10-Q",
+          "filed": "2019-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-12-31",
+          "end": "2018-12-31",
+          "val": 32720000000.0,
+          "form": "10-K",
+          "filed": "2019-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-03-31",
+          "end": "2019-03-31",
+          "val": 28135000000.0,
+          "form": "10-Q",
+          "filed": "2019-04-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 37206000000.0,
+          "form": "10-K",
+          "filed": "2019-08-01",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 37206000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-23",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 37206000000.0,
+          "form": "10-Q",
+          "filed": "2020-01-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 37206000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-06-30",
+          "end": "2019-06-30",
+          "val": 37206000000.0,
+          "form": "10-K",
+          "filed": "2020-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-09-30",
+          "end": "2019-09-30",
+          "val": 34026000000.0,
+          "form": "10-Q",
+          "filed": "2019-10-23",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-12-31",
+          "end": "2019-12-31",
+          "val": 31221000000.0,
+          "form": "10-Q",
+          "filed": "2020-01-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-03-31",
+          "end": "2020-03-31",
+          "val": 30397000000.0,
+          "form": "10-Q",
+          "filed": "2020-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 39180000000.0,
+          "form": "10-K",
+          "filed": "2020-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 39180000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 39180000000.0,
+          "form": "10-Q",
+          "filed": "2021-01-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 39180000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-06-30",
+          "end": "2020-06-30",
+          "val": 39180000000.0,
+          "form": "10-K",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-09-30",
+          "end": "2020-09-30",
+          "val": 36305000000.0,
+          "form": "10-Q",
+          "filed": "2020-10-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-12-31",
+          "end": "2020-12-31",
+          "val": 33387000000.0,
+          "form": "10-Q",
+          "filed": "2021-01-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-03-31",
+          "end": "2021-03-31",
+          "val": 32714000000.0,
+          "form": "10-Q",
+          "filed": "2021-04-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 44141000000.0,
+          "form": "10-K",
+          "filed": "2021-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 44141000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 44141000000.0,
+          "form": "10-Q",
+          "filed": "2022-01-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 44141000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-06-30",
+          "end": "2021-06-30",
+          "val": 44141000000.0,
+          "form": "10-K",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-09-30",
+          "end": "2021-09-30",
+          "val": 41015000000.0,
+          "form": "10-Q",
+          "filed": "2021-10-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-12-31",
+          "end": "2021-12-31",
+          "val": 36769000000.0,
+          "form": "10-Q",
+          "filed": "2022-01-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-03-31",
+          "end": "2022-03-31",
+          "val": 36796000000.0,
+          "form": "10-Q",
+          "filed": "2022-04-26",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 48408000000.0,
+          "form": "10-K",
+          "filed": "2022-07-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 48408000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 48408000000.0,
+          "form": "10-Q",
+          "filed": "2023-01-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 48408000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-06-30",
+          "end": "2022-06-30",
+          "val": 48408000000.0,
+          "form": "10-K",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "val": 43889000000.0,
+          "form": "10-Q",
+          "filed": "2022-10-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-12-31",
+          "end": "2022-12-31",
+          "val": 39626000000.0,
+          "form": "10-Q",
+          "filed": "2023-01-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-03-31",
+          "end": "2023-03-31",
+          "val": 39601000000.0,
+          "form": "10-Q",
+          "filed": "2023-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 53813000000.0,
+          "form": "10-K",
+          "filed": "2023-07-27",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 53813000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 53813000000.0,
+          "form": "10-Q",
+          "filed": "2024-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 53813000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 53813000000.0,
+          "form": "10-K",
+          "filed": "2024-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-06-30",
+          "end": "2023-06-30",
+          "val": 53813000000.0,
+          "form": "8-K",
+          "filed": "2024-12-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-09-30",
+          "end": "2023-09-30",
+          "val": 49188000000.0,
+          "form": "10-Q",
+          "filed": "2023-10-24",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-12-31",
+          "end": "2023-12-31",
+          "val": 46034000000.0,
+          "form": "10-Q",
+          "filed": "2024-01-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-03-31",
+          "end": "2024-03-31",
+          "val": 44833000000.0,
+          "form": "10-Q",
+          "filed": "2024-04-25",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 60184000000.0,
+          "form": "10-K",
+          "filed": "2024-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 60184000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 60184000000.0,
+          "form": "8-K",
+          "filed": "2024-12-03",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 60184000000.0,
+          "form": "10-Q",
+          "filed": "2025-01-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 60184000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-06-30",
+          "end": "2024-06-30",
+          "val": 60184000000.0,
+          "form": "10-K",
+          "filed": "2025-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-09-30",
+          "end": "2024-09-30",
+          "val": 55689000000.0,
+          "form": "10-Q",
+          "filed": "2024-10-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-12-31",
+          "end": "2024-12-31",
+          "val": 48045000000.0,
+          "form": "10-Q",
+          "filed": "2025-01-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-03-31",
+          "end": "2025-03-31",
+          "val": 47476000000.0,
+          "form": "10-Q",
+          "filed": "2025-04-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 67265000000.0,
+          "form": "10-K",
+          "filed": "2025-07-30",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 67265000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 67265000000.0,
+          "form": "10-Q",
+          "filed": "2026-01-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 67265000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-06-30",
+          "end": "2025-06-30",
+          "val": 67265000000.0,
+          "form": "10-K",
+          "filed": "2026-07-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-09-30",
+          "end": "2025-09-30",
+          "val": 61533000000.0,
+          "form": "10-Q",
+          "filed": "2025-10-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-12-31",
+          "end": "2025-12-31",
+          "val": 54044000000.0,
+          "form": "10-Q",
+          "filed": "2026-01-28",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-03-31",
+          "end": "2026-03-31",
+          "val": 53677000000.0,
+          "form": "10-Q",
+          "filed": "2026-04-29",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-06-30",
+          "end": "2026-06-30",
+          "val": 75712000000.0,
+          "form": "10-K",
+          "filed": "2026-07-29",
+          "days": 0
+        }
+      ]
     },
     "ORCL": {
       "cik": "0001341439",
@@ -116111,9 +118898,904 @@
           "filed": "2026-09-11",
           "days": 0
         }
+      ],
+      "rpo": [
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-08-31",
+          "end": "2018-08-31",
+          "val": 31300000000.0,
+          "form": "10-Q",
+          "filed": "2018-09-19",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2018-11-30",
+          "end": "2018-11-30",
+          "val": 30100000000.0,
+          "form": "10-Q",
+          "filed": "2018-12-19",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-02-28",
+          "end": "2019-02-28",
+          "val": 31500000000.0,
+          "form": "10-Q",
+          "filed": "2019-03-18",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 36200000000.0,
+          "form": "10-K",
+          "filed": "2019-06-21",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-08-31",
+          "end": "2019-08-31",
+          "val": 33800000000.0,
+          "form": "10-Q",
+          "filed": "2019-09-13",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2019-11-30",
+          "end": "2019-11-30",
+          "val": 32800000000.0,
+          "form": "10-Q",
+          "filed": "2019-12-13",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-02-29",
+          "end": "2020-02-29",
+          "val": 33800000000.0,
+          "form": "10-Q",
+          "filed": "2020-03-13",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 37000000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-08-31",
+          "end": "2020-08-31",
+          "val": 35500000000.0,
+          "form": "10-Q",
+          "filed": "2020-09-15",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2020-11-30",
+          "end": "2020-11-30",
+          "val": 34400000000.0,
+          "form": "10-Q",
+          "filed": "2020-12-11",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-02-28",
+          "end": "2021-02-28",
+          "val": 35300000000.0,
+          "form": "10-Q",
+          "filed": "2021-03-11",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 41300000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-08-31",
+          "end": "2021-08-31",
+          "val": 38700000000.0,
+          "form": "10-Q",
+          "filed": "2021-09-13",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2021-11-30",
+          "end": "2021-11-30",
+          "val": 37200000000.0,
+          "form": "10-Q",
+          "filed": "2021-12-10",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-02-28",
+          "end": "2022-02-28",
+          "val": 38500000000.0,
+          "form": "10-Q",
+          "filed": "2022-03-11",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 46600000000.0,
+          "form": "10-K",
+          "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-08-31",
+          "end": "2022-08-31",
+          "val": 60700000000.0,
+          "form": "10-Q",
+          "filed": "2022-09-13",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2022-11-30",
+          "end": "2022-11-30",
+          "val": 61200000000.0,
+          "form": "10-Q",
+          "filed": "2022-12-13",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-02-28",
+          "end": "2023-02-28",
+          "val": 62300000000.0,
+          "form": "10-Q",
+          "filed": "2023-03-10",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 67900000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-08-31",
+          "end": "2023-08-31",
+          "val": 64900000000.0,
+          "form": "10-Q",
+          "filed": "2023-09-12",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2023-11-30",
+          "end": "2023-11-30",
+          "val": 65500000000.0,
+          "form": "10-Q",
+          "filed": "2023-12-12",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-02-29",
+          "end": "2024-02-29",
+          "val": 80200000000.0,
+          "form": "10-Q",
+          "filed": "2024-03-12",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 97900000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-08-31",
+          "end": "2024-08-31",
+          "val": 99100000000.0,
+          "form": "10-Q",
+          "filed": "2024-09-10",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2024-11-30",
+          "end": "2024-11-30",
+          "val": 97300000000.0,
+          "form": "10-Q",
+          "filed": "2024-12-10",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-02-28",
+          "end": "2025-02-28",
+          "val": 130200000000.0,
+          "form": "10-Q",
+          "filed": "2025-03-11",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 137800000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-08-31",
+          "end": "2025-08-31",
+          "val": 455300000000.0,
+          "form": "10-Q",
+          "filed": "2025-09-10",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2025-11-30",
+          "end": "2025-11-30",
+          "val": 523300000000.0,
+          "form": "10-Q",
+          "filed": "2025-12-11",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-02-28",
+          "end": "2026-02-28",
+          "val": 552600000000.0,
+          "form": "10-Q",
+          "filed": "2026-03-11",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 638000000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "RevenueRemainingPerformanceObligation",
+          "start": "2026-08-31",
+          "end": "2026-08-31",
+          "val": 664000000000.0,
+          "form": "10-Q",
+          "filed": "2026-09-11",
+          "days": 0
+        }
+      ],
+      "deferred_revenue": [
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 8966000000.0,
+          "form": "10-Q",
+          "filed": "2018-09-19",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 8966000000.0,
+          "form": "10-Q",
+          "filed": "2018-12-19",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 8966000000.0,
+          "form": "10-Q",
+          "filed": "2019-03-18",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-05-31",
+          "end": "2018-05-31",
+          "val": 8966000000.0,
+          "form": "10-K",
+          "filed": "2019-06-21",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-08-31",
+          "end": "2018-08-31",
+          "val": 11019000000.0,
+          "form": "10-Q",
+          "filed": "2018-09-19",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2018-11-30",
+          "end": "2018-11-30",
+          "val": 8898000000.0,
+          "form": "10-Q",
+          "filed": "2018-12-19",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-02-28",
+          "end": "2019-02-28",
+          "val": 8633000000.0,
+          "form": "10-Q",
+          "filed": "2019-03-18",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 9043000000.0,
+          "form": "10-K",
+          "filed": "2019-06-21",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 9043000000.0,
+          "form": "10-Q",
+          "filed": "2019-09-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 9043000000.0,
+          "form": "10-Q",
+          "filed": "2019-12-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 9043000000.0,
+          "form": "10-Q",
+          "filed": "2020-03-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-05-31",
+          "end": "2019-05-31",
+          "val": 9043000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-08-31",
+          "end": "2019-08-31",
+          "val": 10739000000.0,
+          "form": "10-Q",
+          "filed": "2019-09-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2019-11-30",
+          "end": "2019-11-30",
+          "val": 8702000000.0,
+          "form": "10-Q",
+          "filed": "2019-12-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-02-29",
+          "end": "2020-02-29",
+          "val": 8417000000.0,
+          "form": "10-Q",
+          "filed": "2020-03-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 8599000000.0,
+          "form": "10-K",
+          "filed": "2020-06-22",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 8599000000.0,
+          "form": "10-Q",
+          "filed": "2020-09-15",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 8599000000.0,
+          "form": "10-Q",
+          "filed": "2020-12-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 8599000000.0,
+          "form": "10-Q",
+          "filed": "2021-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-05-31",
+          "end": "2020-05-31",
+          "val": 8599000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-08-31",
+          "end": "2020-08-31",
+          "val": 10546000000.0,
+          "form": "10-Q",
+          "filed": "2020-09-15",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2020-11-30",
+          "end": "2020-11-30",
+          "val": 8718000000.0,
+          "form": "10-Q",
+          "filed": "2020-12-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-02-28",
+          "end": "2021-02-28",
+          "val": 8758000000.0,
+          "form": "10-Q",
+          "filed": "2021-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 9454000000.0,
+          "form": "10-K",
+          "filed": "2021-06-21",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 9454000000.0,
+          "form": "10-Q",
+          "filed": "2021-09-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 9454000000.0,
+          "form": "10-Q",
+          "filed": "2021-12-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 9454000000.0,
+          "form": "10-Q",
+          "filed": "2022-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-05-31",
+          "end": "2021-05-31",
+          "val": 9454000000.0,
+          "form": "10-K",
+          "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-08-31",
+          "end": "2021-08-31",
+          "val": 10784000000.0,
+          "form": "10-Q",
+          "filed": "2021-09-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2021-11-30",
+          "end": "2021-11-30",
+          "val": 8675000000.0,
+          "form": "10-Q",
+          "filed": "2021-12-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-02-28",
+          "end": "2022-02-28",
+          "val": 8614000000.0,
+          "form": "10-Q",
+          "filed": "2022-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 9110000000.0,
+          "form": "10-K",
+          "filed": "2022-06-21",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 9110000000.0,
+          "form": "10-Q",
+          "filed": "2022-09-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 9110000000.0,
+          "form": "10-Q",
+          "filed": "2022-12-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 9110000000.0,
+          "form": "10-Q",
+          "filed": "2023-03-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-05-31",
+          "end": "2022-05-31",
+          "val": 9110000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-08-31",
+          "end": "2022-08-31",
+          "val": 11261000000.0,
+          "form": "10-Q",
+          "filed": "2022-09-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2022-11-30",
+          "end": "2022-11-30",
+          "val": 9478000000.0,
+          "form": "10-Q",
+          "filed": "2022-12-13",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-02-28",
+          "end": "2023-02-28",
+          "val": 9388000000.0,
+          "form": "10-Q",
+          "filed": "2023-03-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 9938000000.0,
+          "form": "10-K",
+          "filed": "2023-06-20",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 9938000000.0,
+          "form": "10-Q",
+          "filed": "2023-09-12",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 9938000000.0,
+          "form": "10-Q",
+          "filed": "2023-12-12",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 9938000000.0,
+          "form": "10-Q",
+          "filed": "2024-03-12",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-05-31",
+          "end": "2023-05-31",
+          "val": 9938000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-08-31",
+          "end": "2023-08-31",
+          "val": 12266000000.0,
+          "form": "10-Q",
+          "filed": "2023-09-12",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2023-11-30",
+          "end": "2023-11-30",
+          "val": 10129000000.0,
+          "form": "10-Q",
+          "filed": "2023-12-12",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-02-29",
+          "end": "2024-02-29",
+          "val": 10196000000.0,
+          "form": "10-Q",
+          "filed": "2024-03-12",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 10546000000.0,
+          "form": "10-K",
+          "filed": "2024-06-20",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 10546000000.0,
+          "form": "10-Q",
+          "filed": "2024-09-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 10546000000.0,
+          "form": "10-Q",
+          "filed": "2024-12-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 10546000000.0,
+          "form": "10-Q",
+          "filed": "2025-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-05-31",
+          "end": "2024-05-31",
+          "val": 10546000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-08-31",
+          "end": "2024-08-31",
+          "val": 12884000000.0,
+          "form": "10-Q",
+          "filed": "2024-09-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2024-11-30",
+          "end": "2024-11-30",
+          "val": 10826000000.0,
+          "form": "10-Q",
+          "filed": "2024-12-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-02-28",
+          "end": "2025-02-28",
+          "val": 10368000000.0,
+          "form": "10-Q",
+          "filed": "2025-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 10733000000.0,
+          "form": "10-K",
+          "filed": "2025-06-18",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 10733000000.0,
+          "form": "10-Q",
+          "filed": "2025-09-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 10733000000.0,
+          "form": "10-Q",
+          "filed": "2025-12-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 10733000000.0,
+          "form": "10-Q",
+          "filed": "2026-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-05-31",
+          "end": "2025-05-31",
+          "val": 10733000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-08-31",
+          "end": "2025-08-31",
+          "val": 13362000000.0,
+          "form": "10-Q",
+          "filed": "2025-09-10",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2025-11-30",
+          "end": "2025-11-30",
+          "val": 11175000000.0,
+          "form": "10-Q",
+          "filed": "2025-12-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-02-28",
+          "end": "2026-02-28",
+          "val": 11182000000.0,
+          "form": "10-Q",
+          "filed": "2026-03-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 15395000000.0,
+          "form": "10-K",
+          "filed": "2026-06-22",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-05-31",
+          "end": "2026-05-31",
+          "val": 15395000000.0,
+          "form": "10-Q",
+          "filed": "2026-09-11",
+          "days": 0
+        },
+        {
+          "tag": "ContractWithCustomerLiability",
+          "start": "2026-08-31",
+          "end": "2026-08-31",
+          "val": 30789000000.0,
+          "form": "10-Q",
+          "filed": "2026-09-11",
+          "days": 0
+        }
       ]
     }
   },
   "failures": [],
-  "retrieved_at": "2026-09-17T23:35:03Z"
+  "retrieved_at": "2026-09-17T23:47:48Z"
 }

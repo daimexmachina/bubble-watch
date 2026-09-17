@@ -83,6 +83,17 @@ pub const TAGS_LEASE: &[&str] = &[
 /// tag, so its value must render as "not disclosed" and NEVER as zero — a
 /// fabricated zero would understate the most exposed company's obligations as
 /// nothing at all.
+/// Remaining performance obligation: contracted revenue not yet recognised.
+/// META does not tag this at all, so absence is a reported gap.
+pub const TAGS_RPO: &[&str] = &["RevenueRemainingPerformanceObligation"];
+
+/// Contract liability (deferred revenue): cash billed, not yet recognised.
+/// Comparing this against RPO is what shows whether backlog converts to cash.
+pub const TAGS_DEFERRED_REVENUE: &[&str] = &[
+    "ContractWithCustomerLiability",
+    "ContractWithCustomerLiabilityCurrent",
+];
+
 pub const TAGS_PURCHASE_OBLIGATION: &[&str] = &[
     "UnrecordedUnconditionalPurchaseObligationBalanceSheetAmount",
     "PurchaseObligation",
@@ -361,6 +372,12 @@ pub fn company(f: &Fetcher, ticker: &str, cik: &str, name: &str) -> CompanyFacts
     }
     if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_PURCHASE_OBLIGATION), "USD", true) {
         cf.purchase_obligation = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_RPO), "USD", true) {
+        cf.rpo = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_DEFERRED_REVENUE), "USD", true) {
+        cf.deferred_revenue = v;
     }
 
     let _ = ticker;

@@ -314,6 +314,39 @@ source = "edgar-fulltext"
 rationale = "How much new equity supply is being pushed at the market, the broad IPO wave that the cohort-based 'issuance' indicator explicitly cannot see. Counted from SEC EDGAR full-text search over the trailing twelve months. It measures ATTEMPTS to sell stock, not money raised and not market absorption: many registrations are withdrawn or price far below the indicated range, and this cannot see offer price or first-day performance. Reference values measured from this host 2026-09-17 (annual S-1 counts): 2019 1,867; 2020 2,890; 2021 5,619 (the peak, and the clearest primary-market mania in the window); 2022 2,715; 2023 2,553; 2024 2,663; 2025 2,824. Anchors are deliberately shallow in the middle because this is a noisy count and a few hundred filings either way is not a regime change. A reading near the recent average says the primary market looks ordinary, which is NOT the same as no bubble: this is a supply measure and it carries no price information."
 anchors = [[800.0, 4.0], [1500.0, 12.0], [2000.0, 22.0], [2600.0, 34.0], [3200.0, 48.0], [4000.0, 68.0], [5000.0, 85.0], [6200.0, 97.0]]
 
+# ---------------------------------------------------------------------------
+# Backlog quality (NEW, methodology 1.3).
+#
+# This indicator exists because of a measured finding, and it is deliberately NOT
+# an RPO/revenue level measure. See the rationale for why.
+#
+# Measured from this host 2026-09-17, from SEC XBRL:
+#
+#   ORCL   RPO 137.8B (2025-05-31) -> 455.3B (2025-08-31): +230% in ONE quarter,
+#          while deferred revenue went 10.7B -> 13.4B. RPO/deferred 12.8x -> 49.4x.
+#   GOOGL  RPO/deferred 51.4x and still climbing.
+#   MSFT   RPO/deferred 9.0x - 11.8x, the conservative position.
+#
+# Deferred revenue is cash actually billed for work not yet recognised. RPO is a
+# promise. A backlog exploding while billed cash stays flat is the signature of
+# non-cash consideration or vendor-financed commitments, and cannot be seen any
+# other way in the free data.
+#
+# Anchors are set on the RATIO of RPO to deferred revenue, not on RPO itself:
+#   below ~5x   the backlog is being billed roughly in proportion
+#   ~10x        MSFT's position: large backlog, still converting
+#   ~20-30x     conversion is materially lagging
+#   >40x        the backlog is largely not converting (ORCL, GOOGL)
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "backlog_quality"
+label = "Backlog vs billed cash (RPO / deferred revenue)"
+weight = 7.0
+unit = "ratio, remaining performance obligation divided by contract liability (deferred revenue)"
+source = "edgar"
+rationale = "Whether contracted future revenue is converting into cash actually billed. Deferred revenue is money collected for work not yet recognised; RPO is a promise. When RPO grows while deferred revenue stays flat, commitments are not converting, which is the signature of non-cash consideration or vendor-financed deals. Measured 2026-09-17: ORCL RPO went 137.8B to 455.3B in ONE quarter (+230%) while deferred revenue went 10.7B to 13.4B, taking its ratio from 12.8x to 49.4x; GOOGL sits at 51.4x and rising; MSFT is 9.0x-11.8x. DELIBERATELY NOT an RPO/REVENUE level measure: that ratio rises for every long-contract business and cannot distinguish a healthy multi-year backlog from a vendor granting deep discounts and financing its customers' purchases — measured ORCL 9.83x and MSFT 2.19x, and neither number is self-evidently bad. The divergence from billed cash is the informative part. KNOWN LIMITS: none of these contracts are tagged with counterparty credit quality, cancellation economics or termination-for-convenience clauses, so $664B of RPO and $664B of cash are not the same asset and this cannot tell the difference. META reports no RPO concept at all (the tag 404s), which is a gap and never a decline. A definition change made INSIDE a continuous tag is invisible to XBRL — GOOGL's Q1-2026 change was pure filing text — so companion text-diff logic is required and is NOT yet implemented. Treat this as a divergence screen, not a bubble verdict."
+anchors = [[2.0, 6.0], [5.0, 15.0], [10.0, 28.0], [18.0, 45.0], [28.0, 62.0], [40.0, 80.0], [55.0, 92.0]]
+
 [[indicator]]
 id = "foreign_interest"
 label = "Foreign ownership of US equities"

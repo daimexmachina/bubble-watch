@@ -74,6 +74,12 @@ pub struct CompanyFacts {
     /// Unconditional purchase obligations. Absent for filers that do not disclose
     /// them (MSFT), which is a gap and never a zero.
     pub purchase_obligation: Vec<EdgarFact>,
+    /// Remaining performance obligation: contracted revenue not yet recognised.
+    /// Absent entirely for META, which is a gap and never a decline.
+    pub rpo: Vec<EdgarFact>,
+    /// Contract liability / deferred revenue: cash billed but not yet recognised.
+    /// The contrast with `rpo` is what reveals whether backlog converts to cash.
+    pub deferred_revenue: Vec<EdgarFact>,
 }
 
 impl CompanyFacts {
@@ -163,6 +169,70 @@ impl CompanyFacts {
             ));
         }
         Ok(f)
+    }
+
+    /// Why a stock-based series is unusable, as a machine-readable code plus a
+    /// human reason.
+    ///
+    /// Every variant here was observed live on the real cohort. A naive
+    /// implementation emits a number for all of them and produces false positives:
+    /// on gross PP&E alone, 4 of 9 companies fail.
+    pub fn series_health(
+        facts: &[EdgarFact],
+        as_of: &str,
+        min_annual_facts: usize,
+        max_gap_days: i64,
+        max_stale_days: i64,
+        max_single_period_growth: f64,
+    ) -> Result<(), String> {
+        if facts.len() < min_annual_facts {
+            return Err(format!(
+                "THIN: only {} observation(s), fewer than the {} required",
+                facts.len(),
+                min_annual_facts
+            ));
+        }
+        let mut xs: Vec<&EdgarFact> = facts.iter().collect();
+        xs.sort_by(|a, b| a.end.cmp(&b.end));
+
+        // Recency. GOOGL's gross PP&E is 20 months stale and META's 92 months.
+        let latest = xs.last().unwrap();
+        let stale = crate::sources::edgar::days_between(&latest.end, as_of);
+        if stale > max_stale_days {
+            return Err(format!(
+                "STALE: latest observation {} is {} days before {}, beyond the {} day limit",
+                latest.end, stale, as_of, max_stale_days
+            ));
+        }
+
+        // Continuity. AMZN's gross PP&E has a 1827-day hole, which sorted-series
+        // arithmetic silently bridges as though nothing happened.
+        for w in xs.windows(2) {
+            let gap = crate::sources::edgar::days_between(&w[0].end, &w[1].end);
+            if gap > max_gap_days {
+                return Err(format!(
+                    "GAP: {} days between {} and {}, beyond the {} day limit",
+                    gap, w[0].end, w[1].end, max_gap_days
+                ));
+            }
+        }
+
+        // Definition stability. AMZN's 3.29x single-year jump is a tag definition
+        // swap (PP&E-only to PP&E-including-finance-lease-ROU), not a build-out.
+        for w in xs.windows(2) {
+            if w[0].val > 0.0 {
+                let growth = w[1].val / w[0].val;
+                if growth > max_single_period_growth {
+                    return Err(format!(
+                        "DEFINITION_SWAP: {:.2}x growth from {} to {} exceeds the {:.2}x ceiling, \
+                         which indicates the tag changed meaning rather than the business changing \
+                         size",
+                        growth, w[0].end, w[1].end, max_single_period_growth
+                    ));
+                }
+            }
+        }
+        Ok(())
     }
 }
 

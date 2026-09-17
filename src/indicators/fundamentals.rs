@@ -641,6 +641,159 @@ impl Indicator for PrimaryMarketSupply {
     }
 }
 
+/// Backlog quality: is contracted future revenue converting into billed cash?
+///
+/// NOT a level indicator of "is there a bubble". The RPO/revenue ratio alone is a
+/// Rorschach test — it rises for every long-contract business, and it cannot
+/// distinguish a healthy multi-year backlog from a vendor granting deep discounts
+/// and financing its customers' purchases. Measured reality: ORCL's RPO/revenue
+/// runs 9.83x and MSFT's 2.19x, and neither number is self-evidently bad.
+///
+/// What IS informative is the DIVERGENCE between contracted backlog and cash
+/// actually billed. Deferred revenue is money collected for work not yet
+/// recognised; RPO is a promise. When RPO explodes while deferred revenue stays
+/// flat, the backlog is not converting, which is the signature of non-cash
+/// consideration or vendor-financed commitments.
+///
+/// Measured, and this is the finding:
+///   ORCL: RPO 137.8B (2025-05-31) -> 455.3B (2025-08-31), +230% in ONE quarter,
+///         while deferred revenue went 10.7B -> 13.4B. RPO/deferred: 12.8x -> 49.4x.
+///   GOOGL: RPO/deferred rose to 51.4x, still climbing.
+///   MSFT: 9.0x-11.8x, the conservative position.
+///
+/// HONEST LIMITS, stated because this measure is easy to over-read:
+///   * RPO is a stock and revenue is a flow, so a rising ratio is arithmetically
+///     guaranteed whenever backlog grows faster than recognition;
+///   * none of these contracts are tagged with counterparty credit quality,
+///     cancellation economics or termination-for-convenience clauses. $664B of
+///     ORCL RPO and $664B of cash are not the same asset and this cannot tell the
+///     difference;
+///   * META does not report RPO at all (the tag 404s), which is a gap and never a
+///     decline;
+///   * a definition change INSIDE a continuous tag is invisible to XBRL — GOOGL's
+///     Q1-2026 change was pure filing text. Companion logic on the filing text is
+///     required, and is not yet implemented here.
+///
+/// So this is a SCREENING indicator for divergence, not a verdict, and it is
+/// described that way in its own output rather than as a bubble measure.
+pub struct BacklogQuality;
+
+impl Indicator for BacklogQuality {
+    fn id(&self) -> &'static str {
+        "backlog_quality"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        let as_of = ctx.obs.retrieved_at.clone();
+        let as_of_date = crate::history::date_of(&as_of);
+
+        let mut worst: Option<(String, f64, f64)> = None; // ticker, ratio, rpo
+        let mut no_rpo = Vec::new();
+        let mut rejected = Vec::new();
+        let mut rows = Vec::new();
+        let mut newest = String::new();
+
+        for (ticker, cf) in &ctx.obs.edgar {
+            if cf.rpo.is_empty() {
+                // META reports no RPO concept at all: a gap, never a decline.
+                no_rpo.push(ticker.clone());
+                continue;
+            }
+            if let Err(why) = CompanyFacts::series_health(&cf.rpo, &as_of_date, 4, 400, 460, 3.0) {
+                rejected.push(format!("{} ({})", ticker, why));
+                continue;
+            }
+            let Some(rpo) = cf.rpo.iter().max_by(|a, b| a.end.cmp(&b.end)) else {
+                continue;
+            };
+            let Some(dr) = cf.deferred_revenue.iter().max_by(|a, b| a.end.cmp(&b.end)) else {
+                rejected.push(format!(
+                    "{} (no deferred-revenue series to compare)",
+                    ticker
+                ));
+                continue;
+            };
+            if dr.val <= 0.0 {
+                continue;
+            }
+            let ratio = rpo.val / dr.val;
+            if rpo.end > newest {
+                newest = rpo.end.clone();
+            }
+            rows.push(format!(
+                "{}: RPO ${:.1}B vs deferred revenue ${:.1}B = {:.1}x",
+                ticker,
+                rpo.val / 1e9,
+                dr.val / 1e9,
+                ratio
+            ));
+            if worst.as_ref().map(|(_, w, _)| ratio > *w).unwrap_or(true) {
+                worst = Some((ticker.clone(), ratio, rpo.val));
+            }
+        }
+
+        let Some((ticker, ratio, rpo_val)) = worst else {
+            return Reading::Unavailable {
+                reason: format!(
+                    "no cohort filer had both a usable RPO series and a deferred-revenue series. \
+                     No RPO concept reported by: {}. Rejected: {}",
+                    if no_rpo.is_empty() {
+                        "none".into()
+                    } else {
+                        no_rpo.join(", ")
+                    },
+                    if rejected.is_empty() {
+                        "none".into()
+                    } else {
+                        rejected.join("; ")
+                    }
+                ),
+            };
+        };
+
+        let stress = crate::score::interpolate(ratio, &ic.anchors);
+        rows.sort();
+        Reading::Scored {
+            stress,
+            value: ratio,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "Contracted backlog relative to cash actually billed. Highest cohort ratio is {} at \
+                 {:.1}x (RPO ${:.1}B against deferred revenue). All filers: {}. WHY THIS IS A \
+                 DIVERGENCE MEASURE AND NOT A BUBBLE VERDICT: an RPO/REVENUE ratio rises for every \
+                 long-contract business and cannot distinguish a healthy backlog from a vendor \
+                 financing its customers, so it is not scored here. What is scored is whether the \
+                 backlog is being BILLED: when RPO grows while deferred revenue stays flat, the \
+                 commitments are not converting to cash. It still cannot see counterparty credit \
+                 quality, cancellation terms or termination clauses — ${:.0}B of RPO and ${:.0}B of \
+                 cash are not the same asset.{}",
+                ticker,
+                ratio,
+                rpo_val / 1e9,
+                rows.join(", "),
+                rpo_val / 1e9,
+                rpo_val / 1e9,
+                if no_rpo.is_empty() {
+                    String::new()
+                } else {
+                    format!(
+                        " NOT REPORTED AT ALL (a gap, never a decline): {}.",
+                        no_rpo.join(", ")
+                    )
+                }
+            ),
+            provenance: cohort_provenance(ctx, &newest),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
