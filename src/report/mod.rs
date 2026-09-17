@@ -1,3 +1,4 @@
+pub mod charts;
 pub mod html;
 pub mod json;
 pub mod layman;

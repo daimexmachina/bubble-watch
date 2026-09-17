@@ -142,10 +142,16 @@ fn dir_color(d: &str) -> &'static str {
     }
 }
 
-/// Inline-SVG sparkline of the recorded composite. Drawn from real archived
-/// points only — with fewer than two points there is nothing to draw, and the
-/// function says so instead of emitting a misleading flat line.
-fn sparkline(points: &[crate::model::TrendPoint], limit: usize) -> String {
+/// The composite trend chart. Delegates to `report::charts`, which draws it on a
+/// FIXED 0-100 scale with the phase bands shaded — auto-scaling to the data range
+/// would make a two-point move look dramatic, which is the classic way a chart
+/// misleads.
+fn sparkline(points: &[crate::model::TrendPoint], _limit: usize) -> String {
+    crate::report::charts::composite_chart(points)
+}
+
+#[allow(dead_code)]
+fn sparkline_legacy(points: &[crate::model::TrendPoint], limit: usize) -> String {
     if points.len() < 2 {
         return "<div class='spark-empty'>Not enough recorded runs yet to draw a trend. A line \
                 needs at least two dated runs; re-running the tool on a later day adds one.</div>"
@@ -309,6 +315,37 @@ pub fn render_dashboard(
         rows
     };
 
+    // Per-indicator charts: one per measurement that appears anywhere in the
+    // archive, using the newest run's label for the title.
+    let mut ids: Vec<String> = Vec::new();
+    for p in points.iter().rev() {
+        for k in p.stresses.keys() {
+            if !ids.contains(k) {
+                ids.push(k.clone());
+            }
+        }
+    }
+    ids.sort();
+    let label_for = |id: &str| -> String {
+        latest
+            .and_then(|r| r.indicators.iter().find(|i| i.id == id))
+            .map(|i| i.label.clone())
+            .unwrap_or_else(|| id.to_string())
+    };
+    let mut ind_charts = String::new();
+    for id in &ids {
+        ind_charts.push_str(&format!(
+            "<div class='ind-chart'><div class='ind-h'>{label}</div><div class='ind-id'>{id}</div>             {chart}</div>",
+            label = esc(&label_for(id)),
+            id = esc(id),
+            chart = crate::report::charts::indicator_chart(points, id, &label_for(id))
+        ));
+    }
+    if ind_charts.is_empty() {
+        ind_charts =
+            "<p class='chart-empty'>No measurements have been recorded yet.</p>".to_string();
+    }
+
     let headline = latest
         .map(|r| {
             format!(
@@ -343,7 +380,9 @@ body {{ margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"
 @media (prefers-color-scheme: dark) {{ body {{ background:#121212; color:#e8e8e8; }}
   table {{ border-color:#333 !important; }} th {{ background:#1e1e1e !important; }}
   td, th {{ border-color:#2a2a2a !important; }} .card {{ background:#1a1a1a !important; border-color:#2e2e2e !important; }}
-  .spark-empty {{ background:#1e1e1e !important; color:#aaa !important; }} }}
+  .spark-empty {{ background:#1e1e1e !important; color:#aaa !important; }}
+  /* The chart band fills are light by design; dim them so the line stays legible. */
+  svg rect {{ opacity:.18; }} }}
 h1 {{ font-size:20px; margin:0 0 2px; }}
 .sub {{ color:#777; font-size:12px; margin-bottom:20px; }}
 .card {{ background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:18px; margin-bottom:18px; }}
@@ -363,6 +402,16 @@ a:hover {{ text-decoration:underline; }}
 .spark-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
 code {{ background:#f1f1f1; padding:1px 5px; border-radius:3px; font-size:12.5px; }}
 .disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
+.chart-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
+.ind-chart {{ border-top:1px solid #eee; padding-top:10px; margin-top:12px; }}
+.ind-chart:first-child {{ border-top:0; margin-top:0; padding-top:0; }}
+.ind-h {{ font-size:12.5px; font-weight:600; color:#333; }}
+.ind-id {{ font-size:10.5px; color:#aaa; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-bottom:2px; }}
+@media (prefers-color-scheme: dark) {{
+  .ind-chart {{ border-color:#2a2a2a; }}
+  .ind-h {{ color:#ddd; }}
+  .chart-empty {{ background:#1e1e1e !important; color:#aaa !important; }}
+}}
 </style></head><body>
 
 <h1>AI Bubble Watch — history</h1>
@@ -373,8 +422,18 @@ code {{ background:#f1f1f1; padding:1px 5px; border-radius:3px; font-size:12.5px
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Score over recorded runs</h3>
   {series}
-  <p style="margin:10px 0 0;font-size:12px;color:#777">Dashed guides mark the documented phase
-  boundaries at 35, 55 and 75. These are comparisons of measured state, not a forecast.</p>
+  <p style="margin:10px 0 0;font-size:12px;color:#777">The shaded bands are the documented phases
+  (early below 35, mid 35–55, late 55–75, critical above 75) and the scale is fixed at 0–100, so a
+  small move looks small rather than being stretched to fill the chart. These are comparisons of
+  measured state, not a forecast.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">Each measurement over time</h3>
+  <p class="dt" style="margin:0 0 6px">Every scored measurement, on a fixed 0-100 scale. A line
+  breaks wherever a measurement is missing — it is never drawn across a gap or plotted as zero.
+  A gap in the credit lines means FRED did not answer, not that credit was calm.</p>
+  {ind_charts}
 </div>
 
 <div class="card">
@@ -398,6 +457,7 @@ timing information.</p>
         ver = esc(super::VERSION),
         headline = headline,
         series = series,
+        ind_charts = ind_charts,
         rows = body_rows
     )
 }
@@ -475,12 +535,19 @@ fn trend_card(r: &Report) -> String {
             } else {
                 String::new()
             };
+            // Movement chart: bars from the previous reading to the current one.
+            let chart_deltas: Vec<(String, String, f64, f64)> = d
+                .indicators
+                .iter()
+                .map(|i| (i.id.clone(), i.label.clone(), i.delta, i.current_stress))
+                .collect();
+            let movement = crate::report::charts::movement_chart(&chart_deltas, d.elapsed_days);
             format!(
                 "<p style='margin:0 0 4px'>Against the baseline of <b>{date}</b>, <b>{days:.0} day(s)</b> ago: \
                  the score moved <b style='color:{col}'>{delta:+.1}</b> and is now \
                  <b>{dir}</b>. Baseline weighted coverage was {bcov:.0}% against {ccov:.0}% today, within the \
                  comparability tolerance — without that guarantee no comparison would be shown at all.</p>\
-                 {phase_note}{ind_table}",
+                 {phase_note}<div style='margin-top:12px'>{movement}</div>{ind_table}",
                 date = esc(&d.baseline_date),
                 days = d.elapsed_days,
                 col = dir_color(d.direction.as_str()),
@@ -489,6 +556,7 @@ fn trend_card(r: &Report) -> String {
                 bcov = d.baseline_coverage * 100.0,
                 ccov = r.coverage * 100.0,
                 phase_note = phase_note,
+                movement = movement,
                 ind_table = ind_table
             )
         }
