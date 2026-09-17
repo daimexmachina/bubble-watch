@@ -106,10 +106,24 @@ All of the following was established by probing the live endpoints from this hos
 |---|---|---|
 | Yahoo Finance chart API | works | Needs a browser-like UA. **Returns HTTP 429 under load** — the client throttles to ~3 req/s with backoff. |
 | SEC EDGAR XBRL `companyconcept` | works | **Requires a descriptive User-Agent.** Rate limit ~10 req/s. |
-| FRED `fredgraph.csv` | **optional, flaky** | Began refusing this host entirely (HTTP/2 `INTERNAL_ERROR`, then read timeouts) after a burst of requests. May recover. **History window is per-series**, not a global ~3 years: `DGS10`/`VIXCLS`/`T10Y2Y`/`NFCI` serve full history and honour `cosd`/`coed`, while the ICE BofA credit spreads and `SP500` are restricted — and for those an impossible window is **silently ignored**, not rejected. |
+| FRED `fredgraph.csv` | **optional, intermittently flaky** | Failure is **transient and time-varying**, not series-specific: measured from this host it served `DGS10` in 0.13 s, then refused *every* series minutes later, then recovered. Treated as optional; failures become reported gaps. |
+| FRED `api.stlouisfed.org` (keyed) | key optional, host fine | A **different host** which answered 5/5 in ~0.15 s while the CSV host was timing out. A free key routes through it and additionally returns full history. |
 | multpl.com (Shiller CAPE) | **not usable** | Now JavaScript-gated; cannot be scraped over plain HTTP. |
 
 The tool is designed to run end-to-end on **Yahoo + EDGAR alone**; FRED only ever adds coverage.
+
+### FRED key — how to get one
+
+1. Register: **https://fredaccount.stlouisfed.org/login/secure/** → *Register* (free, no institutional affiliation).
+2. Request: **https://fredaccount.stlouisfed.org/apikeys** — this page **redirects to login unless you already hold a session**, so sign in first.
+3. The key is **exactly 32 lowercase alphanumeric characters**; the API enforces this and rejects anything else. FRED asks that each application use its own key.
+4. Put it in `~/.hermes/.env` as `FRED_API_KEY=...` and pass it via the environment — never in the repo.
+
+With a key set, requests go through the keyed API v2 host and fall back to the anonymous CSV; coverage rises from 82% to 100% by enabling `credit_hy` and `credit_ig`.
+
+**Scheduled outage:** FRED / ALFRED / FRED Account are down **2026-09-19, 08:30–10:00 CT** for maintenance. Key retrieval will fail in that window — expected, not a fault.
+
+**Keys are never logged.** A key in a query string is masked centrally before any URL is logged, stored as provenance, or embedded in an error string, and a test asserts a dummy key reaches no output path.
 
 ### Three traps found the hard way, each now handled
 
