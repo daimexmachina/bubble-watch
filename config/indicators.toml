@@ -221,3 +221,74 @@ source = "none"
 unit = "pct of US equity market held by foreign investors"
 rationale = "Capital Economics flags record foreign ownership of US equities as a late-stage marker, and it has reached an all-time high. There is no free, machine-readable series for it at the required timeliness, so it is carried with weight 0 as an explicitly acknowledged blind spot rather than being silently dropped. It does not affect the composite. A future version could pick it up from the Treasury TIC data releases (monthly, published as HTML tables)."
 anchors = [[0.0, 0.0], [100.0, 100.0]]
+
+# ---------------------------------------------------------------------------
+# DECLARED GAP — circularity in AI-related financing.
+#
+# This is the most consequential omission in the model, and it is deliberate
+# rather than accidental, so it is declared here at weight 0 (visible in every
+# report, contributing nothing) instead of being left out of the config
+# silently.
+#
+# THE PATTERN BEING MISSED. Capital flows in a loop rather than arriving from
+# outside: a hyperscaler takes an equity stake in an AI lab or "neocloud" (the
+# GPU-rental firms), and the investee then commits to buying compute, chips or
+# cloud capacity back from its investor. A chip vendor invests in the same
+# customers that buy its chips. Sometimes the same money is counted as revenue
+# by several parties in the loop. Two consequences follow, and both are the
+# reasons this matters for a bubble diagnosis specifically:
+#
+#   1. Revenue is not independent corroboration. A sale to a company you funded
+#      is partly your own capital returning, so reported demand can overstate
+#      demand from outside the loop. Bubble accounting needs to distinguish
+#      externally-funded demand from internally-recycled demand, and this model
+#      cannot.
+#   2. It converts an equity risk into a revenue risk. If the underlying
+#      valuation falls, the investee's ability to keep buying falls with it, so
+#      the same shock hits the investor's balance sheet, its revenue and its
+#      reported earnings at once. Losses correlate in a way that ordinary
+#      arm's-length sales do not.
+#
+# WHY IT IS NOT SCORED. The measure needed is a RELATIONSHIP between companies —
+# who invested in whom, how much, and what share of the counterparty's revenue
+# flows back to the investor. Every indicator in this config is either a market
+# price or an audited aggregate for one company, so the data model has no place
+# to put an edge between two companies. The specific gap:
+#
+#   * SEC XBRL exposes no reliable machine-readable link between an equity
+#     investment and the revenue that investment generates. Probed from this
+#     host: the customer-concentration tags that would carry it
+#     (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP
+#     404 for MSFT — that disclosure lives in 10-K narrative text rather than in
+#     a tagged concept.
+#   * The most central counterparties are not in the scored cohort. NVIDIA is
+#     absent from it, and the large private AI labs file no public financials at
+#     all, so the largest nodes in the loop are outside the measurable set.
+#
+# THE AVAILABLE TAG IS NOT A SUBSTITUTE, and this is the trap. Company-concept
+# data for us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and
+# returns real values (measured from this host: GOOGL, MSFT, AMZN, META and NVDA
+# all report it). But it is a mark-to-market P&L figure — the change in value of
+# equity stakes held — not the amount invested and not the revenue flowing back.
+# A large unrealized gain means the stake appreciated; it says nothing about
+# whether the counterparty's purchases were funded by the same investor. Using it
+# as a circularity proxy would be exactly the fabricated-precision this tool
+# exists to prevent, so it is deliberately NOT used, not even at weight 0 as a
+# signal. It is named here so the next reader does not "fix" the omission with it.
+#
+# DIRECTION OF THE BLIND SPOT — stated because it matters more than the gap
+# itself. This omission biases the composite DOWNWARD, toward "calm". The
+# fundamentals indicators read capex as genuine demand and divide by revenue, so
+# recycled flows inflate the numerator and the denominator together: capex
+# reads as investment rather than as self-dealing, and capex/revenue is understated.
+# The composite therefore UNDERSTATES this particular risk and can never overstate
+# it. A calm reading carries even less reassurance than usual on this point.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "circularity"
+label = "Circular financing in the AI buildout (not measured)"
+weight = 0.0
+source = "none"
+unit = "share of counterparty revenue funded by the reporting company's own investment"
+rationale = "A real hole in the model, not a failed fetch. The pattern: an investor takes a stake in an AI lab or neocloud, which then commits to buying chips, compute or cloud capacity back from the investor, so some reported revenue is the investor's own capital returning. This matters because it makes revenue less independent, and because it turns an equity risk into a revenue risk so a valuation fall hits balance sheet, revenue and earnings together. It is not scored because the measure required is a RELATIONSHIP between companies while every indicator here is a price or a single-company aggregate. SEC XBRL carries no reliable link from an investment to the revenue it generates: the customer-concentration tags that would (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP 404 for MSFT, that disclosure being 10-K narrative rather than a tagged concept. The two most central counterparties are also outside the scored set — NVIDIA is not in the cohort, and the large private AI labs file no public financials. NOTE: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and returns real values for the cohort, but it is mark-to-market P&L on stakes held, not the amount invested and not the revenue flowing back, so it is deliberately NOT used as a proxy. EFFECT: this gap biases the composite toward 'calm', never toward alarm — recycled flows inflate capex and revenue together, so capex reads as genuine demand and capex/revenue is understated. Treat a low score as less reassuring than usual on this dimension."
+anchors = [[0.0, 0.0], [100.0, 100.0]]

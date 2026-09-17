@@ -26,6 +26,11 @@ pub struct LaymanSummary {
     /// Whether things are getting better or worse. This is the section that
     /// answers the question the credit indicators were always meant to answer.
     pub direction_of_travel: String,
+    /// The permanent holes in the model, which do not depend on today's data.
+    /// These are stated prominently rather than listed as data quality, because
+    /// the most consequential one is a real blind spot rather than a failed
+    /// fetch — the report can be at 100% coverage and still not see it.
+    pub known_blind_spots: String,
     pub bottom_line: String,
 }
 
@@ -44,6 +49,7 @@ fn plain_name(id: &str) -> &'static str {
         "funding_gap" => "how much AI companies spend compared with what they sell",
         "leverage" => "how much debt these companies are carrying",
         "foreign_interest" => "how much foreign money owns US shares",
+        "circularity" => "money moving in circles between the companies involved",
         _ => "one of the measurements",
     }
 }
@@ -116,8 +122,10 @@ why this report tells you what it cannot check as well as what it can.",
         r.composite,
         phase_plain,
         scored_count,
-        if declared_gaps > 0 {
-            format!(", plus {} thing it cannot measure at all", declared_gaps)
+        if declared_gaps == 1 {
+            ", plus 1 thing it cannot measure at all".to_string()
+        } else if declared_gaps > 1 {
+            format!(", plus {} things it cannot measure at all", declared_gaps)
         } else {
             String::new()
         }
@@ -194,7 +202,9 @@ even where spending is stretched.",
         .collect();
 
     let what_we_cannot_measure = if gaps.is_empty() {
-        "Everything this report tries to measure, it managed to measure today.".to_string()
+        "Every measurement this report attempted today, it managed to take. That is not the same \
+as measuring everything that matters — the things it cannot measure at all are set out above."
+            .to_string()
     } else {
         format!(
             "There are things this report could not check today: {}. They are left blank rather \
@@ -308,6 +318,43 @@ appear.",
         }
     };
 
+    // Declared blind spots: weight-0 entries, which are permanent properties of
+    // the model rather than failures on this run. Written out in full because the
+    // circularity one materially limits what a low score can mean.
+    let declared: Vec<&crate::model::UnavailableItem> = r
+        .data_quality
+        .unavailable
+        .iter()
+        .filter(|u| u.weight <= 0.0)
+        .collect();
+
+    let circularity_note = "One thing this report cannot see at all is money going in circles. In this boom, large technology companies have taken ownership stakes in AI businesses, and those businesses then buy computing power, chips and cloud services back from the companies that funded them. A chip maker invests in the very customers who buy its chips. Sometimes the same dollars get counted as sales by more than one company in the chain. This report cannot measure any of that, because it needs to know who invested in whom and how much of a company's sales came from its own backer, and that relationship is not published in a form a program can read reliably. It matters twice over. First, a sale is not independent proof that outside demand exists. Second, if the young company's value falls, it can hit its backer's profits and its sales at the same time. If anything this gap makes the score look better than it should, because spending that is really money moving in a circle is counted here as ordinary business investment. Treat a calm reading as less reassuring than usual on this point.";
+
+    let known_blind_spots = if declared.is_empty() {
+        "This report measures a fixed list of things and claims nothing beyond it.".to_string()
+    } else {
+        let mut out = String::new();
+        let has_circularity = declared.iter().any(|u| u.id == "circularity");
+        if has_circularity {
+            out.push_str(circularity_note);
+            out.push(' ');
+        }
+        let others: Vec<String> = declared
+            .iter()
+            .filter(|u| u.id != "circularity")
+            .map(|u| plain_name(&u.id).to_string())
+            .collect();
+        if !others.is_empty() {
+            out.push_str(&format!(
+                "There {} {} it also cannot measure at all: {}. Those are left blank rather than guessed at, and they never affect the score. The difference between these and the gaps listed elsewhere is that these are permanent — they would still be missing on a day when every source answered.",
+                if others.len() == 1 { "is one more thing" } else { "are further things" },
+                if others.len() == 1 { "" } else { "" },
+                join_list(&others)
+            ));
+        }
+        out.trim().to_string()
+    };
+
     LaymanSummary {
         what_this_is,
         the_score,
@@ -316,6 +363,7 @@ appear.",
         what_we_cannot_measure,
         about_timing,
         direction_of_travel,
+        known_blind_spots,
         bottom_line,
     }
 }
@@ -422,6 +470,7 @@ mod tests {
                 what_we_cannot_measure: String::new(),
                 about_timing: String::new(),
                 direction_of_travel: String::new(),
+                known_blind_spots: String::new(),
                 bottom_line: String::new(),
             },
         }
@@ -488,7 +537,7 @@ mod tests {
         );
         let s = summarize(&r);
         let all = format!(
-            "{} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {}",
             s.what_this_is,
             s.the_score,
             s.what_is_stretched,
@@ -496,6 +545,7 @@ mod tests {
             s.what_we_cannot_measure,
             s.about_timing,
             s.direction_of_travel,
+            s.known_blind_spots,
             s.bottom_line
         )
         .to_lowercase();

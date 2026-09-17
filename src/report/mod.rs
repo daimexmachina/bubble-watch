@@ -251,6 +251,7 @@ pub fn build_with_history(
             what_we_cannot_measure: String::new(),
             about_timing: String::new(),
             direction_of_travel: String::new(),
+            known_blind_spots: String::new(),
             bottom_line: String::new(),
         },
         analog,

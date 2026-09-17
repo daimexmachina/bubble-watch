@@ -665,7 +665,11 @@ pub fn render(r: &Report) -> String {
         layman_block("What is stretched", &r.layman.what_is_stretched),
         layman_block("What is calm", &r.layman.what_is_calm),
         layman_block("Getting better or worse", &r.layman.direction_of_travel),
-        layman_block("What this cannot check", &r.layman.what_we_cannot_measure),
+        layman_block("What this cannot see at all", &r.layman.known_blind_spots),
+        layman_block(
+            "What this could not check today",
+            &r.layman.what_we_cannot_measure,
+        ),
         layman_block("About timing", &r.layman.about_timing),
     ]
     .join("");
@@ -723,6 +727,10 @@ ul {{ margin:6px 0 0; padding-left:20px; }}
 li {{ margin-bottom:4px; font-size:13px; }}
 .note {{ background:#fff8e1; border-left:3px solid #f9a825; padding:10px 14px; border-radius:4px; font-size:13px; }}
 .card.lm {{ border-left:4px solid #1a73e8; }}
+/* The blind-spot card is deliberately visually distinct: it is not data quality,
+   it is a permanent limit on what the score can mean. */
+.card.blind {{ border-left:4px solid #b3261e; background:#fdf5f4; }}
+@media (prefers-color-scheme: dark) {{ .card.blind {{ background:#241a1a !important; border-color:#7f3b36 !important; }} }}
 .lm-intro {{ font-size:14px; margin:0 0 14px; color:#333; }}
 .lm-grid {{ display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }}
 .lm-block {{ background:#f5f8fd; border-radius:6px; padding:11px 13px; }}
@@ -750,6 +758,11 @@ li {{ margin-bottom:4px; font-size:13px; }}
     {lm_blocks}
   </div>
   <div class="lm-bottom"><b>Bottom line.</b> {lm_bottom}</div>
+</div>
+
+<div class="card blind">
+  <h3 style="margin-top:0;font-size:15px">What this report cannot see</h3>
+  <p style="margin:0;font-size:13.5px;line-height:1.6">{blind}</p>
 </div>
 
 <div class="card">
@@ -813,6 +826,7 @@ li {{ margin-bottom:4px; font-size:13px; }}
         analogcaveat = esc(&r.analog.caveat),
         headline = esc(&r.headline),
         trendcard = trend_card(r),
+        blind = esc(&r.layman.known_blind_spots),
         rows = rows,
         avail = r.data_quality.available_weight,
         total = r.data_quality.total_weight,
