@@ -769,6 +769,7 @@ li {{ margin-bottom:4px; font-size:13px; }}
   <h3 style="margin-top:0;font-size:15px">The score</h3>
   <div class="score">{score:.1}<small>/100 stress</small></div>
   <div style="margin:10px 0 4px"><span class="phase" style="background:{pcol};color:{ptxt}">{phase}</span></div>
+  <p class="lm-b" style="margin:12px 0 0">{thescore}</p>
   <div class="note">{pdetail}</div>
   <div style="margin-top:16px">{gauge}</div>
   <div style="margin-top:6px;font-size:13px">{analog}</div>
@@ -817,6 +818,7 @@ li {{ margin-bottom:4px; font-size:13px; }}
         lm_blocks = lm_blocks,
         lm_bottom = esc(&r.layman.bottom_line),
         score = r.composite,
+        thescore = esc(&r.layman.the_score),
         phase = esc(&r.phase),
         pcol = phase_color(&r.phase),
         ptxt = phase_text_color(&r.phase),
