@@ -131,6 +131,165 @@ fn every_unavailable_weight_is_documented_in_caveats_or_quality() {
 }
 
 #[test]
+fn history_never_changes_the_composite() {
+    // THE load-bearing test for v1.1. The trend is derived FROM the composite,
+    // so if it could also feed back into the composite, the score would partly
+    // be a function of its own past — and a published, audited number would
+    // silently change. The composite must be byte-identical with and without
+    // history.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+
+    let without = bubble_watch::report::build(readings.clone(), &obs, &c, "2026-09-17T12:00:00Z");
+
+    // Match the baseline's coverage to this run's actual coverage, so the test
+    // exercises a COMPARABLE baseline. (On the committed fixtures coverage is
+    // not 100%, because FRED is absent — which is itself a useful reminder that
+    // a coverage-matched baseline is a real constraint, not a formality.)
+    let archive = vec![bubble_watch::model::TrendPoint {
+        date: "2026-08-01".into(),
+        generated_at: "2026-08-01T12:00:00Z".into(),
+        composite: 90.0, // deliberately extreme: it must not drag the score
+        coverage: without.coverage,
+        phase: "critical".into(),
+        stresses: std::collections::BTreeMap::new(),
+    }];
+    let with = bubble_watch::report::build_with_history(
+        readings,
+        &obs,
+        &c,
+        "2026-09-17T12:00:00Z",
+        &archive,
+        true,
+    );
+
+    assert_eq!(
+        without.composite, with.composite,
+        "history must never move the composite"
+    );
+    assert_eq!(without.coverage, with.coverage);
+    assert_eq!(without.phase, with.phase);
+    // Per-indicator stresses must be untouched too.
+    for (a, b) in without.indicators.iter().zip(with.indicators.iter()) {
+        assert_eq!(a.reading, b.reading, "indicator {} was altered", a.id);
+    }
+    // The extreme baseline must still be reported as a delta, not scored into
+    // the level.
+    let d = with.trend.delta.expect("an eligible baseline was supplied");
+    assert!(
+        d.composite_delta < 0.0,
+        "delta is a comparison, not a score"
+    );
+}
+
+#[test]
+fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+
+    // Baseline with materially different coverage: must be refused.
+    let bad = vec![bubble_watch::model::TrendPoint {
+        date: "2026-08-01".into(),
+        generated_at: "2026-08-01T12:00:00Z".into(),
+        composite: 40.0,
+        coverage: 0.50,
+        phase: "mid".into(),
+        stresses: std::collections::BTreeMap::new(),
+    }];
+    let r = bubble_watch::report::build_with_history(
+        readings.clone(),
+        &obs,
+        &c,
+        "2026-09-17T12:00:00Z",
+        &bad,
+        true,
+    );
+    assert!(
+        r.trend.delta.is_none(),
+        "a coverage-mismatched baseline must never produce a delta"
+    );
+    assert!(
+        r.caveats
+            .iter()
+            .any(|x| x.contains("DIRECTION OF TRAVEL NOT REPORTED")),
+        "the refusal must be disclosed in the caveats"
+    );
+
+    // Every emitted delta must carry a positive elapsed time.
+    let good = vec![bubble_watch::model::TrendPoint {
+        date: "2026-08-01".into(),
+        generated_at: "2026-08-01T12:00:00Z".into(),
+        composite: 40.0,
+        coverage: r.coverage,
+        phase: "mid".into(),
+        stresses: std::collections::BTreeMap::new(),
+    }];
+    let r2 = bubble_watch::report::build_with_history(
+        readings,
+        &obs,
+        &c,
+        "2026-09-17T12:00:00Z",
+        &good,
+        true,
+    );
+    if let Some(d) = &r2.trend.delta {
+        assert!(
+            d.elapsed_days > 0.0,
+            "a delta needs elapsed time to mean anything"
+        );
+    }
+}
+
+#[test]
+fn the_html_trend_card_needs_no_javascript_and_loads_nothing() {
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let archive = vec![bubble_watch::model::TrendPoint {
+        date: "2026-08-01".into(),
+        generated_at: "2026-08-01T12:00:00Z".into(),
+        composite: 28.0,
+        coverage: indicators::evaluate_all(&ctx)
+            .iter()
+            .filter(|r| r.reading.is_available() && r.weight > 0.0)
+            .map(|r| r.weight)
+            .sum::<f64>()
+            / c.total_weight(),
+        phase: "early".into(),
+        stresses: std::collections::BTreeMap::new(),
+    }];
+    let r = bubble_watch::report::build_with_history(
+        readings,
+        &obs,
+        &c,
+        "2026-09-17T12:00:00Z",
+        &archive,
+        true,
+    );
+    let h = bubble_watch::report::html::render(&r);
+    assert!(h.contains("Direction of travel"));
+    assert!(!h.contains("<script"), "must still need no JavaScript");
+    assert!(
+        !h.contains("src=\"http") && !h.contains("href=\"http"),
+        "must still load nothing external"
+    );
+}
+
+#[test]
 fn live_sources_are_reachable_or_the_test_says_why() {
     // Networked test: opt in explicitly so `cargo test` stays fast and offline.
     //   BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture

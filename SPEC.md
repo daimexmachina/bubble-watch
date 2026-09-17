@@ -243,3 +243,69 @@ Global: `--config PATH`, `--offline` (cache only), `--cache-dir PATH`,
 - `config/indicators.toml` documents every weight and anchor with a rationale.
 - README states the honesty contract and the not-a-prophecy disclaimer.
 - Git history shows incremental commits; spec and config committed.
+
+---
+
+## 11. v1.1 — direction of travel (run history)
+
+**Problem this fixes.** v1 is a point-in-time scorer with no memory. Its own
+config says of credit spreads that *"the informative credit signal is the
+DIRECTION OF TRAVEL from a tight base"* — and v1 cannot see direction at all,
+because nothing persists between runs. A level with no reference point cannot
+distinguish "wide and widening" from "wide and narrowing", which are opposite
+signals.
+
+**Design decision 1 — the trend is CONTEXT, not a scored indicator.** It does
+NOT enter the composite. Adding it as an eleventh weighted indicator would change
+a published, audited number (32.4 on the 2026-09-17 run) for a signal that is
+*derived from the composite itself* — the score would partly be a function of its
+own past. The composite is therefore byte-identical before and after this
+version, and there is a test that asserts exactly that.
+
+**Design decision 2 — comparing runs of unequal coverage is INVALID, and the
+tool must refuse to do it.** §6 renormalizes the composite over available weight,
+so a run at 100% coverage and a run at 62% coverage are not on the same scale;
+subtracting them produces a difference that is partly an artefact of which
+sources answered. The existing COMPARABILITY caveat already warns about this in
+prose. The trend feature therefore *enforces* it: a baseline run is eligible only
+if its weighted coverage is within `coverage_tolerance_pp` of the current run's.
+When no eligible baseline exists, **no delta is reported** — the reason is
+printed instead. There is no fallback to "the previous run anyway", because that
+would manufacture a directional claim out of a definitional difference.
+
+**Design decision 3 — a delta is never presented without its elapsed time.** A
+change of +4 over 3 days and a change of +4 over 400 days are different facts.
+Every delta carries the actual gap in days, and the baseline's date and coverage.
+
+**Design decision 4 — the archive is append-only, but the series is daily.** The
+archive (`data/history/runs.jsonl`, one JSON object per line) is append-only so
+nothing is ever destroyed; re-running the tool four times in an afternoon is a
+legitimate audit trail. The *series* used for trend computation takes at most one
+entry per calendar date — the last one written that day — so intraday re-runs
+cannot masquerade as a longer history. This is a selection rule for display, not
+a deletion.
+
+**Design decision 5 — a malformed archive line is reported, not swallowed.** A
+line that fails to parse becomes a warning naming the line number; the remaining
+record still loads. One bad byte must not destroy the history, and must not pass
+silently either.
+
+**Scope of the change:**
+
+| Area | Change |
+|---|---|
+| `src/history.rs` | NEW. Archive load/append, daily series, pure delta computation. |
+| `config [trend]` | `min_gap_days`, `coverage_tolerance_pp`, `flat_band`, `sparkline_points`. |
+| `model` | `TrendPoint`, `IndicatorTrend`, `Trend`; `Report.trend`; `LaymanSummary.direction_of_travel`. |
+| `report::build_with_history` | Builds the trend alongside the report; `build` delegates with an empty history so existing callers are unaffected. |
+| CLI | `trend` subcommand; `report --no-record` and `--history-dir`. |
+| HTML | Trend card with inline-SVG sparkline and per-indicator direction. |
+
+**Definition of done for v1.1:**
+- The composite is unchanged by this feature (test-asserted against the frozen
+  fixture; the published 2026-09-17 number must still reproduce).
+- No delta is ever emitted against a coverage-mismatched baseline.
+- No delta is ever emitted without its elapsed days.
+- `cargo test` green; the offline suite proves both suppression paths with no
+  network.
+- The HTML still loads nothing external and still needs no JavaScript.

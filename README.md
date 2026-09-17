@@ -55,6 +55,8 @@ cargo build --release
 ./target/release/bubble-watch score --json         # machine-readable
 ./target/release/bubble-watch explain              # per-indicator math, weights, anchors, provenance
 ./target/release/bubble-watch report --out out     # writes <name>.json and <name>.html
+./target/release/bubble-watch trend                # direction of travel vs the last comparable run
+./target/release/bubble-watch site --out site      # self-contained site: dashboard + per-day reports
 ./target/release/bubble-watch --offline score      # cache only; never touches the network
 ```
 
@@ -63,12 +65,90 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 64 tests, no network required
+cargo test                                         # 114 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
 The networked test asserts **shape, never a market value**, so a moving market cannot fail the
 suite.
+
+---
+
+## Direction of travel (why level alone is not enough)
+
+The credit rationale above concludes that the informative signal is the **direction of travel**, not
+the level. A point-in-time scorer cannot see direction, because nothing persists between runs. So
+each run is appended to `data/history/runs.jsonl` and the tool reports a delta.
+
+**The trend is context, not an eleventh indicator.** It is derived *from* the composite, so scoring
+it inside the composite would make the score partly a function of its own past. The composite is
+byte-identical with and without history, and a test asserts exactly that.
+
+Three rules are enforced rather than merely documented:
+
+1. **Unequal coverage is not comparable, so the comparison is refused.** Because the composite is
+   renormalized over available weight (see the math above), a run at 100% coverage and one at 62%
+   are not on the same scale — subtracting them mixes a real market move with the effect of which
+   sources answered. A baseline is eligible only if its coverage is within
+   `coverage_tolerance_pp` (default 5pp). With no eligible baseline, **no delta is emitted** and the
+   reason is printed. There is deliberately no "use the previous run anyway" fallback.
+2. **No delta is ever shown without its elapsed time.** +4 over 3 days and +4 over 400 days are
+   different facts.
+3. **A gap is never treated as a zero.** Zero is a legitimate stress reading, so an unavailable
+   indicator is *absent* from the archived stresses and omitted from the per-indicator delta rather
+   than being compared against a number.
+
+The archive is append-only, so nothing is destroyed; the *displayed* series keeps at most one point
+per calendar date, so re-running the tool three times in an afternoon is an audit trail rather than
+three days of history. A malformed archive line is reported with its line number and skipped — it
+never passes silently, and never destroys the rest of the history.
+
+Tuning lives in the `[trend]` block of `config/indicators.toml`.
+
+---
+
+## Running it daily, and serving it on the LAN
+
+```bash
+scripts/daily-refresh.sh      # live fetch, record the run, regenerate the site
+scripts/serve.sh              # static server on :8770
+```
+
+Both are wired to user-level systemd units (copies in `deploy/`):
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp deploy/*.service deploy/*.timer ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now bubble-watch-site.service
+systemctl --user enable --now bubble-watch-refresh.timer
+systemctl --user list-timers bubble-watch-refresh.timer
+```
+
+The timer fires at **13:30 local** — after the US market close, so the day's final prices and spreads
+are settled — with `Persistent=true` so a day missed to downtime is caught up on boot, and a
+randomized delay to avoid piling load onto the Pi.
+
+**Why systemd and not an agent cron turn:** the job is deterministic. Running it under systemd costs
+zero model tokens and cannot hallucinate a number, which is the whole point of this tool's design.
+
+The server serves exactly one directory. Path traversal is refused, directory listings are disabled,
+no uploads and no CGI; it is **not** exposed to the internet. The site is plain HTML with no
+JavaScript and no external resources, so it renders with no network access at all — a report that
+needs the network to display breaks exactly when a market event makes it most interesting.
+
+Layout of the generated site:
+
+| Path | Contents |
+|---|---|
+| `index.html` | landing page |
+| `dashboard.html` | the score over time, one row per recorded day, plus biggest per-indicator moves |
+| `latest.html` | the newest full report |
+| `<date>.html` | the full report for each archived date |
+| `series.csv` | the series as plain text, usable without a browser and diffable in git |
+
+A date with no archived report page is rendered as plain text marked *(summary only)*, never as a
+link — a dead link would be a false claim that a report exists.
 
 ---
 
@@ -184,31 +264,41 @@ row, and the report carries a `PROXIES IN USE` caveat:
 src/
   score.rs          pure: anchor interpolation, weighted composite, coverage
   phase.rs          pure: phase classification + historical-analog overlay
+  history.rs        pure trend logic + the append-only run archive
   config.rs         config load + validation (rejects inconsistent configs)
   model.rs          types; every scored value carries Provenance
   http.rs           shared client: UA, throttle, retry, circuit breaker, cache
   sources/          yahoo.rs, edgar.rs, fred.rs  (the only modules that do IO)
   indicators/       market.rs, credit.rs, fundamentals.rs
-  report/           json.rs, html.rs
+  report/           json.rs, html.rs (per-run report + multi-run dashboard), layman.rs
 config/indicators.toml   all weights, anchors, thresholds + their rationale
+scripts/                 serve.sh, daily-refresh.sh
+deploy/                  systemd units for the timer and the LAN server
+data/history/runs.jsonl  append-only archive of recorded runs (git-ignored)
+site/                    generated site (git-ignored)
 tests/                   fixture-driven, offline; live assertions are opt-in
 ```
 
 The scoring core is a pure function of `(observations, config) -> Report`: no clock, no randomness,
-no IO. Identical inputs produce byte-identical output, and a test proves it.
+no IO. Identical inputs produce byte-identical output, and a test proves it. Trend computation is
+pure in the same way — the caller loads the archive and passes the timestamp in, so the whole
+scoring path stays deterministic and testable offline.
 
 ---
 
 ## Extending it
 
 - **Change the model's opinion:** edit `config/indicators.toml`. The loader rejects non-monotone
-  anchors, out-of-range stress values, descending phase thresholds and duplicate ids, so a typo
-  cannot silently change the score.
+  anchors, out-of-range stress values, descending phase thresholds, duplicate ids and nonsensical
+  trend settings, so a typo cannot silently change the score.
 - **Add an indicator:** implement `Indicator` in `src/indicators/`, register it in `find()`, and add
   it to `IMPLEMENTED`. A weighted indicator in the config with no implementation is reported as an
-  explicit *bug*, not a data gap — never as a silent omission.
-- **Schedule it:** the CLI is stateless and exits non-zero on degraded data, so a cron job can call
-  `bubble-watch report` and alert on coverage or phase changes.
+  explicit *bug*, not a data gap — never as a silent omission. Nothing else needs changing: the
+  trend picks up per-indicator deltas automatically, and an indicator absent from an older archived
+  run is omitted from that comparison rather than compared against a zero.
+- **Schedule it differently:** `scripts/daily-refresh.sh` is a plain script; point any scheduler at
+  it. It propagates the tool's exit codes, so a degraded run shows up as a failed unit rather than a
+  silent success.
 
 ## License
 
