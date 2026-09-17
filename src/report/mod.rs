@@ -327,6 +327,31 @@ mod tests {
     }
 
     #[test]
+    fn html_states_that_the_analog_window_is_not_a_probability() {
+        // Timing is the most misusable output in the tool, so the VISIBLE page
+        // must carry the disclaimer in plain words — matching the JSON's
+        // is_probability:false rather than relying on a soft caveat.
+        let c = cfg();
+        let mut obs = Observations::default();
+        let mut reading = scored("valuation_stretch", 14.0, 42.0);
+        if let Reading::Scored { provenance, .. } = &mut reading.reading {
+            provenance.endpoint = "t".into();
+        }
+        let r = build(vec![reading], &obs, &c, "2026-09-16T00:00:00Z");
+        let h = crate::report::html::render(&r);
+        if r.analog.range_months.is_some() {
+            assert!(
+                h.contains("not a probability"),
+                "a rendered time range must be labelled as not a probability"
+            );
+            assert!(
+                h.contains("not a prediction"),
+                "a rendered time range must be labelled as not a prediction"
+            );
+        }
+    }
+
+    #[test]
     fn html_allows_provenance_citations_but_never_loads_them() {
         // Regression guard for the above: a report WITH a real http endpoint in
         // its provenance must still render, and must still not load anything.

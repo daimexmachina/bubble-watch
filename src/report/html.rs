@@ -167,8 +167,13 @@ pub fn render(r: &Report) -> String {
 
     let analog = match (r.analog.range_months, &r.analog.band) {
         (Some(rg), Some(b)) => format!(
-            "Band <b>{}</b> — historically <b>{:.0}–{:.0} months</b> to a peak in the reference analogs.",
-            esc(b), rg[0], rg[1]
+            "Band <b>{}</b> — historically <b>{:.0}–{:.0} months</b> to a peak in the reference analogs. \
+             <b>This is not a probability and not a prediction:</b> it is a comparison against {} prior \
+             episodes, and state extremity is not timing.",
+            esc(b),
+            rg[0],
+            rg[1],
+            r.analog.analogs.len()
         ),
         _ => format!(
             "Not shown. {}",
