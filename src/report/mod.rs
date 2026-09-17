@@ -170,6 +170,15 @@ pub fn build_with_history(
          not exist because it does not issue equity. Each indicator's row names its own limitation."
             .into(),
     );
+    caveats.push(format!(
+        "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
+         and refuses to compute a direction of travel across a version change: redefining an \
+         indicator changes what the composite MEANS, so a difference across such a change would \
+         report an accounting change as a market move. This version replaced the share-count \
+         issuance proxy with reported cash flows and added primary-market supply; runs recorded \
+         before it are preserved but cannot serve as baselines.",
+        cfg.meta.schema_version
+    ));
     caveats.push(
         "A CALM READING IS NOT EVIDENCE OF SAFETY. Bubbles are generally identifiable only in \
          hindsight, and cheap credit or healthy breadth are consistent with both 'no bubble' and \

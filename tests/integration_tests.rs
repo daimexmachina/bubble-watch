@@ -161,6 +161,32 @@ fn the_proxy_disclosure_matches_what_is_actually_a_proxy() {
 }
 
 #[test]
+fn the_report_states_its_own_methodology_version() {
+    // The archive refuses to compare across a methodology change, so the report
+    // must say which version produced it — otherwise a reader comparing two
+    // saved reports by hand has no way to know they are incomparable.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-17T12:00:00Z");
+    let m = r
+        .caveats
+        .iter()
+        .find(|x| x.contains("METHODOLOGY VERSION"))
+        .unwrap_or_else(|| panic!("must disclose its methodology: {:?}", r.caveats));
+    assert!(
+        m.contains(&c.meta.schema_version),
+        "must name the actual version {}: {}",
+        c.meta.schema_version,
+        m
+    );
+}
+
+#[test]
 fn history_never_changes_the_composite() {
     // THE load-bearing test for v1.1. The trend is derived FROM the composite,
     // so if it could also feed back into the composite, the score would partly
