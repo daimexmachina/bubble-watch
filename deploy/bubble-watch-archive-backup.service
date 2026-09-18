@@ -1,0 +1,16 @@
+[Unit]
+Description=bubble-watch archive backup (copy run history into the vault)
+# %h expands to the invoking user's home, so the unit carries no absolute path.
+Documentation=file:%h/workspace/bubble-watch/scripts/archive-backup.sh
+After=network-online.target
+
+[Service]
+Type=oneshot
+# %h is the user's home directory; %f is the unit file name. Using %h keeps this
+# unit free of any user-specific absolute path.
+WorkingDirectory=%h/workspace/bubble-watch
+# Runs shortly before the Vault Backup cron (every six hours on the hour), so a
+# fresh copy is in the vault before the vault itself is committed and pushed.
+ExecStart=/usr/bin/env bash %h/workspace/bubble-watch/scripts/archive-backup.sh
+StandardOutput=journal
+StandardError=journal

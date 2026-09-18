@@ -1,0 +1,12 @@
+[Unit]
+Description=bubble-watch archive backup timer
+
+[Timer]
+# Every six hours, ten minutes before the vault backup cron, so the copy is in the
+# vault before the vault is committed and pushed.
+OnCalendar=*-*-* 00,06,12,18:50:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
