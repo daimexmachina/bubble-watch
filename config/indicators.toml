@@ -333,11 +333,41 @@ anchors = [[2.0, 5.0], [2.8, 18.0], [3.5, 30.0], [5.0, 50.0], [7.0, 75.0], [10.0
 id = "credit_ig"
 label = "US investment-grade credit spreads"
 weight = 6.0
-unit = "pct, ICE BofA US Corporate option-adjusted spread"
+unit = "pct, Moody's Baa corporate bond yield less the 10-year Treasury yield"
 source = "fred"
-fred_series = "BAMLC0A0CM"
-rationale = "Investment-grade spreads are the funding cost for the hyperscaler buildout itself. Same direction as high yield: wide = high stress, tight = low stress, not inverted. Lower weight than HY because IG spreads are structurally less informative (the cohort is overwhelmingly IG-rated, so these spreads are close to a base-rate cost of capital rather than a risk judgment on AI specifically)."
-anchors = [[0.5, 8.0], [0.8, 20.0], [1.1, 35.0], [1.5, 55.0], [2.0, 75.0], [3.0, 93.0]]
+fred_series = "BAA10Y"
+# ---------------------------------------------------------------------------
+# SERIES CHANGED 2026-09-17 — schema_version 1.4 -> 1.5.
+#
+# Was: ICE BofA US Corporate option-adjusted spread (BAMLC0A0CM).
+# Now: Moody's Baa yield less the 10-year Treasury (BAA10Y).
+#
+# The OAS is the better measure of investment-grade conditions in isolation, and it
+# is given up reluctantly. The reason is history: EVERY ICE BofA series on FRED
+# begins 2023-09-18 (verified 2026-09-17 for BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A1HYBB
+# and others), and no free pre-2023 option-adjusted spread exists. With 2.5 years of
+# data the anchors could not reference any observed stress episode — the series had
+# never seen 2000, 2008 or 2020, so the top of its scale was an extrapolation.
+# BAA10Y carries 10,177 observations from 1986-01-02 and includes all three.
+#
+# ANCHORS ARE SET ON THIS SERIES' OWN DISTRIBUTION, not transposed from the OAS.
+# The two live on completely different scales — BAA10Y's median is 2.13 while the
+# OAS currently sits at 0.78 — so carrying the old anchors across would have read
+# the MIDDLE of forty years as near-alarm.
+#
+# Measured distribution, 1986-2026 (10,177 observations):
+#   min 1.16 · 5th 1.50 · 10th 1.56 · 25th 1.74 · median 2.13 · 75th 2.66
+#   90th 3.11 · 95th 3.32 · 99th 5.35 · max 6.06
+# Observed episodes: 2000-03 (dot-com peak) 1.96 · 2002-10 (post-bust) 3.90 ·
+# 2007-02 (pre-GFC tight) 1.56 · 2008-12 (GFC peak) 6.10 · 2020-03 (COVID) 4.31 ·
+# latest 2026-09-16 1.43.
+#
+# NOTE: the falsification test for credit conditions also reads BAA10Y, so this
+# indicator and that test are NOT independent — the same series read two ways. That
+# is disclosed in the indicator's output rather than left for a reader to notice.
+# ---------------------------------------------------------------------------
+rationale = "Investment-grade credit conditions: the yield on Baa-rated corporate debt less the 10-year Treasury, a credit-risk premium for the lower half of investment grade. SERIES CHANGED 2026-09-17 from the ICE BofA US Corporate option-adjusted spread. The OAS is the better measure in isolation and was given up reluctantly: every ICE BofA series on FRED begins 2023-09-18, so with 2.5 years of data the anchors could not reference any observed stress episode — the series had never seen 2000, 2008 or 2020. BAA10Y runs from 1986 with 10,177 observations and includes all three, so the scale is now justified by history rather than extrapolation. Anchors are set on BAA10Y's OWN distribution (median 2.13, 95th 3.32, max 6.06) and deliberately NOT transposed from the OAS, which lives on a different scale entirely (OAS currently 0.78) — carrying them across would have read the middle of forty years as near-alarm. DIRECTION: wide = high stress, tight = low stress, unchanged; see the credit level-vs-direction note for why the complacency reading is deliberately not used. LIMITATION: the falsification test for credit conditions reads the same BAA10Y series, so the two are not independent measurements."
+anchors = [[1.2, 4.0], [1.6, 14.0], [2.0, 26.0], [2.5, 42.0], [3.1, 60.0], [4.0, 80.0], [5.5, 94.0]]
 
 [[indicator]]
 id = "capex_vs_cashflow"

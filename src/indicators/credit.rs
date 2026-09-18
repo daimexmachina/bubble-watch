@@ -44,6 +44,41 @@ fn credit_reading(ctx: &Ctx, id: &str, _label: &str, what: &str) -> Reading {
         };
     };
     let stress = crate::score::interpolate(level, &ic.anchors);
+
+    // Series length and span, so the reader can see whether the scale is anchored
+    // on observed history or on extrapolation. This is the concrete reason the
+    // investment-grade indicator moved to a 40-year series.
+    let n = s.points.len();
+    let span = match (s.points.first(), s.points.last()) {
+        (Some(a), Some(b)) => format!("{} to {}", a.date, b.date),
+        _ => "unknown span".to_string(),
+    };
+    let history_note = if n < 200 {
+        format!(
+            " HISTORY WARNING: this series has only {} observations ({}), which spans too \
+             little time to contain a full stress episode, so the upper part of the scale is \
+             extrapolated rather than observed.",
+            n, span
+        )
+    } else {
+        format!(" History: {} observations spanning {}.", n, span)
+    };
+
+    // If another part of the report reads the same series, say so. Counting one
+    // series twice as though it were two pieces of evidence is the exact
+    // double-counting error already fixed once in this model.
+    let shared = if id == "credit_ig" && SHARES_SERIES_WITH_FALSIFIER {
+        format!(
+            " NOT INDEPENDENT: the falsification test for credit conditions reads the same {} \
+             series, so this indicator and that test are the same measurement read two ways \
+             (a level here, a historical percentile there). Do not treat them as two pieces \
+             of evidence.",
+            series_id
+        )
+    } else {
+        String::new()
+    };
+
     Reading::Scored {
         stress,
         value: level,
@@ -55,8 +90,8 @@ fn credit_reading(ctx: &Ctx, id: &str, _label: &str, what: &str) -> Reading {
              HY spreads have a ~3.0% median over the available record and a level-based \
              complacency score would read nearly the whole post-2009 period as a bubble. \
              The informative signal is the DIRECTION OF TRAVEL from a tight base — widening \
-             is the early warning. Watch the change, not the level.",
-            what, level, s.provenance.as_of
+             is the early warning. Watch the change, not the level.{}{}",
+            what, level, s.provenance.as_of, history_note, shared
         ),
         provenance: s.provenance.clone(),
     }
@@ -77,6 +112,37 @@ impl Indicator for CreditHy {
     }
 }
 
+/// Investment-grade credit conditions, measured on a series with 40 years of
+/// history rather than two and a half.
+///
+/// WHY THE SERIES CHANGED. This indicator previously read the ICE BofA US Corporate
+/// option-adjusted spread, which is the *better* measure of investment-grade
+/// conditions — but every ICE BofA series on FRED begins 2023-09-18. Verified from
+/// this host 2026-09-17: BAMLH0A0HYM2, BAMLC0A0CM, BAMLH0A1HYBB and the rest all
+/// start on that date, and no free pre-2023 high-yield or IG option-adjusted spread
+/// exists.
+///
+/// The consequence was not cosmetic. With only ~2.5 years of history the anchors
+/// could not be anchored on any observed stress episode: the series had never seen
+/// 2000, 2008 or 2020, so the top of its scale was an extrapolation rather than a
+/// reference. Baa-minus-10Y carries 10,177 observations from 1986 and includes all
+/// three episodes, so the same scale can now be justified by history.
+///
+/// WHAT IT MEASURES NOW: the yield on Baa-rated corporate debt minus the 10-year
+/// Treasury — a credit-risk premium for the lower half of investment grade.
+///
+/// DIRECTION is unchanged: wide = high stress, tight = low stress. The config
+/// already documents why the complacency reading (tight spreads as the bubble
+/// signal) is deliberately not used: HY OAS has a ~3% median over its record and is
+/// rarely wide, so a level-based complacency score would read most of the last
+/// decade as a bubble — near-constant, and carrying no timing information.
+///
+/// ONE HONEST CONSEQUENCE, disclosed rather than left for a reader to notice: the
+/// falsification test for credit conditions also uses BAA10Y, so this indicator and
+/// that test are NOT independent measurements. They are the same series read two
+/// ways — a level-scored indicator and a historical-percentile falsifier. The output
+/// says so, because counting one series twice as though it were two pieces of
+/// evidence is exactly the double-counting error already fixed once in this model.
 pub struct CreditIg;
 impl Indicator for CreditIg {
     fn id(&self) -> &'static str {
@@ -87,10 +153,15 @@ impl Indicator for CreditIg {
             ctx,
             self.id(),
             "US investment-grade credit spreads",
-            "ICE BofA US Corporate option-adjusted spread",
+            "Moody's Baa corporate yield less the 10-year Treasury",
         )
     }
 }
+
+/// True when the same series backs another part of the report, so the output can
+/// say that the two are not independent. Kept as a named function rather than a
+/// comment so the statement lives in the code that renders it.
+pub const SHARES_SERIES_WITH_FALSIFIER: bool = true;
 
 /// Private-credit lending growth: the financing channel the public spreads miss.
 ///
