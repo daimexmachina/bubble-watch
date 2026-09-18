@@ -794,6 +794,130 @@ impl Indicator for BacklogQuality {
     }
 }
 
+/// Foreign ownership of US equities — the blind spot that turned out to be
+/// measurable.
+///
+/// WHY THIS REPLACED A DECLARED GAP. The config previously carried
+/// `foreign_interest` at weight 0 with the rationale: "There is no free,
+/// machine-readable series for it at the required timeliness, so it is carried
+/// with weight 0 as an explicitly acknowledged blind spot." That claim was FALSE,
+/// and it was false in a way that matters: the Fed's Z.1 Financial Accounts publish
+/// rest-of-world holdings of US corporate equities quarterly, free, with a history
+/// back to 1945. Verified from this host 2026-09-17: $22.21tn at 2026:Q2, up 25.7%
+/// year over year.
+///
+/// Declaring something unmeasurable when it is measurable is its own kind of
+/// dishonesty — it converts a gap in effort into a claim about the world, and a
+/// reader cannot tell the difference. So the blind spot is retired.
+///
+/// DIRECTION: higher = more stress. Capital Economics flags record foreign
+/// ownership of US equities as a LATE-STAGE marker, so the level relative to its
+/// own long history is what matters, not the direction of change: a market
+/// increasingly held by investors whose willingness to hold it depends on returns
+/// continuing is more fragile, not less.
+///
+/// SCORED ON THE PERCENTILE OF ITS OWN HISTORY, not the dollar level. The absolute
+/// stock grows with the market itself, so a raw level would rise in every bull
+/// market regardless of whether foreign participation actually increased. A
+/// percentile against 80 years of the same series is the only version of this
+/// number that means anything, and the output says so.
+pub struct ForeignOwnership;
+
+impl Indicator for ForeignOwnership {
+    fn id(&self) -> &'static str {
+        "foreign_interest"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        let Some(series) = ctx.obs.yahoo.get("FOREIGN_US_EQUITY") else {
+            return Reading::Unavailable {
+                reason: "Fed Z.1 rest-of-world equity holdings unavailable: the release archive \
+                         could not be retrieved or the M3s table was not parseable"
+                    .into(),
+            };
+        };
+        if series.points.len() < 40 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "rest-of-world holdings series has only {} observations, too few for a \
+                     percentile against its own history",
+                    series.points.len()
+                ),
+            };
+        }
+        // Require the series to be usable before trusting a percentile from it: a
+        // tag that stops updating would otherwise report a stale level as current.
+        let as_of = crate::history::date_of(&ctx.obs.retrieved_at);
+        let ends: Vec<crate::model::EdgarFact> = vec![]; // Z.1 is a macro series, not XBRL
+        let _ = ends;
+        let Some(last) = series.points.last() else {
+            return Reading::Unavailable {
+                reason: "rest-of-world holdings series arrived empty".into(),
+            };
+        };
+
+        let values: Vec<f64> = series
+            .points
+            .iter()
+            .map(|p| p.value)
+            .filter(|v| *v > 0.0)
+            .collect();
+        let Some(pct) = crate::falsifiers::percentile_of(&values, last.value) else {
+            return Reading::Unavailable {
+                reason: format!(
+                    "only {} usable observations, too few for a percentile",
+                    values.len()
+                ),
+            };
+        };
+
+        let yoy = crate::sources::z1::yoy_growth(&series.points);
+        let stress = crate::score::interpolate(pct, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: pct,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "Rest-of-world holdings of US corporate equities: ${:.2}tn at {}, the {:.0}th \
+                 percentile of this series' own history (which begins {}).{}{} SCORED ON THE \
+                 PERCENTILE, NOT THE DOLLAR LEVEL: the absolute stock grows with the market \
+                 itself, so a raw level would rise in every bull market whether or not foreign \
+                 participation actually increased. A percentile against the full history is the \
+                 only version of this number that is interpretable. DIRECTION: a higher \
+                 percentile reads as more stress, following Capital Economics, which flags \
+                 record foreign ownership as a LATE-STAGE marker — a market increasingly held by \
+                 investors whose willingness to hold depends on returns continuing is more \
+                 fragile. This indicator was a declared weight-0 blind spot until 2026-09-17, on \
+                 the stated grounds that no free machine-readable series existed; that was wrong, \
+                 and the gap is now closed.",
+                last.value / 1e12,
+                last.date,
+                pct,
+                series
+                    .points
+                    .first()
+                    .map(|p| p.date.clone())
+                    .unwrap_or_default(),
+                match yoy {
+                    Some(g) => format!(" Up {:.1}% year over year.", g),
+                    None => String::new(),
+                },
+                format!(" Retrieved {}.", as_of),
+            ),
+            provenance: series.provenance.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

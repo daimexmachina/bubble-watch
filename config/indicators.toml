@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.4"
+schema_version = "1.5"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -481,74 +481,43 @@ anchors = [[-10.0, 5.0], [0.0, 15.0], [8.0, 32.0], [16.0, 50.0], [25.0, 68.0], [
 [[indicator]]
 id = "foreign_interest"
 label = "Foreign ownership of US equities"
-weight = 0.0
-source = "none"
-unit = "pct of US equity market held by foreign investors"
-rationale = "Capital Economics flags record foreign ownership of US equities as a late-stage marker, and it has reached an all-time high. There is no free, machine-readable series for it at the required timeliness, so it is carried with weight 0 as an explicitly acknowledged blind spot rather than being silently dropped. It does not affect the composite. A future version could pick it up from the Treasury TIC data releases (monthly, published as HTML tables)."
-anchors = [[0.0, 0.0], [100.0, 100.0]]
-
+weight = 5.0
+unit = "percentile of rest-of-world US corporate equity holdings within the series' own history"
+source = "fed-z1"
 # ---------------------------------------------------------------------------
-# DECLARED GAP — circularity in AI-related financing.
+# THE DECLARED GAP WAS WRONG, and it is retired here rather than quietly dropped.
 #
-# This is the most consequential omission in the model, and it is deliberate
-# rather than accidental, so it is declared here at weight 0 (visible in every
-# report, contributing nothing) instead of being left out of the config
-# silently.
+# This indicator carried weight 0 with the rationale "There is no free,
+# machine-readable series for it at the required timeliness, so it is carried with
+# weight 0 as an explicitly acknowledged blind spot." That was false. The Fed's Z.1
+# Financial Accounts publish rest-of-world holdings of US corporate equities
+# quarterly, free, no key, with history back to 1945 — series FL263064105.Q in the
+# M3s table, read through the same archive the private-credit indicator already
+# uses.
 #
-# THE PATTERN BEING MISSED. Capital flows in a loop rather than arriving from
-# outside: a hyperscaler takes an equity stake in an AI lab or "neocloud" (the
-# GPU-rental firms), and the investee then commits to buying compute, chips or
-# cloud capacity back from its investor. A chip vendor invests in the same
-# customers that buy its chips. Sometimes the same money is counted as revenue
-# by several parties in the loop. Two consequences follow, and both are the
-# reasons this matters for a bubble diagnosis specifically:
+# Verified from this host 2026-09-17: $22.21tn at 2026:Q2, up 25.7% year over year,
+# against $8.13tn as recently as 2019:Q4.
 #
-#   1. Revenue is not independent corroboration. A sale to a company you funded
-#      is partly your own capital returning, so reported demand can overstate
-#      demand from outside the loop. Bubble accounting needs to distinguish
-#      externally-funded demand from internally-recycled demand, and this model
-#      cannot.
-#   2. It converts an equity risk into a revenue risk. If the underlying
-#      valuation falls, the investee's ability to keep buying falls with it, so
-#      the same shock hits the investor's balance sheet, its revenue and its
-#      reported earnings at once. Losses correlate in a way that ordinary
-#      arm's-length sales do not.
-#
-# WHY IT IS NOT SCORED. The measure needed is a RELATIONSHIP between companies —
-# who invested in whom, how much, and what share of the counterparty's revenue
-# flows back to the investor. Every indicator in this config is either a market
-# price or an audited aggregate for one company, so the data model has no place
-# to put an edge between two companies. The specific gap:
-#
-#   * SEC XBRL exposes no reliable machine-readable link between an equity
-#     investment and the revenue that investment generates. Probed from this
-#     host: the customer-concentration tags that would carry it
-#     (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP
-#     404 for MSFT — that disclosure lives in 10-K narrative text rather than in
-#     a tagged concept.
-#   * The most central counterparties are not in the scored cohort. NVIDIA is
-#     absent from it, and the large private AI labs file no public financials at
-#     all, so the largest nodes in the loop are outside the measurable set.
-#
-# THE AVAILABLE TAG IS NOT A SUBSTITUTE, and this is the trap. Company-concept
-# data for us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and
-# returns real values (measured from this host: GOOGL, MSFT, AMZN, META and NVDA
-# all report it). But it is a mark-to-market P&L figure — the change in value of
-# equity stakes held — not the amount invested and not the revenue flowing back.
-# A large unrealized gain means the stake appreciated; it says nothing about
-# whether the counterparty's purchases were funded by the same investor. Using it
-# as a circularity proxy would be exactly the fabricated-precision this tool
-# exists to prevent, so it is deliberately NOT used, not even at weight 0 as a
-# signal. It is named here so the next reader does not "fix" the omission with it.
-#
-# DIRECTION OF THE BLIND SPOT — stated because it matters more than the gap
-# itself. This omission biases the composite DOWNWARD, toward "calm". The
-# fundamentals indicators read capex as genuine demand and divide by revenue, so
-# recycled flows inflate the numerator and the denominator together: capex
-# reads as investment rather than as self-dealing, and capex/revenue is understated.
-# The composite therefore UNDERSTATES this particular risk and can never overstate
-# it. A calm reading carries even less reassurance than usual on this point.
+# Declaring something unmeasurable when it is measurable is its own kind of
+# dishonesty: it converts a gap in effort into a claim about the world, and a reader
+# cannot tell the difference from the outside. So it is scored now, and the change
+# is recorded here rather than made silently.
 # ---------------------------------------------------------------------------
+# SCORED ON THE PERCENTILE OF ITS OWN HISTORY, not the dollar level. The absolute
+# stock grows with the market itself, so a raw level would rise in every bull market
+# whether or not foreign participation increased. A percentile against 80 years of
+# the same series is the only interpretable version of this number.
+#
+# DIRECTION: higher = more stress. Capital Economics flags record foreign ownership
+# as a LATE-STAGE marker: a market increasingly held by investors whose willingness
+# to hold depends on returns continuing is more fragile, not less.
+#
+# Anchors put a mid-history reading near the middle, and the top of the scale at
+# readings only seen in the most extreme episodes. Kept deliberately conservative at
+# the low end, because foreign participation rising from a low base is not itself
+# evidence of anything.
+rationale = "How much of the US equity market is held by foreign investors, expressed as a percentile of the series' own history. Capital Economics flags record foreign ownership of US equities as a late-stage marker, and the Fed's Z.1 Financial Accounts carry it directly: series FL263064105.Q, 'Rest of the world; U.S. corporate equities; asset', quarterly, free, no key, history from 1945. Measured 2026-09-17: $22.21tn at 2026:Q2, up 25.7% year over year, against $8.13tn at 2019:Q4. THIS INDICATOR WAS A DECLARED BLIND SPOT AT WEIGHT 0 UNTIL 2026-09-17, on the stated grounds that no free machine-readable series existed at the required timeliness — that claim was false, and the gap is retired rather than quietly dropped. Scored on the PERCENTILE of its own history, not the dollar level: the absolute stock grows with the market itself, so a raw level would rise in every bull market whether or not foreign participation actually increased. DIRECTION: a higher percentile reads as more stress, following Capital Economics' treatment of record foreign ownership as a late-stage marker — a market increasingly held by investors whose willingness to hold depends on returns continuing is more fragile. Limitation: Z.1 reports holdings including valuation changes, so a rising series partly reflects US equities outperforming rather than foreign investors buying more."
+anchors = [[5.0, 6.0], [25.0, 14.0], [50.0, 26.0], [70.0, 42.0], [85.0, 60.0], [95.0, 80.0], [99.0, 92.0]]
 [[indicator]]
 id = "circularity"
 label = "Circular financing in the AI buildout (not measured)"

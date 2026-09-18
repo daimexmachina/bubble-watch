@@ -145,6 +145,20 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // Rest-of-world holdings of US corporate equities — the previously declared
+    // "unmeasurable" blind spot. Same archive, different table; the Fetcher cache
+    // means the 8MB download is reused rather than repeated.
+    match z1::series_from_m3(f, z1::SERIES_FOREIGN_EQUITY) {
+        Ok(series) => {
+            obs.yahoo.insert("FOREIGN_US_EQUITY".to_string(), series);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "fed-z1".into(),
+            endpoint: format!("{} :: M3s {}", z1::Z1_URL, z1::SERIES_FOREIGN_EQUITY),
+            reason: e,
+        }),
+    }
+
     for (ticker, cik, name) in edgar::COHORT {
         let cf = edgar::company(f, ticker, cik, name);
         // Record a failure when a filer yielded nothing at all, so the gap is
@@ -179,7 +193,11 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
     let yahoo_ok = obs
         .yahoo
         .keys()
-        .filter(|k| !k.starts_with("S1_REGISTRATIONS") && !k.starts_with("PRIVATE_CREDIT"))
+        .filter(|k| {
+            !k.starts_with("S1_REGISTRATIONS")
+                && !k.starts_with("PRIVATE_CREDIT")
+                && !k.starts_with("FOREIGN_US_EQUITY")
+        })
         .count();
     let yahoo_fail = obs.failures.iter().filter(|x| x.source == "yahoo").count();
     out.push(SourceHealth {
@@ -258,7 +276,7 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
     let z1_ok = obs
         .yahoo
         .keys()
-        .filter(|k| k.starts_with("PRIVATE_CREDIT"))
+        .filter(|k| k.starts_with("PRIVATE_CREDIT") || k.starts_with("FOREIGN_US_EQUITY"))
         .count();
     let z1_fail = obs.failures.iter().filter(|x| x.source == "fed-z1").count();
     out.push(SourceHealth {

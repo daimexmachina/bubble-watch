@@ -51,6 +51,17 @@ pub const SERIES_ALL_SECTORS: &str = "FL893167205.Q";
 /// Series id for the nonfinancial corporate share.
 pub const SERIES_CORPORATE: &str = "FL103167205.Q";
 
+/// Series id for REST OF WORLD holdings of US corporate equities.
+///
+/// This is the `foreign_interest` blind spot, and it turns out to be measurable.
+/// Verified 2026-09-17 from the Fed's Z.1 M3s table: $22.21tn at 2026:Q2, up
+/// 25.7% year over year, with a quarterly history back to 1945. The config
+/// previously declared "no free, machine-readable series for it at the required
+/// timeliness" — that claim was wrong.
+pub const SERIES_FOREIGN_EQUITY: &str = "FL263064105.Q";
+/// Table holding the foreign-holdings series (the Z.1 levels matrix).
+const TABLE_M3: &str = "csv/M3s_Q.csv";
+
 /// A descriptive UA is required by federal endpoints.
 const UA: &str = "bubble-watch/0.1 (research tool; contact via repository)";
 
@@ -175,6 +186,23 @@ pub fn normalise_date(q: &str) -> Option<String> {
         _ => return None,
     };
     Some(format!("{:04}-{:02}-{:02}", year, m, d))
+}
+
+/// Fetch a series from the Z.1 M3s levels matrix (a different table from F4.4).
+pub fn series_from_m3(f: &crate::http::Fetcher, series_id: &str) -> Result<Series, String> {
+    let bytes = f.get_bytes(Z1_URL, UA)?;
+    let text = read_zip_entry(&bytes, TABLE_M3)?;
+    let points = parse_series(&text, series_id)?;
+    let last = points.last().map(|p| p.date.clone()).unwrap_or_default();
+    Ok(Series {
+        provenance: Provenance {
+            source: "fed-z1".into(),
+            endpoint: format!("{} :: {} :: {}", Z1_URL, TABLE_M3, series_id),
+            as_of: last,
+            retrieved_at: crate::now_iso8601(),
+        },
+        points,
+    })
 }
 
 /// Trailing-twelve-month growth of a quarterly series, as a percentage.
