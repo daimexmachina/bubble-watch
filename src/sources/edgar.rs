@@ -76,6 +76,20 @@ pub const TAGS_LEASE: &[&str] = &[
     "OperatingLeaseLiabilityNoncurrent",
 ];
 
+/// Long-term debt maturities by year, for the refinancing-timing question.
+///
+/// Verified 2026-09-17: resolves for all five scored filers. This is what makes
+/// "who might be tested first" answerable — the LEVEL of debt says how exposed a
+/// company is, but the SCHEDULE says when, and for this cohort the schedule is
+/// the surprising part: near-term maturities are small for every filer, so a
+/// classic maturity wall is not the mechanism in this cycle.
+pub const TAGS_DEBT_DUE_1Y: &[&str] =
+    &["LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths"];
+pub const TAGS_DEBT_DUE_2Y: &[&str] = &["LongTermDebtMaturitiesRepaymentsOfPrincipalInYearTwo"];
+pub const TAGS_DEBT_DUE_3Y: &[&str] = &["LongTermDebtMaturitiesRepaymentsOfPrincipalInYearThree"];
+pub const TAGS_DEBT_DUE_AFTER: &[&str] =
+    &["LongTermDebtMaturitiesRepaymentsOfPrincipalAfterYearFive"];
+
 /// Unconditional purchase obligations: take-or-pay commitments that fall due
 /// whether or not the demand materialises.
 ///
@@ -378,6 +392,18 @@ pub fn company(f: &Fetcher, ticker: &str, cik: &str, name: &str) -> CompanyFacts
     }
     if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_DEFERRED_REVENUE), "USD", true) {
         cf.deferred_revenue = v;
+    }
+    for (tag, slot) in [
+        (TAGS_DEBT_DUE_1Y, 0usize),
+        (TAGS_DEBT_DUE_2Y, 1),
+        (TAGS_DEBT_DUE_3Y, 2),
+    ] {
+        if let Ok(Some(v)) = resolve(f, cik, &usgaap(tag), "USD", true) {
+            cf.debt_due[slot] = v;
+        }
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_DEBT_DUE_AFTER), "USD", true) {
+        cf.debt_due_after = v;
     }
 
     let _ = ticker;

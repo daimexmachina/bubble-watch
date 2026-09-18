@@ -452,6 +452,7 @@ mod tests {
                 band_note: None,
             },
             trend: Trend::empty("no history in this test"),
+            exposure: Vec::new(),
             explosiveness: None,
             indicators: inds,
             data_quality: DataQuality {

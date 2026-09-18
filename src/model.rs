@@ -80,6 +80,10 @@ pub struct CompanyFacts {
     /// Contract liability / deferred revenue: cash billed but not yet recognised.
     /// The contrast with `rpo` is what reveals whether backlog converts to cash.
     pub deferred_revenue: Vec<EdgarFact>,
+    /// Long-term debt maturing within 1, 2 and 3 years, indexed 0..2.
+    pub debt_due: [Vec<EdgarFact>; 3],
+    /// Long-term debt maturing after five years.
+    pub debt_due_after: Vec<EdgarFact>,
 }
 
 impl CompanyFacts {
@@ -489,6 +493,10 @@ pub struct Report {
     /// Direction of travel since an eligible baseline. CONTEXT ONLY — it never
     /// enters the composite.
     pub trend: Trend,
+    /// Per-company exposure ranking. CONTEXT ONLY — company-level analysis never
+    /// enters a market-level composite.
+    #[serde(default)]
+    pub exposure: Vec<crate::exposure::CompanyExposure>,
     /// GSADF explosiveness test on the price series. A different KIND of evidence
     /// from every indicator here: a formal hypothesis test rather than a
     /// hand-anchored judgement. Deliberately NOT folded into the composite, and

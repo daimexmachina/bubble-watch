@@ -471,6 +471,47 @@ fn print_human(r: &bubble_watch::model::Report) {
     println!("{}", "-".repeat(72));
     println!("{}", r.phase_label);
 
+    // Per-company exposure. CONTEXT, not part of the composite: company-level
+    // analysis and a market-level score answer different questions.
+    if !r.exposure.is_empty() {
+        println!();
+        println!("PER-COMPANY EXPOSURE (context only - never enters the composite)");
+        println!(
+            "{:<8}{:>11}{:>11}{:>9}{:>14}{:>11}",
+            "COMPANY", "debt/CFO", "due<1y/CFO", "leases", "commitments", "RPO/rev"
+        );
+        for e in &r.exposure {
+            let fmt = |v: Option<f64>, partial: bool| match v {
+                Some(x) => format!("{:.2}", x),
+                // Never render a missing value as 0.00. An absent disclosure is
+                // not a small number.
+                None => {
+                    if partial {
+                        "n/d".to_string()
+                    } else {
+                        "-".to_string()
+                    }
+                }
+            };
+            println!(
+                "{:<8}{:>11}{:>11}{:>9}{:>14}{:>11}",
+                e.ticker,
+                fmt(e.debt_to_cfo, false),
+                fmt(e.near_term_to_cfo, false),
+                fmt(e.lease_to_cfo, false),
+                fmt(e.commitments_to_cfo, e.is_partial()),
+                fmt(e.rpo_to_revenue, false)
+            );
+        }
+        println!("  'n/d' = not disclosed; a missing figure is named, never shown as 0.00.");
+        println!("  Ordered most-exposed first by a simple rank key, not a probability.");
+        for e in &r.exposure {
+            for n in &e.notes {
+                println!("    {}: {}", e.ticker, n);
+            }
+        }
+    }
+
     // The second, independent method. Printed next to the composite and never
     // reconciled with it: if the two disagree, that IS the finding.
     match &r.explosiveness {

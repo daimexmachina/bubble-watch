@@ -65,6 +65,11 @@ pub fn build_with_history(
 
     let analog = crate::phase::analog_window(comp_opt, coverage, cfg);
 
+    // Per-company exposure. A different level of analysis from the composite —
+    // market-level configuration versus who carries the risk — so it is context
+    // and never folded in.
+    let exposure = crate::exposure::build(obs, &crate::history::date_of(generated_at));
+
     // GSADF explosiveness test. A second, independent method: a formal test with
     // a published pedigree, rather than an anchored judgement. Reported alongside
     // the composite and never reconciled with it, because the tension between the
@@ -302,6 +307,7 @@ pub fn build_with_history(
         },
         analog,
         trend,
+        exposure,
         explosiveness,
         indicators: readings,
         data_quality: DataQuality {
