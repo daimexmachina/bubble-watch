@@ -29,7 +29,21 @@ fi
 rc=$?
 
 # Also keep a dated copy of the JSON report for offline inspection.
-"$BIN" report --out "$REPO/out" --name "ai-bubble-watch-$(date +%F)" \
+#
+# The DATE COMES FROM THE RUN, NOT FROM THE SHELL. Using `date +%F` takes the LOCAL
+# date, while the archive records runs in UTC — so after 17:00 Pacific the two
+# disagree and a report gets filed under yesterday's name next to an archive entry
+# dated tomorrow. Deriving both from the same generated_at keeps them consistent.
+RUN_DATE="$("$BIN" score --json 2>/dev/null \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["generated_at"][:10])' 2>/dev/null \
+  || true)"
+# Fall back to the local date only if the run could not be read, and say so.
+if [ -z "$RUN_DATE" ]; then
+  RUN_DATE="$(date +%F)"
+  echo "WARNING: could not read generated_at from the run; falling back to the local date $RUN_DATE" >&2
+fi
+
+"$BIN" report --out "$REPO/out" --name "ai-bubble-watch-$RUN_DATE" \
   --history-dir "$REPO/data/history" --no-record >/dev/null || true
 
 exit $rc
