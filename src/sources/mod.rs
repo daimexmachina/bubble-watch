@@ -1,5 +1,6 @@
 //! Source registry: the only module allowed to touch the network.
 
+pub mod census;
 pub mod edgar;
 pub mod fred;
 pub mod fulltext;
@@ -145,6 +146,21 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // Census C30 data-center construction. The only PHYSICAL, financial-market-
+    // independent series in the model: dollars actually spent on steel and concrete,
+    // from the government's own construction survey.
+    match census::data_center(f) {
+        Ok(series) => {
+            obs.yahoo
+                .insert("DATACENTER_CONSTRUCTION".to_string(), series);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "census-c30".into(),
+            endpoint: format!("{} :: '{}'", census::URL, census::LINE_ITEM),
+            reason: e,
+        }),
+    }
+
     // Rest-of-world holdings of US corporate equities — the previously declared
     // "unmeasurable" blind spot. Same archive, different table; the Fetcher cache
     // means the 8MB download is reused rather than repeated.
@@ -197,6 +213,7 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
             !k.starts_with("S1_REGISTRATIONS")
                 && !k.starts_with("PRIVATE_CREDIT")
                 && !k.starts_with("FOREIGN_US_EQUITY")
+                && !k.starts_with("DATACENTER")
         })
         .count();
     let yahoo_fail = obs.failures.iter().filter(|x| x.source == "yahoo").count();
@@ -285,6 +302,24 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
         ok_count: z1_ok,
         failed_count: z1_fail,
         detail: "Fed Z.1 F4.4 private-credit lending (8MB archive)".into(),
+    });
+
+    let c30_ok = obs
+        .yahoo
+        .keys()
+        .filter(|k| k.starts_with("DATACENTER"))
+        .count();
+    let c30_fail = obs
+        .failures
+        .iter()
+        .filter(|x| x.source == "census-c30")
+        .count();
+    out.push(SourceHealth {
+        name: "census-c30".into(),
+        status: status_for(c30_ok, c30_fail),
+        ok_count: c30_ok,
+        failed_count: c30_fail,
+        detail: "Census C30 data-center construction spending (monthly)".into(),
     });
 
     out.push(SourceHealth {

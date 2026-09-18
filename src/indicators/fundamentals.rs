@@ -918,6 +918,111 @@ impl Indicator for ForeignOwnership {
     }
 }
 
+/// Data-center construction spending, from the US government's own survey.
+///
+/// THE ONLY PHYSICAL SERIES IN THIS MODEL. Every other indicator here is a price,
+/// a credit spread, or a set of financial statements — all of them financial CLAIMS
+/// about the buildout, and all of them capable of moving on sentiment alone. This
+/// is the buildout itself, measured in dollars spent on steel and concrete by the
+/// Census Bureau's Construction Spending survey. It cannot be talked up.
+///
+/// Measured from this host 2026-09-17, full-year totals:
+///   2015  $2,745M     2023  $19,995M
+///   2019  $8,483M     2024  $34,797M  (+74.0%)
+///   2021  $9,949M     2025  $49,737M  (+42.9%)
+///   latest month Jul-2026 $6,551M, +58.5% year over year
+///
+/// SCORED ON YEAR-OVER-YEAR GROWTH, NOT LEVEL, and the direction is deliberately
+/// INVERTED relative to most indicators here. A large and stable construction
+/// market is not a bubble signal; what matters is whether spending is ACCELERATING
+/// beyond what the demand can absorb. So the anchors treat moderate growth as
+/// ordinary and only extreme acceleration as high stress.
+///
+/// THIS IS THE ONLY INDICATOR WHOSE HIGH READING IS GENUINELY DOUBLE-EDGED, and the
+/// output says so. Rapid construction growth is evidence of the boom being real and
+/// large — which is exactly what makes an eventual bust costly. A reader could
+/// reasonably read a high value here as confirmation of the thesis or as evidence
+/// of a durable buildout, and this tool does not pretend to resolve that.
+///
+/// LIMITATIONS, stated in the output:
+///   * it measures BUILDINGS, not the IT hardware inside them, so it captures the
+///     shell and not the chips;
+///   * nominal dollars, NOT deflated — input-cost inflation in transformers,
+///     switchgear and labour inflates this line without any new capacity;
+///   * Census added this line item only in the May 2024 release, with estimates from
+///     January 2014, so there is no data-center series covering 2000 or 2008 and the
+///     scale describes THIS boom's range rather than a full cycle;
+///   * the latest month is preliminary and revised for two years afterwards, so the
+///     most recent point is the least reliable.
+pub struct DataCenterConstruction;
+
+impl Indicator for DataCenterConstruction {
+    fn id(&self) -> &'static str {
+        "datacenter_construction"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        let Some(series) = ctx.obs.yahoo.get("DATACENTER_CONSTRUCTION") else {
+            return Reading::Unavailable {
+                reason: "Census C30 data-center construction series unavailable: the workbook \
+                         could not be retrieved or the line item was not parseable"
+                    .into(),
+            };
+        };
+        let Some(growth) = crate::sources::census::yoy(&series.points) else {
+            return Reading::Unavailable {
+                reason: "data-center construction series has no observation twelve months back, \
+                         so year-over-year growth cannot be computed"
+                    .into(),
+            };
+        };
+        let last = series.points.last();
+        let stress = crate::score::interpolate(growth, &ic.anchors);
+
+        // The most recent month is preliminary and revised for two years, so say so
+        // rather than presenting it with the same confidence as settled data.
+        let prelim = if series.provenance.as_of.contains('p') {
+            " The latest month is PRELIMINARY and will be revised for up to two years, so the \
+             newest point is the least reliable."
+        } else {
+            ""
+        };
+
+        Reading::Scored {
+            stress,
+            value: growth,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "Data-center construction spending grew {:.1}% year over year{}. This is the \
+                 only PHYSICAL series in the model — dollars actually spent on buildings, from \
+                 the Census Bureau's construction survey — so unlike every price and credit \
+                 measure here it cannot be moved by sentiment. READ IT AS DOUBLE-EDGED: rapid \
+                 growth is evidence the boom is real and large, which is precisely what makes an \
+                 eventual bust costly, so a high reading is consistent with both a bubble thesis \
+                 and a durable buildout. This tool does not claim to resolve that. LIMITATIONS: \
+                 it measures buildings and not the IT hardware inside them; the dollars are \
+                 NOMINAL and not deflated, so input-cost inflation inflates this line without any \
+                 new capacity; Census added the line item only in the May 2024 release with \
+                 estimates from January 2014, so no data-center series covers 2000 or 2008 and the \
+                 scale describes this boom's range rather than a full cycle.{}",
+                growth,
+                last.map(|l| format!(" (latest month {} at ${:.0}M)", l.date, l.value / 1e6))
+                    .unwrap_or_default(),
+                prelim
+            ),
+            provenance: series.provenance.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

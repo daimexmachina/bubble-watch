@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.5"
+schema_version = "1.6"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -507,6 +507,45 @@ unit = "pct, year-over-year growth in private-credit loans outstanding"
 source = "fed-z1"
 rationale = "How fast the private-credit channel is expanding, which the two public spread indicators cannot see because private credit does not trade and so has no index spread. BIS Bulletin 120 identifies private credit as taking a rapidly increasing role in financing the AI buildout. Measured 2026-09-17 from the Fed's Z.1 F4.4 table: all-sector private-credit loans went from roughly $1.1tn (2024:Q1) to $1.5tn (2026:Q2), about +36% in ten quarters, while the public high-yield index spread barely moved. CRITICAL LIMITATION: Z.1 reports private credit as a TOTAL FOR THE WHOLE ECONOMY, not for AI. Nothing in the free data attributes an individual private loan to a data-centre or GPU borrower, so this measures the size and growth of the financing CHANNEL and not the amount reaching AI. Growth here is consistent with the BIS thesis and does not establish it. Scored on GROWTH rather than level, because the outstanding stock is not itself a bubble signal whereas rapid expansion is what the BIS claim actually asserts."
 anchors = [[-10.0, 5.0], [0.0, 15.0], [8.0, 32.0], [16.0, 50.0], [25.0, 68.0], [35.0, 84.0], [50.0, 95.0]]
+
+# ---------------------------------------------------------------------------
+# Data-center construction (NEW, methodology 1.6).
+#
+# THE ONLY PHYSICAL SERIES IN THE MODEL. Every other indicator is a price, a credit
+# spread, or financial statements — all financial CLAIMS about the buildout, and all
+# capable of moving on sentiment. This is dollars actually spent on buildings, from
+# the US Census Bureau's Construction Spending survey, so it cannot be talked up.
+#
+# Measured from this host 2026-09-17, full-year totals ($M):
+#   2015   2,745      2022  12,583
+#   2019   8,483      2023  19,995
+#   2021   9,949      2024  34,797  (+74.0% YoY)
+#                     2025  49,737  (+42.9% YoY)
+#   latest month Jul-2026 = 6,551, +58.5% year over year
+#
+# SOURCE: census.gov/construction/c30/xlsx/privtime.xlsx — an xlsx, because there is
+# no CSV and no keyless API (the EITS endpoint returns "Missing Key" and FRED carries
+# the aggregate construction series but NOT the data-center line item). Read with
+# the same zip support already present for the Fed Z.1 work.
+#
+# SCORED ON YEAR-OVER-YEAR GROWTH, NOT LEVEL. A large and stable construction market
+# is not a bubble signal; accelerating spend beyond what demand can absorb is. The
+# anchors therefore treat moderate growth as ordinary and only extreme acceleration
+# as high stress.
+#
+# DOUBLE-EDGED, AND THE OUTPUT SAYS SO. Rapid construction growth is evidence the
+# boom is real and large — which is exactly what makes a bust costly. A high reading
+# here is consistent with BOTH the bubble thesis and a durable buildout, and this
+# tool does not claim to resolve that.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "datacenter_construction"
+label = "Data-center construction spending (physical)"
+weight = 7.0
+unit = "pct, year-over-year growth in US data-center construction spending"
+source = "census-c30"
+rationale = "The only PHYSICAL series in this model: dollars actually spent building data centres, from the US Census Bureau's Construction Spending survey, rather than a price or a credit spread that could move on sentiment alone. Measured 2026-09-17, full-year totals: 2015 $2,745M; 2019 $8,483M; 2021 $9,949M; 2022 $12,583M; 2023 $19,995M; 2024 $34,797M (+74.0%); 2025 $49,737M (+42.9%); latest month Jul-2026 $6,551M, up 58.5% year over year. Scored on year-over-year GROWTH rather than level, because a large and stable construction market is not a bubble signal whereas accelerating spend beyond what demand can absorb is. DELIBERATELY DOUBLE-EDGED, and the output says so: rapid construction growth is evidence the boom is real and large, which is precisely what makes an eventual bust costly, so a high reading is consistent with both the bubble thesis and a durable buildout. LIMITATIONS: measures buildings and not the IT hardware inside them; nominal dollars, not deflated, so input-cost inflation inflates the line without new capacity; Census added the line item only in the May 2024 release with estimates from January 2014, so no data-center series covers 2000 or 2008 and the scale describes this boom rather than a full cycle."
+anchors = [[-15.0, 5.0], [0.0, 12.0], [10.0, 21.0], [25.0, 34.0], [40.0, 50.0], [60.0, 68.0], [85.0, 84.0], [120.0, 95.0]]
 
 [[indicator]]
 id = "foreign_interest"
