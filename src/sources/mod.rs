@@ -4,6 +4,7 @@ pub mod edgar;
 pub mod fred;
 pub mod fulltext;
 pub mod yahoo;
+pub mod z1;
 
 use crate::http::Fetcher;
 use crate::model::{Observations, Series, SourceFailure};
@@ -131,6 +132,19 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // Fed Z.1 private-credit lending. One 8MB archive yields both series, so it
+    // is fetched once and both columns are parsed from it.
+    match z1::private_credit(f, z1::SERIES_ALL_SECTORS, "all sectors private credit") {
+        Ok(series) => {
+            obs.yahoo.insert("PRIVATE_CREDIT_ALL".to_string(), series);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "fed-z1".into(),
+            endpoint: format!("{} :: F4.4 {}", z1::Z1_URL, z1::SERIES_ALL_SECTORS),
+            reason: e,
+        }),
+    }
+
     for (ticker, cik, name) in edgar::COHORT {
         let cf = edgar::company(f, ticker, cik, name);
         // Record a failure when a filer yielded nothing at all, so the gap is
@@ -165,7 +179,7 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
     let yahoo_ok = obs
         .yahoo
         .keys()
-        .filter(|k| !k.starts_with("S1_REGISTRATIONS"))
+        .filter(|k| !k.starts_with("S1_REGISTRATIONS") && !k.starts_with("PRIVATE_CREDIT"))
         .count();
     let yahoo_fail = obs.failures.iter().filter(|x| x.source == "yahoo").count();
     out.push(SourceHealth {
@@ -241,6 +255,20 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
         .iter()
         .filter(|x| x.source == "sec-edgar-fulltext")
         .count();
+    let z1_ok = obs
+        .yahoo
+        .keys()
+        .filter(|k| k.starts_with("PRIVATE_CREDIT"))
+        .count();
+    let z1_fail = obs.failures.iter().filter(|x| x.source == "fed-z1").count();
+    out.push(SourceHealth {
+        name: "fed-z1".into(),
+        status: status_for(z1_ok, z1_fail),
+        ok_count: z1_ok,
+        failed_count: z1_fail,
+        detail: "Fed Z.1 F4.4 private-credit lending (8MB archive)".into(),
+    });
+
     out.push(SourceHealth {
         name: "sec-edgar-fulltext".into(),
         status: status_for(ft_ok, ft_fail),

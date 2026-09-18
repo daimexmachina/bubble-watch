@@ -92,6 +92,104 @@ impl Indicator for CreditIg {
     }
 }
 
+/// Private-credit lending growth: the financing channel the public spreads miss.
+///
+/// WHY THIS INDICATOR EXISTS. `credit_hy` and `credit_ig` read PUBLIC bond index
+/// spreads. BIS Bulletin 120 (Jan 2026) documents that AI-related financing is
+/// shifting from operating cash flow toward debt with **private credit playing a
+/// rapidly increasing role** — and private credit appears in no index spread,
+/// because it is not traded. This measures that channel's size and growth.
+///
+/// Measured from this host 2026-09-17, from the Fed's own F4.4 table:
+///   all sectors' private-credit loans   $1.1tn (2024:Q1) -> $1.5tn (2026:Q2),
+///   roughly +36% in ten quarters, while the public high-yield index spread has
+///   barely moved.
+///
+/// THE LIMITATION IS SEVERE AND IS STATED IN THE OUTPUT, not only here. Z.1
+/// reports private credit as a TOTAL for the entire economy. It is NOT AI-specific
+/// and nothing in the free data attributes a private loan to a data-centre or GPU
+/// borrower. So this measures the size and growth of the CHANNEL, not the amount
+/// reaching AI. A high reading is consistent with the BIS thesis and does not
+/// confirm it. It is included because a growing share of this cycle's debt is
+/// being originated where the tool was not looking, and silently ignoring that
+/// would be worse than measuring it with a caveat.
+///
+/// SCORED ON GROWTH, NOT LEVEL. The level of economy-wide private credit is not a
+/// bubble signal at all; a large and stable stock is unremarkable. What matters is
+/// rapid expansion, which is what "private credit is playing a rapidly increasing
+/// role" actually asserts. Scoring the level would read every year as alarming.
+pub struct PrivateCreditGrowth;
+
+impl Indicator for PrivateCreditGrowth {
+    fn id(&self) -> &'static str {
+        "private_credit_growth"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        let Some(series) = ctx.obs.yahoo.get("PRIVATE_CREDIT_ALL") else {
+            return Reading::Unavailable {
+                reason: "Fed Z.1 private-credit series unavailable: the release archive could \
+                         not be retrieved or the table was not parseable"
+                    .into(),
+            };
+        };
+
+        let Some(growth) = crate::sources::z1::yoy_growth(&series.points) else {
+            return Reading::Unavailable {
+                reason: format!(
+                    "private-credit series has only {} observations, too few for a \
+                     year-over-year comparison",
+                    series.points.len()
+                ),
+            };
+        };
+
+        let last = series.points.last();
+        let prior = series.points.get(series.points.len().saturating_sub(5));
+        let level_note = match (last, prior) {
+            (Some(l), Some(p)) => format!(
+                "Level: ${:.2}tn at {}, against ${:.2}tn a year earlier.",
+                l.value / 1e12,
+                l.date,
+                p.value / 1e12
+            ),
+            _ => String::new(),
+        };
+
+        let stress = crate::score::interpolate(growth, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: growth,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "Private-credit lending grew {:.1}% year over year. {}. This is the channel \
+                 BIS Bulletin 120 identifies as taking a rapidly increasing role in financing \
+                 the buildout, and it appears in NEITHER of the public credit-spread indicators \
+                 above because private credit is not traded and so has no index spread. \
+                 CRITICAL LIMITATION, please do not over-read this number: Z.1 reports private \
+                 credit as a TOTAL FOR THE WHOLE ECONOMY. It is not AI-specific, and nothing in \
+                 the free data attributes an individual private loan to a data-centre or GPU \
+                 borrower. This measures the size and growth of the financing CHANNEL, not the \
+                 amount of it reaching AI. Growth in the channel is consistent with the BIS \
+                 thesis and does not establish it. Scored on growth rather than level: the \
+                 outstanding stock of private credit is not itself a bubble signal, whereas \
+                 rapid expansion is what the BIS claim actually asserts.",
+                growth, level_note
+            ),
+            provenance: series.provenance.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

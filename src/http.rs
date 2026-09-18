@@ -15,6 +15,7 @@
 //! never overwrites a value from a previous successful run.
 
 use std::cell::{Cell, RefCell};
+use std::io::Read;
 use std::time::{Duration, Instant};
 
 pub struct Fetcher {
@@ -166,12 +167,34 @@ impl Fetcher {
 
     /// Core fetch with an explicit retry budget, preserving the error kind.
     pub fn get_raw(&self, url: &str, user_agent: &str, retries: u32) -> Result<String, FetchError> {
+        self.get_raw_bytes(url, user_agent, retries).and_then(|b| {
+            String::from_utf8(b).map_err(|e| {
+                FetchError::Unavailable(format!("response was not valid UTF-8: {}", e))
+            })
+        })
+    }
+
+    /// Binary variant, for archives. The Fed Z.1 release is an 8MB zip, so this
+    /// cannot go through the `String` path; everything else — the cache, the
+    /// circuit breaker, the retry policy, the 404-is-absence rule — behaves
+    /// identically.
+    pub fn get_bytes(&self, url: &str, user_agent: &str) -> Result<Vec<u8>, String> {
+        self.get_raw_bytes(url, user_agent, self.retries)
+            .map_err(|e| e.message())
+    }
+
+    fn get_raw_bytes(
+        &self,
+        url: &str,
+        user_agent: &str,
+        retries: u32,
+    ) -> Result<Vec<u8>, FetchError> {
         let host = host_of(url);
 
         // Offline mode never touches the network; it is a cache read or a gap.
         if self.offline {
             if let Some(p) = self.cache_path(url) {
-                if let Ok(s) = std::fs::read_to_string(&p) {
+                if let Ok(s) = std::fs::read(&p) {
                     self.log
                         .borrow_mut()
                         .push(format!("CACHE hit {}", redact_url(url)));
@@ -207,11 +230,13 @@ impl Fetcher {
                 .call()
             {
                 Ok(resp) => {
-                    // A body-read failure is a transport problem, not absence.
-                    let body = resp
-                        .into_string()
+                    // Read as bytes so the same path serves text and archives; the
+                    // text callers convert afterwards.
+                    let mut body: Vec<u8> = Vec::new();
+                    resp.into_reader()
+                        .read_to_end(&mut body)
                         .map_err(|e| FetchError::Unavailable(e.to_string()))?;
-                    if body.trim().is_empty() {
+                    if body.is_empty() {
                         last_err = "empty response body".into();
                         continue;
                     }

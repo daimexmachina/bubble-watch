@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.3"
+schema_version = "1.4"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -439,6 +439,44 @@ unit = "ratio, remaining performance obligation divided by contract liability (d
 source = "edgar"
 rationale = "Whether contracted future revenue is converting into cash actually billed. The circular-financing pattern this is designed to detect — firms acting simultaneously as investor, supplier and customer — is documented by the BIS [L1] and the IMF [L3], and quantified by Polderdijk (Twente, 2026), who builds a Circular Financing Intensity index from customer concentration, vendor-linked financing and multi-year capacity commitments and finds it positively associated with valuation multiples. Deferred revenue is money collected for work not yet recognised; RPO is a promise. When RPO grows while deferred revenue stays flat, commitments are not converting, which is the signature of non-cash consideration or vendor-financed deals. Measured 2026-09-17: ORCL RPO went 137.8B to 455.3B in ONE quarter (+230%) while deferred revenue went 10.7B to 13.4B, taking its ratio from 12.8x to 49.4x; GOOGL sits at 51.4x and rising; MSFT is 9.0x-11.8x. DELIBERATELY NOT an RPO/REVENUE level measure: that ratio rises for every long-contract business and cannot distinguish a healthy multi-year backlog from a vendor granting deep discounts and financing its customers' purchases — measured ORCL 9.83x and MSFT 2.19x, and neither number is self-evidently bad. The divergence from billed cash is the informative part. KNOWN LIMITS: none of these contracts are tagged with counterparty credit quality, cancellation economics or termination-for-convenience clauses, so $664B of RPO and $664B of cash are not the same asset and this cannot tell the difference. META reports no RPO concept at all (the tag 404s), which is a gap and never a decline. A definition change made INSIDE a continuous tag is invisible to XBRL — GOOGL's Q1-2026 change was pure filing text — so companion text-diff logic is required and is NOT yet implemented. Treat this as a divergence screen, not a bubble verdict."
 anchors = [[2.0, 6.0], [5.0, 15.0], [10.0, 28.0], [18.0, 45.0], [28.0, 62.0], [40.0, 80.0], [55.0, 92.0]]
+
+# ---------------------------------------------------------------------------
+# Private-credit lending growth (NEW, methodology 1.4).
+#
+# Closes the gap BIS Bulletin 120 [L2] identifies: the tool's two credit
+# indicators read PUBLIC bond index spreads, while a rapidly increasing share of
+# this cycle's debt is originated in private credit, which has no index spread
+# because it does not trade.
+#
+# Measured from this host 2026-09-17, from the Fed's own Z.1 F4.4 table:
+#
+#   all sectors' private-credit loans:  $1.1tn (2024:Q1) -> $1.5tn (2026:Q2)
+#   i.e. roughly +36% in ten quarters, while the public HY index spread barely moved.
+#
+# SOURCE NOTE: FRED does NOT mirror these series. The `FL893167205.Q` identifiers
+# return "series does not exist" on FRED's keyed API, and FRED's own "private
+# credit" search returns only BIS *total credit* aggregates, which are a different
+# concept (all credit) and must not be substituted. The Fed publishes Z.1 only as
+# an 8MB zip of 307 CSVs with no per-table endpoint, so the archive is read
+# directly. The `zip` dependency reuses the same miniz_oxide decompressor already
+# in the graph via ureq->flate2, so no new codec enters the build.
+#
+# SCORED ON GROWTH, NOT LEVEL: the outstanding stock of economy-wide private credit
+# is not a bubble signal, whereas rapid expansion is what the BIS claim asserts.
+#
+# THE LIMITATION IS SEVERE AND IS REPEATED IN THE INDICATOR'S OWN OUTPUT: Z.1
+# reports a whole-economy total. It is NOT AI-specific. This measures the CHANNEL,
+# not the AI share of it, and a high reading is consistent with the BIS thesis
+# without confirming it.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "private_credit_growth"
+label = "Private-credit lending growth (whole-economy channel)"
+weight = 6.0
+unit = "pct, year-over-year growth in private-credit loans outstanding"
+source = "fed-z1"
+rationale = "How fast the private-credit channel is expanding, which the two public spread indicators cannot see because private credit does not trade and so has no index spread. BIS Bulletin 120 identifies private credit as taking a rapidly increasing role in financing the AI buildout. Measured 2026-09-17 from the Fed's Z.1 F4.4 table: all-sector private-credit loans went from roughly $1.1tn (2024:Q1) to $1.5tn (2026:Q2), about +36% in ten quarters, while the public high-yield index spread barely moved. CRITICAL LIMITATION: Z.1 reports private credit as a TOTAL FOR THE WHOLE ECONOMY, not for AI. Nothing in the free data attributes an individual private loan to a data-centre or GPU borrower, so this measures the size and growth of the financing CHANNEL and not the amount reaching AI. Growth here is consistent with the BIS thesis and does not establish it. Scored on GROWTH rather than level, because the outstanding stock is not itself a bubble signal whereas rapid expansion is what the BIS claim actually asserts."
+anchors = [[-10.0, 5.0], [0.0, 15.0], [8.0, 32.0], [16.0, 50.0], [25.0, 68.0], [35.0, 84.0], [50.0, 95.0]]
 
 [[indicator]]
 id = "foreign_interest"

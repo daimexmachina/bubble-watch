@@ -15,6 +15,16 @@ path = "src/lib.rs"
 
 [dependencies]
 ureq = "2"
+# Already present transitively (ureq -> flate2 -> miniz_oxide), promoted to a
+# direct dependency to read the Fed Z.1 release, which is published only as a zip
+# of CSVs. Enabling `zip` adds the pure-Rust ZIP reader that flate2 already
+# carries; no new code enters the dependency graph.
+# The Fed Z.1 release is published only as an 8MB zip of 307 CSV tables, with no
+# per-table endpoint. `zip` is used with default-features off and ONLY the pure
+# Rust `deflate` backend, so no C toolchain or system zlib is required. Its own
+# decompressor is the same miniz_oxide already in the graph via ureq->flate2,
+# so the genuine addition is the archive-structure reader, not a new codec.
+zip = { version = "2", default-features = false, features = ["deflate"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

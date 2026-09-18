@@ -52,6 +52,7 @@ fn plain_name(id: &str) -> &'static str {
         "circularity" => "money moving in circles between the companies involved",
         "primary_market_supply" => "how many companies are filing to sell shares for the first time",
         "backlog_quality" => "whether the big orders companies have booked are turning into money actually collected",
+        "private_credit_growth" => "how fast lending outside the public bond market is growing",
         _ => "one of the measurements",
     }
 }
