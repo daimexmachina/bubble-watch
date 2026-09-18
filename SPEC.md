@@ -309,3 +309,74 @@ silently either.
 - `cargo test` green; the offline suite proves both suppression paths with no
   network.
 - The HTML still loads nothing external and still needs no JavaScript.
+
+---
+
+## 12. v1.2 – v1.8 — corrections, new evidence, and falsification
+
+Methodology `schema_version` moved 1.1 → 1.8 across this stretch. Every change is recorded in
+`config/indicators.toml` with its measured justification; this section records the reasoning.
+
+### 12.1 The rule that governs all of it
+
+**A number the source did not supply is never printed.** Three distinct failure modes were found in
+the wild and each now has its own handling, because conflating them is how fabrication happens:
+
+| Case | Handling |
+|---|---|
+| Concept never reported (MSFT purchase obligations) | "not disclosed" |
+| Reported but stale (AMZN, 810 days; ORCL debt, 2022) | rejected with the age stated |
+| Series exists but the layout changed | hard error, never an empty series |
+
+A stale or exactly-zero balance sheet series is a **wrong tag**, not a fact. This was not hypothetical:
+`us-gaap:LongTermDebt` resolves for ORCL to a single 2022 fact worth `0.0`, so the model reported the
+most leveraged company in the cohort as carrying **no debt**.
+
+### 12.2 Corrections (the score moved because the model was wrong, not the market)
+
+| Change | Measured effect |
+|---|---|
+| Leverage: ORCL debt bug + operating leases | stress 18.2 → 34.1 (understated 15.1 points) |
+| Concentration/breadth double-counting | r = −0.70 (12m) / −0.93 (6m); weights 22 → 11 |
+| Issuance: share-count proxy → reported cash flows | +50.9 → 25.3; four of five cohort members retire stock on net |
+| `credit_ig`: 2.5 years → 40 years (Baa less 10Y) | anchors now reference 2000, 2008, 2020 |
+| `foreign_interest`: a **false** "unmeasurable" claim | retired; now the highest reading at 92.0 |
+
+That last one deserves emphasis: the config stated *"There is no free, machine-readable series for it
+at the required timeliness."* That was false. Fed Z.1 publishes it quarterly since 1945. Declaring
+something unmeasurable when it is measurable converts a gap in **effort** into a claim about the
+**world**, and a reader cannot tell the difference from outside.
+
+### 12.3 New evidence
+
+- **`backlog_quality`** — RPO ÷ deferred revenue. Contracted backlog is a promise; deferred revenue is
+  cash billed. ORCL's backlog exploded 137.8B → 455.3B in one quarter while billed cash went
+  10.7B → 13.4B. Deliberately *not* an RPO/revenue measure, which is a Rorschach test.
+- **`private_credit_growth`** — the channel BIS Bulletin 120 names as fastest-growing is invisible to
+  public index spreads. Live: `credit_hy` 16.4 and `credit_ig` 9.7 (calm) against private credit 44.7.
+- **`datacenter_construction`** — the only **non-financial** series in the model. +58.5% YoY.
+- **`grid_cancellations`** — 38.7% of announced capacity abandoned. A *level*, not a rate; the sheets
+  are cumulative inventories.
+- **`narrative_saturation`** — an EDGAR census (not a sample). 81× growth in AI mentions since 2015.
+
+### 12.4 Two things deliberately kept OUT of the composite
+
+**GSADF explosiveness test.** A formal hypothesis test, not a hand-anchored judgement. Averaging it in
+would destroy the point of having a method that can disagree. It currently does: composite "mid" while
+the test is significant at 1%.
+
+**Falsification tests.** Built by asking the opposite question — what would show the thesis is wrong?
+Reported beside the score because a 30 would otherwise mean either "mild bubble" or "strong
+counter-evidence". Two of three currently read against.
+
+The reason both exist: **the composite rose 30.6 → 40.5 during development, largely by adding
+indicators that scored high.** A researcher looking for confirming evidence finds it. A model that
+cannot say "I was wrong" is not an instrument, it is a position.
+
+### 12.5 Definition of done for v1.8
+
+- 198 tests green offline; live assertions opt-in.
+- Every new source probe-verified with real values before the indicator was written.
+- Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
+- The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
+  nobody can see is not finished work.

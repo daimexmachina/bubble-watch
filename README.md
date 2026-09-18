@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 114 tests, no network required
+cargo test                                         # 198 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -161,15 +161,49 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 |---|---|---|---|
 | `capex_vs_cashflow` | 14 | Cohort TTM capex ÷ TTM operating cash flow | SEC EDGAR |
 | `valuation_stretch` | 14 | S&P 500 deviation from its 5-year log-linear trend | Yahoo |
-| `concentration` | 12 | Cap-weight (SPY) vs equal-weight (RSP) 12-month return gap | Yahoo |
-| `credit_hy` | 12 | US high-yield option-adjusted spread | FRED *(key recommended)* |
-| `breadth` | 10 | RSP/SPY ratio vs its own 200-day average | Yahoo |
-| `issuance` | 10 | Trailing share-count change across the cohort | SEC EDGAR |
-| `volatility` | 8 | VIX level | Yahoo |
+| `credit_hy` | 12 | US high-yield option-adjusted spread | FRED *(key)* |
+| `issuance` | 10 | Net equity issuance ÷ operating cash flow, from reported cash flows | SEC EDGAR |
+| `primary_market_supply` | 9 | SEC S-1 registration count, trailing year | EDGAR full-text |
 | `funding_gap` | 8 | Cohort TTM capex ÷ TTM revenue | SEC EDGAR |
-| `credit_ig` | 6 | US investment-grade option-adjusted spread | FRED *(key recommended)* |
-| `leverage` | 6 | Cohort long-term debt ÷ TTM operating cash flow | SEC EDGAR |
-| `foreign_interest` | 0 | Foreign ownership of US equities | **declared gap** |
+| `volatility` | 8 | VIX level | Yahoo |
+| `backlog_quality` | 7 | RPO ÷ deferred revenue — is backlog converting to billed cash? | SEC EDGAR |
+| `datacenter_construction` | 7 | Data-center construction spending, YoY | Census C30 |
+| `concentration` | 6 | Cap-weight vs equal-weight 12-month return gap | Yahoo |
+| `credit_ig` | 6 | Baa yield less 10Y Treasury (40 years of history) | FRED *(key)* |
+| `leverage` | 6 | Long-term debt **plus operating leases** ÷ operating cash flow | SEC EDGAR |
+| `private_credit_growth` | 6 | Private-credit lending, YoY (whole-economy channel) | Fed Z.1 |
+| `grid_cancellations` | 6 | Cancelled/postponed generating capacity as share of announced | EIA-860M |
+| `breadth` | 5 | Equal-weight/cap-weight ratio vs its 200-day average | Yahoo |
+| `foreign_interest` | 5 | Rest-of-world US equity holdings, percentile of own history | Fed Z.1 |
+| `narrative_saturation` | 5 | 10-K filings mentioning AI, annualised YoY | EDGAR full-text |
+| `circularity` | 0 | **declared gap** — see below | — |
+
+Weight totals 134 across the 17 scored indicators. `circularity` is carried at weight 0 as an
+explicitly acknowledged blind spot: no free source relates an equity investment to the revenue it
+generates, so it is declared rather than silently dropped.
+
+### Two indicators are deliberately NOT in the composite
+
+- **GSADF explosiveness test** (`src/gsadf.rs`) — a formal hypothesis test on the price series, per
+  Phillips-Shi-Yu. A different *kind* of evidence from a hand-anchored judgement, so averaging it in
+  would destroy the value of having two methods that can disagree. The live run currently shows
+  **composite "mid" while the test is significant at 1%**, and the report presents both without
+  reconciling them.
+- **Falsification tests** (`src/falsifiers.rs`) — measurements chosen to show the thesis is *wrong*.
+  Averaging "evidence for" and "evidence against" into one number would merge opposite meanings, so
+  they are reported beside the score. Currently **2 of 3 read against** the bubble thesis.
+
+Both exist because a model that can only accumulate confirming evidence is not an instrument. The
+composite rose 30.6 → 40.5 during development, largely by *adding indicators that scored high* —
+which is exactly the bias these two panels are for.
+
+### Per-company exposure
+
+`src/exposure.rs` ranks who is most exposed and who is tested first, from debt, operating leases,
+unconditional purchase obligations and RPO relative to cash generation. CONTEXT ONLY — company-level
+analysis never enters a market-level score. Every absent value renders as **"not disclosed"**, never
+as `0.00`: MSFT reports no purchase-obligation concept at all, while AMZN discloses one whose latest
+figure is 810 days old, and those are different facts.
 
 Mapped to the eight bubble indicators published by Capital Economics (CNBC, 2026-09-10) plus the
 credit and fundamental signals that dominate the current debate.
@@ -206,6 +240,10 @@ All of the following was established by probing the live endpoints from this hos
 | FRED `fredgraph.csv` | **optional, intermittently flaky** | Failure is **transient and time-varying**, not series-specific: measured from this host it served `DGS10` in 0.13 s, then refused *every* series minutes later, then recovered. Treated as optional; failures become reported gaps. |
 | FRED `api.stlouisfed.org` (keyed) | key optional, host fine | A **different host** which answered 5/5 in ~0.15 s while the CSV host was timing out. A free key routes through it and additionally returns full history. |
 | multpl.com (Shiller CAPE) | **not usable** | Now JavaScript-gated; cannot be scraped over plain HTTP. |
+| Fed Z.1 Financial Accounts | works | 8MB zip of 307 CSVs, no key. **FRED does NOT mirror these series** — the `FL…` ids 400 as "does not exist", and FRED's own "private credit" search returns BIS *total credit*, a different concept. Read directly. |
+| Census C30 construction | works | xlsx only; no CSV and no keyless API (EITS returns "Missing Key"), and FRED has the aggregate but not the data-center line item. |
+| EIA-860M generator inventory | works | xlsx only (14MB); `api.eia.gov/v2` needs a key and none is configured. Sheets located by name. |
+| EDGAR full-text search | works | A **census** of filings, not a sample, which is why it is usable for hype when news/search measures are not. Needs a descriptive UA. |
 
 The tool is designed to run end-to-end on **Yahoo + EDGAR alone**; FRED only ever adds coverage.
 
@@ -265,13 +303,18 @@ src/
   score.rs          pure: anchor interpolation, weighted composite, coverage
   phase.rs          pure: phase classification + historical-analog overlay
   history.rs        pure trend logic + the append-only run archive
+  gsadf.rs          pure GSADF explosiveness test (Phillips-Shi-Yu)
+  falsifiers.rs     pure: measurements that could show the thesis is WRONG
+  exposure.rs       pure: per-company exposure ranking (context only)
   config.rs         config load + validation (rejects inconsistent configs)
   model.rs          types; every scored value carries Provenance
   http.rs           shared client: UA, throttle, retry, circuit breaker, cache
-  sources/          yahoo.rs, edgar.rs, fred.rs  (the only modules that do IO)
+  sources/          the only modules that do IO: yahoo.rs, edgar.rs, fred.rs,
+                    fulltext.rs, z1.rs, census.rs, eia.rs
   indicators/       market.rs, credit.rs, fundamentals.rs
   report/           json.rs, html.rs (per-run report + multi-run dashboard), layman.rs
-config/indicators.toml   all weights, anchors, thresholds + their rationale
+config/indicators.toml   all weights, anchors, thresholds + their rationale,
+                         plus a cited BIBLIOGRAPHY block [L1]-[L9]
 scripts/                 serve.sh, daily-refresh.sh
 deploy/                  systemd units for the timer and the LAN server
 data/history/runs.jsonl  append-only archive of recorded runs (git-ignored)
