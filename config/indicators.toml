@@ -14,6 +14,71 @@
 # bubble-like. No indicator here is inverted — including the credit spreads,
 # which is a deliberate decision documented in their rationale below.
 
+# ---------------------------------------------------------------------------
+# BASIS IN THE LITERATURE
+#
+# The rationales below are not the author's priors dressed as arithmetic. Each
+# claim about *why* a measure matters for this particular episode traces to a
+# published source, listed here so a reader can check the reasoning rather than
+# take it on trust. Where this model departs from the literature it says so.
+#
+# [L1]  BIS Working Paper 1367, Rungcharoenkitkul (Jul 2026), "The AI investment
+#       race". Models the boom as a contest in a winner-take-most market and
+#       estimates over-investment at ~1.5x the efficient level, rising to ~3x
+#       where demand is less elastic. Its two load-bearing claims for this model:
+#       that debt and CIRCULAR STAKES create financial fragility, and that stress
+#       in one firm can cascade through chains of financial exposures. Basis for
+#       the `circularity` declared gap and for the leverage work.
+#
+# [L2]  BIS Bulletin 120, Aldasoro, Doerr & Rees (Jan 2026), "Financing the AI
+#       boom: from cash flows to debt". The financing shift from operating cash
+#       flow to debt, with private credit rising rapidly. Basis for the leverage
+#       and (future) private-credit work.
+#
+# [L3]  IMF Global Financial Stability Report (Apr 2026), Ch.1. Contains Figure
+#       1.18 "Artificial Intelligence Circularity" and Figure 1.17 on AI
+#       value-stack balance-sheet vulnerabilities, and states that firms have
+#       "increasingly relied on circular financing". Its assessment is that the
+#       financial-stability impact is currently modest — a reading this tool does
+#       not contradict and should not be read as contradicting.
+#
+# [L4]  Kshirsagar & Chen (Oct 2025), "The AI Infrastructure Revenue Gap". AI
+#       accelerators have 1-3 year useful lives against 5-6 year depreciation
+#       schedules; that gap is a quantified "capital subsidy" and turns a ~$800bn
+#       revenue gap into >$1.5tn. Basis for the depreciation indicator, which is
+#       deliberately NOT yet implemented — see its note below.
+#
+# [L5]  Van Nieuwerburgh (Mar 2026), "Financing the AI Buildout". Off-balance-sheet
+#       structures, long-term leases and asset-backed lending let firms scale while
+#       preserving balance-sheet flexibility, making the distribution of risk less
+#       transparent. This is exactly the residual limitation the leverage indicator
+#       states about itself.
+#
+# [L6]  Phillips, Shi & Yu (2015), "Testing for Multiple Bubbles", Int. Econ.
+#       Review, and Sarkar & Wells (2026), "Is there an AI bubble?", Frontiers of
+#       Mathematical Finance. The GSADF test implemented in src/gsadf.rs, and the
+#       reason a hand-anchored composite is reported alongside a formal test
+#       rather than instead of one.
+#
+# [L7]  Gürkaynak (2008), "Econometric Tests of Asset Price Bubbles: Taking
+#       Stock", Fed FEDS 2005-04. The critical counterweight: conclusive real-time
+#       bubble detection is close to impossible. This is the basis for the tool
+#       refusing to emit any timing probability, and for every "not a forecast"
+#       statement in the output.
+#
+# [L8]  Caballero (NBER w34722, 2026), "Speculative Growth and the AI 'Bubble'".
+#       A third possibility beyond fundamentals-or-bubble: temporary overvaluation
+#       can leave a PERMANENT real legacy. The strongest counter-argument to a
+#       bubble reading, and the reason the report does not treat a high score as a
+#       verdict. Basis for the falsification work still outstanding.
+#
+# [L9]  Wang & Chen (arXiv 2606.01575, 2026), "Boom, Bubble, or Buildout?". A
+#       five-pillar framework (fundamental valuation, residual-exuberance tests,
+#       SADF/GSADF, LPPL, sentiment/issuance, capex payback) concluding AI is "a
+#       real technological revolution with localized bubble dynamics". The
+#       multi-method principle behind reporting two methods that may disagree.
+# ---------------------------------------------------------------------------
+
 [meta]
 schema_version = "1.3"
 # Reviewed: 2026-09-16
@@ -330,7 +395,7 @@ source = "edgar"
 # They remain deliberately shallow at the low end: Capital Economics rates cohort
 # leverage as not yet alarming relative to valuations, and that reading should
 # still produce a moderate rather than a high score.
-rationale = "Whether the cohort can carry the commitments it has signed. Computed from reported total long-term debt PLUS operating lease liabilities, divided by TTM operating cash flow. Two corrections over the previous version, both measured 2026-09-17: (a) us-gaap:LongTermDebt resolves for ORCL to a stale 2022-05-31 fact worth exactly zero, so the old resolver reported the most leveraged company in the cohort as carrying no debt — ORCL's notes are ~$122bn under us-gaap:LongTermNotesPayable; (b) operating leases were excluded, which the old rationale admitted understated leverage. Including leases moves the cohort mean from 0.556x to 0.955x operating cash flow, an understatement of 15.1 stress points. A stale or exactly-zero series is now REJECTED rather than used, because both indicate a wrong tag rather than a fact. STILL EXCLUDES off-balance-sheet vehicles (SPVs, joint ventures, sale-leasebacks) that finance a growing share of data-centre construction, so true leverage remains higher than this ratio. Unconditional purchase obligations are reported alongside rather than folded in, because they are not universally disclosed and blending a partial total would make the ratio mean different things for different filers."
+rationale = "Whether the cohort can carry the commitments it has signed. The financing shift this measures — from internal cash flow toward debt, with private credit rising fast — is the subject of BIS Bulletin 120 [L2], and the off-balance-sheet structures it still cannot see are the subject of Van Nieuwerburgh [L5]. Computed from reported total long-term debt PLUS operating lease liabilities, divided by TTM operating cash flow. Two corrections over the previous version, both measured 2026-09-17: (a) us-gaap:LongTermDebt resolves for ORCL to a stale 2022-05-31 fact worth exactly zero, so the old resolver reported the most leveraged company in the cohort as carrying no debt — ORCL's notes are ~$122bn under us-gaap:LongTermNotesPayable; (b) operating leases were excluded, which the old rationale admitted understated leverage. Including leases moves the cohort mean from 0.556x to 0.955x operating cash flow, an understatement of 15.1 stress points. A stale or exactly-zero series is now REJECTED rather than used, because both indicate a wrong tag rather than a fact. STILL EXCLUDES off-balance-sheet vehicles (SPVs, joint ventures, sale-leasebacks) that finance a growing share of data-centre construction, so true leverage remains higher than this ratio. Unconditional purchase obligations are reported alongside rather than folded in, because they are not universally disclosed and blending a partial total would make the ratio mean different things for different filers."
 anchors = [[0.3, 5.0], [0.6, 14.0], [1.0, 28.0], [1.5, 48.0], [2.2, 70.0], [3.2, 88.0], [4.5, 96.0]]
 
 [[indicator]]
@@ -372,7 +437,7 @@ label = "Backlog vs billed cash (RPO / deferred revenue)"
 weight = 7.0
 unit = "ratio, remaining performance obligation divided by contract liability (deferred revenue)"
 source = "edgar"
-rationale = "Whether contracted future revenue is converting into cash actually billed. Deferred revenue is money collected for work not yet recognised; RPO is a promise. When RPO grows while deferred revenue stays flat, commitments are not converting, which is the signature of non-cash consideration or vendor-financed deals. Measured 2026-09-17: ORCL RPO went 137.8B to 455.3B in ONE quarter (+230%) while deferred revenue went 10.7B to 13.4B, taking its ratio from 12.8x to 49.4x; GOOGL sits at 51.4x and rising; MSFT is 9.0x-11.8x. DELIBERATELY NOT an RPO/REVENUE level measure: that ratio rises for every long-contract business and cannot distinguish a healthy multi-year backlog from a vendor granting deep discounts and financing its customers' purchases — measured ORCL 9.83x and MSFT 2.19x, and neither number is self-evidently bad. The divergence from billed cash is the informative part. KNOWN LIMITS: none of these contracts are tagged with counterparty credit quality, cancellation economics or termination-for-convenience clauses, so $664B of RPO and $664B of cash are not the same asset and this cannot tell the difference. META reports no RPO concept at all (the tag 404s), which is a gap and never a decline. A definition change made INSIDE a continuous tag is invisible to XBRL — GOOGL's Q1-2026 change was pure filing text — so companion text-diff logic is required and is NOT yet implemented. Treat this as a divergence screen, not a bubble verdict."
+rationale = "Whether contracted future revenue is converting into cash actually billed. The circular-financing pattern this is designed to detect — firms acting simultaneously as investor, supplier and customer — is documented by the BIS [L1] and the IMF [L3], and quantified by Polderdijk (Twente, 2026), who builds a Circular Financing Intensity index from customer concentration, vendor-linked financing and multi-year capacity commitments and finds it positively associated with valuation multiples. Deferred revenue is money collected for work not yet recognised; RPO is a promise. When RPO grows while deferred revenue stays flat, commitments are not converting, which is the signature of non-cash consideration or vendor-financed deals. Measured 2026-09-17: ORCL RPO went 137.8B to 455.3B in ONE quarter (+230%) while deferred revenue went 10.7B to 13.4B, taking its ratio from 12.8x to 49.4x; GOOGL sits at 51.4x and rising; MSFT is 9.0x-11.8x. DELIBERATELY NOT an RPO/REVENUE level measure: that ratio rises for every long-contract business and cannot distinguish a healthy multi-year backlog from a vendor granting deep discounts and financing its customers' purchases — measured ORCL 9.83x and MSFT 2.19x, and neither number is self-evidently bad. The divergence from billed cash is the informative part. KNOWN LIMITS: none of these contracts are tagged with counterparty credit quality, cancellation economics or termination-for-convenience clauses, so $664B of RPO and $664B of cash are not the same asset and this cannot tell the difference. META reports no RPO concept at all (the tag 404s), which is a gap and never a decline. A definition change made INSIDE a continuous tag is invisible to XBRL — GOOGL's Q1-2026 change was pure filing text — so companion text-diff logic is required and is NOT yet implemented. Treat this as a divergence screen, not a bubble verdict."
 anchors = [[2.0, 6.0], [5.0, 15.0], [10.0, 28.0], [18.0, 45.0], [28.0, 62.0], [40.0, 80.0], [55.0, 92.0]]
 
 [[indicator]]
@@ -452,5 +517,5 @@ label = "Circular financing in the AI buildout (not measured)"
 weight = 0.0
 source = "none"
 unit = "share of counterparty revenue funded by the reporting company's own investment"
-rationale = "A real hole in the model, not a failed fetch. The pattern: an investor takes a stake in an AI lab or neocloud, which then commits to buying chips, compute or cloud capacity back from the investor, so some reported revenue is the investor's own capital returning. This matters because it makes revenue less independent, and because it turns an equity risk into a revenue risk so a valuation fall hits balance sheet, revenue and earnings together. It is not scored because the measure required is a RELATIONSHIP between companies while every indicator here is a price or a single-company aggregate. SEC XBRL carries no reliable link from an investment to the revenue it generates: the customer-concentration tags that would (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP 404 for MSFT, that disclosure being 10-K narrative rather than a tagged concept. The two most central counterparties are also outside the scored set — NVIDIA is not in the cohort, and the large private AI labs file no public financials. NOTE: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and returns real values for the cohort, but it is mark-to-market P&L on stakes held, not the amount invested and not the revenue flowing back, so it is deliberately NOT used as a proxy. EFFECT: this gap biases the composite toward 'calm', never toward alarm — recycled flows inflate capex and revenue together, so capex reads as genuine demand and capex/revenue is understated. Treat a low score as less reassuring than usual on this dimension."
+rationale = "A real hole in the model, not a failed fetch. Named as a first-order concern by both the BIS [L1] and the IMF [L3], whose GFSR carries a figure captioned 'Artificial Intelligence Circularity'. The pattern: an investor takes a stake in an AI lab or neocloud, which then commits to buying chips, compute or cloud capacity back from the investor, so some reported revenue is the investor's own capital returning. This matters because it makes revenue less independent, and because it turns an equity risk into a revenue risk so a valuation fall hits balance sheet, revenue and earnings together. It is not scored because the measure required is a RELATIONSHIP between companies while every indicator here is a price or a single-company aggregate. SEC XBRL carries no reliable link from an investment to the revenue it generates: the customer-concentration tags that would (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP 404 for MSFT, that disclosure being 10-K narrative rather than a tagged concept. The two most central counterparties are also outside the scored set — NVIDIA is not in the cohort, and the large private AI labs file no public financials. NOTE: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and returns real values for the cohort, but it is mark-to-market P&L on stakes held, not the amount invested and not the revenue flowing back, so it is deliberately NOT used as a proxy. See [L1] and [L3]. EFFECT: this gap biases the composite toward 'calm', never toward alarm — recycled flows inflate capex and revenue together, so capex reads as genuine demand and capex/revenue is understated. Treat a low score as less reassuring than usual on this dimension."
 anchors = [[0.0, 0.0], [100.0, 100.0]]

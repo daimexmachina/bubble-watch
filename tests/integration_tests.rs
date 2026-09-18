@@ -222,6 +222,28 @@ fn the_report_discloses_the_concentration_breadth_double_counting() {
 }
 
 #[test]
+fn a_missing_explosiveness_test_is_disclosed_not_silent() {
+    // Regression guard. GSADF depends on a long price history that Yahoo
+    // rate-limits intermittently. If that fetch fails the test simply returns
+    // nothing, and without this disclosure a reader would see no result and infer
+    // agreement with the composite rather than ABSENCE of a second opinion.
+    let c = cfg();
+    let obs = Observations::default(); // no price series at all
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-17T12:00:00Z");
+
+    assert!(r.explosiveness.is_none(), "no series means no test");
+    assert!(
+        r.caveats
+            .iter()
+            .any(|x| x.contains("EXPLOSIVENESS TEST") && x.contains("DID NOT RUN")),
+        "a missing second method must be stated: {:?}",
+        r.caveats
+    );
+}
+
+#[test]
 fn history_never_changes_the_composite() {
     // THE load-bearing test for v1.1. The trend is derived FROM the composite,
     // so if it could also feed back into the composite, the score would partly

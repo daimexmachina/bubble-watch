@@ -74,16 +74,40 @@ pub fn build_with_history(
     // a published pedigree, rather than an anchored judgement. Reported alongside
     // the composite and never reconciled with it, because the tension between the
     // two is exactly what a reader should see.
+    let mut gsadf_note: Option<String> = None;
     let explosiveness = if cfg.gsadf.enabled {
         let series_key = if obs.yahoo.contains_key("SPX_MAX_mo") {
             "SPX_MAX_mo"
-        } else {
+        } else if obs.yahoo.contains_key("SPX_5y_mo") {
             "SPX_5y_mo"
+        } else {
+            ""
         };
-        obs.yahoo
-            .get(series_key)
-            .and_then(|s| crate::gsadf::run(&s.points, cfg.gsadf.monte_carlo_reps, cfg.gsadf.seed))
+        match obs.yahoo.get(series_key) {
+            None => {
+                gsadf_note = Some(
+                    "the explosiveness test DID NOT RUN: no long-history price series was \
+                     retrieved. That is a missing second method, not evidence either way, and \
+                     the composite above is unaffected by its absence."
+                        .into(),
+                );
+                None
+            }
+            Some(s) => {
+                let r = crate::gsadf::run(&s.points, cfg.gsadf.monte_carlo_reps, cfg.gsadf.seed);
+                if r.is_none() {
+                    gsadf_note = Some(format!(
+                        "the explosiveness test DID NOT RUN: the available series ({} \
+                         observations) is too short to test. That is a missing second method, \
+                         not evidence either way.",
+                        s.points.len()
+                    ));
+                }
+                r
+            }
+        }
     } else {
+        gsadf_note = Some("the explosiveness test is disabled in config.".into());
         None
     };
 
@@ -204,6 +228,11 @@ pub fn build_with_history(
          corroboration."
             .into(),
     );
+    if let Some(n) = &gsadf_note {
+        // A second method that silently vanishes is worse than one that reports
+        // nothing: a reader would infer agreement where there is only absence.
+        caveats.push(format!("EXPLOSIVENESS TEST: {}", n));
+    }
     caveats.push(format!(
         "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
          and refuses to compute a direction of travel across a version change: redefining an \
