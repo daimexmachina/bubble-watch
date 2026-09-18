@@ -128,6 +128,68 @@ impl CompanyFacts {
         annuals.last().map(|f| (f.val, TtmBasis::AnnualFallback))
     }
 
+    /// Trailing-twelve-month sum as of `offset_q` quarters back from the latest.
+    ///
+    /// `offset_q = 0` is the ordinary TTM. `offset_q = 4` gives the TTM a year
+    /// earlier, which is what makes a year-over-year comparison of aggregates
+    /// possible without refetching anything. Returns None when there is not enough
+    /// history rather than summing a shorter window and mislabelling it.
+    /// Trailing-twelve-month sum as of `offset_q` quarters back from the latest.
+    ///
+    /// `offset_q = 0` is the ordinary TTM. `offset_q = 4` gives the TTM a year
+    /// earlier, which is what makes a year-over-year comparison of aggregates
+    /// possible without refetching anything.
+    ///
+    /// Selection matches `ttm` exactly: walk backwards taking NON-OVERLAPPING
+    /// quarters, detected by comparing each candidate's END against the running
+    /// cursor's START. A plain end-to-end contiguity test is wrong here because
+    /// filers such as MSFT report BOTH quarterly and cumulative year-to-date
+    /// figures, so two facts legitimately sit six months apart in a series that is
+    /// still a valid quarterly sequence. Rejecting those windows made the
+    /// year-over-year comparison unavailable for half the cohort.
+    ///
+    /// Returns None when there genuinely is not enough history, rather than summing
+    /// a shorter window and mislabelling it.
+    pub fn ttm_at_offset(facts: &[EdgarFact], offset_q: usize) -> Option<(f64, TtmBasis)> {
+        let mut quarters: Vec<&EdgarFact> = facts
+            .iter()
+            .filter(|f| (80..=100).contains(&f.days))
+            .collect();
+        quarters.sort_by(|a, b| a.end.cmp(&b.end));
+
+        // Take non-overlapping quarters walking backwards, skipping the first
+        // `offset_q` of them.
+        let mut chosen: Vec<&EdgarFact> = Vec::new();
+        let mut cursor_start: Option<String> = None;
+        for f in quarters.iter().rev() {
+            match &cursor_start {
+                None => {
+                    // The most recent quarter: always eligible.
+                    if offset_q == 0 || chosen.len() < offset_q {
+                        chosen.push(f);
+                        cursor_start = Some(f.start.clone());
+                    }
+                }
+                Some(cs) => {
+                    // Non-overlapping means it ENDS before the cursor STARTS. Using
+                    // the start rather than the end is what lets a quarterly fact
+                    // follow a cumulative one correctly.
+                    if f.end.as_str() < cs.as_str() && chosen.len() < offset_q + 4 {
+                        chosen.push(f);
+                        cursor_start = Some(f.start.clone());
+                    }
+                }
+            }
+            if chosen.len() >= offset_q + 4 {
+                break;
+            }
+        }
+        if chosen.len() < offset_q + 4 {
+            return None;
+        }
+        Some((chosen.iter().map(|f| f.val).sum(), TtmBasis::FourQuarters))
+    }
+
     /// Most recent fact of any duration, for point-in-time series like shares.
     pub fn latest(facts: &[EdgarFact]) -> Option<&EdgarFact> {
         facts.iter().max_by(|a, b| a.end.cmp(&b.end))
@@ -497,6 +559,11 @@ pub struct Report {
     /// enters a market-level composite.
     #[serde(default)]
     pub exposure: Vec<crate::exposure::CompanyExposure>,
+    /// Falsification tests: measurements that could show the bubble thesis is
+    /// WRONG. Deliberately NOT in the composite — averaging "evidence for" and
+    /// "evidence against" into one number would be a category error.
+    #[serde(default)]
+    pub falsifiers: Vec<crate::falsifiers::Falsifier>,
     /// GSADF explosiveness test on the price series. A different KIND of evidence
     /// from every indicator here: a formal hypothesis test rather than a
     /// hand-anchored judgement. Deliberately NOT folded into the composite, and

@@ -471,6 +471,33 @@ fn print_human(r: &bubble_watch::model::Report) {
     println!("{}", "-".repeat(72));
     println!("{}", r.phase_label);
 
+    // Falsification tests. Printed BEFORE the exposure table and after the score,
+    // because the reader should see what would prove the tool wrong before they
+    // see a number that might otherwise only reassure them one way.
+    if !r.falsifiers.is_empty() {
+        let against = bubble_watch::falsifiers::counter_evidence_count(&r.falsifiers);
+        println!();
+        println!(
+            "FALSIFICATION TESTS - what would show the bubble thesis is WRONG ({} of {} read as counter-evidence)",
+            against,
+            r.falsifiers.len()
+        );
+        for f in &r.falsifiers {
+            let mark = match f.verdict {
+                bubble_watch::falsifiers::Verdict::CounterEvidence => "AGAINST ",
+                bubble_watch::falsifiers::Verdict::ConsistentWithBubble => "for     ",
+                bubble_watch::falsifiers::Verdict::Uninformative => "n/a     ",
+            };
+            println!("  [{}] {}", mark, f.question);
+            println!("           reading: {}", f.reading);
+            println!("           verdict: {}", f.verdict.as_str());
+        }
+        println!(
+            "  These are NOT part of the composite. Averaging evidence for and against into one"
+        );
+        println!("  number would merge opposite meanings, so they are reported beside it.");
+    }
+
     // Per-company exposure. CONTEXT, not part of the composite: company-level
     // analysis and a market-level score answer different questions.
     if !r.exposure.is_empty() {

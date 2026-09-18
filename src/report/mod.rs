@@ -70,6 +70,9 @@ pub fn build_with_history(
     // and never folded in.
     let exposure = crate::exposure::build(obs, &crate::history::date_of(generated_at));
 
+    // Falsification tests. Reported beside the composite, never inside it.
+    let falsifiers = crate::falsifiers::build(obs);
+
     // GSADF explosiveness test. A second, independent method: a formal test with
     // a published pedigree, rather than an anchored judgement. Reported alongside
     // the composite and never reconciled with it, because the tension between the
@@ -337,6 +340,7 @@ pub fn build_with_history(
         analog,
         trend,
         exposure,
+        falsifiers,
         explosiveness,
         indicators: readings,
         data_quality: DataQuality {

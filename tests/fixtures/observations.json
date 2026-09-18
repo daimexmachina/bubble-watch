@@ -5,7 +5,7 @@
         "source": "fed-z1",
         "endpoint": "https://www.federalreserve.gov/releases/z1/current/z1_csv_files.zip :: csv/F4_4_s.csv :: FL893167205.Q",
         "as_of": "2026-06-30",
-        "retrieved_at": "2026-09-18T01:01:47Z"
+        "retrieved_at": "2026-09-18T01:11:25Z"
       },
       "points": [
         {
@@ -1235,7 +1235,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/RSP?range=1y&interval=1d",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-18T01:01:42Z"
+        "retrieved_at": "2026-09-18T01:11:21Z"
       },
       "points": [
         {
@@ -2245,7 +2245,7 @@
         "source": "sec-edgar-fulltext",
         "endpoint": "efts.sec.gov/LATEST/search-index forms=S-1 window=2025-09-18..=2026-09-18",
         "as_of": "2026-09-18",
-        "retrieved_at": "2026-09-18T01:01:46Z"
+        "retrieved_at": "2026-09-18T01:11:24Z"
       },
       "points": [
         {
@@ -2259,7 +2259,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-18T01:01:42Z"
+        "retrieved_at": "2026-09-18T01:11:20Z"
       },
       "points": [
         {
@@ -3273,7 +3273,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=5y&interval=1mo",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-18T01:01:41Z"
+        "retrieved_at": "2026-09-18T01:11:20Z"
       },
       "points": [
         {
@@ -3527,7 +3527,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=max&interval=1mo",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-18T01:01:41Z"
+        "retrieved_at": "2026-09-18T01:11:20Z"
       },
       "points": [
         {
@@ -4213,12 +4213,12 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1y&interval=1d",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-18T01:01:43Z"
+        "retrieved_at": "2026-09-18T01:11:21Z"
       },
       "points": [
         {
           "date": "2025-09-18",
-          "value": 655.00244140625
+          "value": 655.0023803710938
         },
         {
           "date": "2025-09-19",
@@ -4230,11 +4230,11 @@
         },
         {
           "date": "2025-09-23",
-          "value": 657.7605590820312
+          "value": 657.7606201171875
         },
         {
           "date": "2025-09-24",
-          "value": 655.6677856445312
+          "value": 655.6678466796875
         },
         {
           "date": "2025-09-25",
@@ -4254,7 +4254,7 @@
         },
         {
           "date": "2025-10-01",
-          "value": 662.9574584960938
+          "value": 662.95751953125
         },
         {
           "date": "2025-10-02",
@@ -4262,7 +4262,7 @@
         },
         {
           "date": "2025-10-03",
-          "value": 663.7112426757812
+          "value": 663.7113037109375
         },
         {
           "date": "2025-10-06",
@@ -4298,7 +4298,7 @@
         },
         {
           "date": "2025-10-16",
-          "value": 655.2117309570312
+          "value": 655.2116088867188
         },
         {
           "date": "2025-10-17",
@@ -4326,11 +4326,11 @@
         },
         {
           "date": "2025-10-27",
-          "value": 679.6094970703125
+          "value": 679.6095581054688
         },
         {
           "date": "2025-10-28",
-          "value": 681.4144897460938
+          "value": 681.41455078125
         },
         {
           "date": "2025-10-29",
@@ -4346,11 +4346,11 @@
         },
         {
           "date": "2025-11-03",
-          "value": 677.7251586914062
+          "value": 677.72509765625
         },
         {
           "date": "2025-11-04",
-          "value": 669.6917114257812
+          "value": 669.691650390625
         },
         {
           "date": "2025-11-05",
@@ -4366,15 +4366,15 @@
         },
         {
           "date": "2025-11-10",
-          "value": 675.8407592773438
+          "value": 675.8406982421875
         },
         {
           "date": "2025-11-11",
-          "value": 677.3878784179688
+          "value": 677.387939453125
         },
         {
           "date": "2025-11-12",
-          "value": 677.7647705078125
+          "value": 677.7648315429688
         },
         {
           "date": "2025-11-13",
@@ -4382,15 +4382,15 @@
         },
         {
           "date": "2025-11-14",
-          "value": 666.4088745117188
+          "value": 666.4088134765625
         },
         {
           "date": "2025-11-17",
-          "value": 660.2002563476562
+          "value": 660.2003173828125
         },
         {
           "date": "2025-11-18",
-          "value": 654.6561889648438
+          "value": 654.65625
         },
         {
           "date": "2025-11-19",
@@ -4410,7 +4410,7 @@
         },
         {
           "date": "2025-11-25",
-          "value": 669.4734497070312
+          "value": 669.4735717773438
         },
         {
           "date": "2025-11-26",
@@ -4422,11 +4422,11 @@
         },
         {
           "date": "2025-12-01",
-          "value": 674.6802978515625
+          "value": 674.6803588867188
         },
         {
           "date": "2025-12-02",
-          "value": 675.9300537109375
+          "value": 675.9299926757812
         },
         {
           "date": "2025-12-03",
@@ -4434,7 +4434,7 @@
         },
         {
           "date": "2025-12-04",
-          "value": 678.7665405273438
+          "value": 678.7664794921875
         },
         {
           "date": "2025-12-05",
@@ -4442,7 +4442,7 @@
         },
         {
           "date": "2025-12-08",
-          "value": 678.0127563476562
+          "value": 678.0126953125
         },
         {
           "date": "2025-12-09",
@@ -4454,7 +4454,7 @@
         },
         {
           "date": "2025-12-11",
-          "value": 683.5072631835938
+          "value": 683.5072021484375
         },
         {
           "date": "2025-12-12",
@@ -4462,7 +4462,7 @@
         },
         {
           "date": "2025-12-15",
-          "value": 675.1365356445312
+          "value": 675.1365966796875
         },
         {
           "date": "2025-12-16",
@@ -4474,7 +4474,7 @@
         },
         {
           "date": "2025-12-18",
-          "value": 670.9114990234375
+          "value": 670.9115600585938
         },
         {
           "date": "2025-12-19",
@@ -4482,7 +4482,7 @@
         },
         {
           "date": "2025-12-22",
-          "value": 681.2098388671875
+          "value": 681.2098999023438
         },
         {
           "date": "2025-12-23",
@@ -4502,7 +4502,7 @@
         },
         {
           "date": "2025-12-30",
-          "value": 683.3782958984375
+          "value": 683.3783569335938
         },
         {
           "date": "2025-12-31",
@@ -4514,7 +4514,7 @@
         },
         {
           "date": "2026-01-05",
-          "value": 684.0845947265625
+          "value": 684.0845336914062
         },
         {
           "date": "2026-01-06",
@@ -4542,7 +4542,7 @@
         },
         {
           "date": "2026-01-14",
-          "value": 686.7105712890625
+          "value": 686.7106323242188
         },
         {
           "date": "2026-01-15",
@@ -4570,7 +4570,7 @@
         },
         {
           "date": "2026-01-26",
-          "value": 689.068115234375
+          "value": 689.0680541992188
         },
         {
           "date": "2026-01-27",
@@ -4586,11 +4586,11 @@
         },
         {
           "date": "2026-01-30",
-          "value": 688.3121337890625
+          "value": 688.3120727539062
         },
         {
           "date": "2026-02-02",
-          "value": 691.73388671875
+          "value": 691.7339477539062
         },
         {
           "date": "2026-02-03",
@@ -4610,7 +4610,7 @@
         },
         {
           "date": "2026-02-09",
-          "value": 690.2816162109375
+          "value": 690.2816772460938
         },
         {
           "date": "2026-02-10",
@@ -4638,7 +4638,7 @@
         },
         {
           "date": "2026-02-19",
-          "value": 680.8616943359375
+          "value": 680.8616333007812
         },
         {
           "date": "2026-02-20",
@@ -4666,7 +4666,7 @@
         },
         {
           "date": "2026-03-02",
-          "value": 682.7516479492188
+          "value": 682.751708984375
         },
         {
           "date": "2026-03-03",
@@ -4674,19 +4674,19 @@
         },
         {
           "date": "2026-03-04",
-          "value": 681.50830078125
+          "value": 681.5082397460938
         },
         {
           "date": "2026-03-05",
-          "value": 677.7084350585938
+          "value": 677.70849609375
         },
         {
           "date": "2026-03-06",
-          "value": 668.8256225585938
+          "value": 668.82568359375
         },
         {
           "date": "2026-03-09",
-          "value": 674.6845092773438
+          "value": 674.6845703125
         },
         {
           "date": "2026-03-10",
@@ -4718,7 +4718,7 @@
         },
         {
           "date": "2026-03-19",
-          "value": 656.3121337890625
+          "value": 656.3121948242188
         },
         {
           "date": "2026-03-20",
@@ -5223,7 +5223,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-18T01:01:43Z"
+        "retrieved_at": "2026-09-18T01:11:22Z"
       },
       "points": [
         {
@@ -6241,7 +6241,7 @@
         "source": "yahoo",
         "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1y&interval=1d",
         "as_of": "2026-09-17",
-        "retrieved_at": "2026-09-18T01:01:43Z"
+        "retrieved_at": "2026-09-18T01:11:21Z"
       },
       "points": [
         {
@@ -7269,7 +7269,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAA10Y&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-18T01:01:45Z"
+        "retrieved_at": "2026-09-18T01:11:23Z"
       },
       "points": [
         {
@@ -47987,7 +47987,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLC0A0CM&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-18T01:01:44Z"
+        "retrieved_at": "2026-09-18T01:11:22Z"
       },
       "points": [
         {
@@ -51141,7 +51141,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-18T01:01:44Z"
+        "retrieved_at": "2026-09-18T01:11:22Z"
       },
       "points": [
         {
@@ -54299,7 +54299,7 @@
         "source": "fred",
         "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&file_type=json&api_key=***",
         "as_of": "2026-09-16",
-        "retrieved_at": "2026-09-18T01:01:44Z"
+        "retrieved_at": "2026-09-18T01:11:23Z"
       },
       "points": [
         {
@@ -165426,5 +165426,5 @@
     }
   },
   "failures": [],
-  "retrieved_at": "2026-09-18T01:01:41Z"
+  "retrieved_at": "2026-09-18T01:11:19Z"
 }
