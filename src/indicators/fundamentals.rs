@@ -1250,6 +1250,217 @@ impl Indicator for NarrativeSaturation {
     }
 }
 
+/// The depreciation "capital subsidy": extending useful lives while the asset base
+/// grows.
+///
+/// THE CLAIM THIS TESTS. Kshirsagar & Chen [L4] observe that AI accelerators have
+/// 1-3 year useful lives against 5-6 year depreciation schedules, and that the gap
+/// is a quantified "capital subsidy" which turns a ~$800bn revenue gap into more
+/// than $1.5tn. Mechanically: if a company extends useful lives, annual depreciation
+/// falls relative to the asset base, and reported earnings are flattered without any
+/// improvement in the business.
+///
+/// Measured from this host 2026-09-17, over the trailing four annual periods:
+///
+///   ORCL   rate 6.41% -> 6.22% while gross PP&E grew 4.28x   <- the anomaly
+///   MSFT   +1.23 points, PP&E 2.63x
+///   NVDA   +1.16, 2.61x
+///   AAPL   -1.24, 1.10x      <- suppressed by the guard
+///   AVGO   -1.35, 1.27x      <- suppressed by the guard
+///
+/// WHY THE TWO-STAGE GUARD IS LOAD-BEARING, and this took five attempts to get
+/// right. A naive "rate fell" test flags SIX of nine companies, including AAPL and
+/// AVGO — which show the same drift with no AI capex story at all, because a
+/// mechanical ratio drifts from asset-mix effects alone as older fully-depreciated
+/// assets age into the denominator. It also MISSED ORCL, the actual signal.
+///
+/// The guard has two stages and both are required:
+///
+///   1. `series_health` on the gross-PP&E series. This rejects AMZN (an 1,827-day
+///      hole and a definition swap to a finance-lease-inclusive tag — its apparent
+///      -12.99 point rate fall is a data artefact, not an accounting choice), META
+///      (abandoned the tag in 2020) and GOOGL (20 months stale). Without this stage
+///      AMZN is a false positive.
+///   2. A rate test over the trailing FOUR ANNUAL periods, deduplicated by date,
+///      combined with an AND on asset growth: the rate must fall by more than half a
+///      point AND gross PP&E must more than 1.5x. The AND is what suppresses
+///      AAPL and AVGO, which have the rate move but NOT the capex surge.
+///
+/// With both stages applied, exactly ONE of nine companies flags: ORCL.
+///
+/// LIMITATIONS: this reads ONE company's chosen depreciation convention against its
+/// own history, so it detects a CHANGE in policy, not an initially aggressive one —
+/// a filer that always depreciated over six years will never flag. It also cannot
+/// see whether the useful life reflects the hardware rather than the building, since
+/// PP&E gross aggregates the two.
+pub struct DepreciationSubsidy;
+
+impl Indicator for DepreciationSubsidy {
+    fn id(&self) -> &'static str {
+        "depreciation_subsidy"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        let as_of = crate::history::date_of(&ctx.obs.retrieved_at);
+        let mut flagged: Vec<(String, f64, f64)> = Vec::new(); // ticker, rate change, ppe growth
+        let mut measured = Vec::new();
+        let mut rejected = Vec::new();
+        let mut newest = String::new();
+
+        // Iterate the cohort AND the accounting peers: the guard needs the negative
+        // controls (AAPL, AVGO) present, or its suppression of the false positives
+        // cannot be demonstrated and the rule would rest on assertion.
+        let all: Vec<(&String, &CompanyFacts)> = ctx
+            .obs
+            .edgar
+            .iter()
+            .chain(ctx.obs.edgar_peers.iter())
+            .collect();
+        for (ticker, cf) in all {
+            if cf.depreciation.is_empty() || cf.ppe_gross.is_empty() {
+                rejected.push(format!("{} (no depreciation or PP&E series)", ticker));
+                continue;
+            }
+
+            // STAGE 1: the series must be healthy before any ratio is computed.
+            if let Err(why) = CompanyFacts::series_health(&cf.ppe_gross, &as_of, 4, 400, 460, 2.5) {
+                rejected.push(format!("{} (gross PP&E: {})", ticker, why));
+                continue;
+            }
+
+            // Deduplicate: EDGAR repeats a fact once per filing that carries it.
+            let dep = CompanyFacts::dedup_by_end(&cf.depreciation);
+            let ppe = CompanyFacts::dedup_by_end(&cf.ppe_gross);
+            let annual: Vec<crate::model::EdgarFact> = dep
+                .into_iter()
+                .filter(|f| (350..=380).contains(&f.days))
+                .collect();
+            if annual.len() < 4 {
+                rejected.push(format!(
+                    "{} (only {} annual depreciation periods)",
+                    ticker,
+                    annual.len()
+                ));
+                continue;
+            }
+
+            // STAGE 2: rate over the trailing four annual periods, matched to the
+            // gross PP&E in force at each period end.
+            let mut pairs: Vec<(String, f64, f64)> = Vec::new();
+            for d in annual.iter().rev().take(4) {
+                if let Some(p) = ppe.iter().rev().find(|p| p.end <= d.end) {
+                    if p.val > 0.0 {
+                        pairs.push((d.end.clone(), d.val / p.val * 100.0, p.val));
+                    }
+                }
+            }
+            pairs.sort_by(|a, b| a.0.cmp(&b.0));
+            if pairs.len() < 3 {
+                rejected.push(format!(
+                    "{} (could not pair PP&E with depreciation)",
+                    ticker
+                ));
+                continue;
+            }
+            let (first, last) = (&pairs[0], &pairs[pairs.len() - 1]);
+            let rate_change = last.1 - first.1;
+            let ppe_growth = if first.2 > 0.0 { last.2 / first.2 } else { 1.0 };
+            if last.0 > newest {
+                newest = last.0.clone();
+            }
+            measured.push(format!(
+                "{} {:+.2}pt with PP&E {:.2}x",
+                ticker, rate_change, ppe_growth
+            ));
+            // BOTH conditions must hold. The AND is what suppresses AAPL and AVGO.
+            if rate_change < -0.5 && ppe_growth > 1.5 {
+                flagged.push((ticker.clone(), rate_change, ppe_growth));
+            }
+        }
+
+        if measured.is_empty() {
+            return Reading::Unavailable {
+                reason: format!(
+                    "no filer had a usable annual depreciation series paired with a healthy \
+                     gross-PP&E series. Rejected: {}",
+                    rejected.join("; ")
+                ),
+            };
+        }
+
+        // One anomalous company is a signal; several would suggest a sector-wide
+        // convention change rather than a single filer's choice.
+        let stress = if flagged.is_empty() {
+            crate::score::interpolate(0.0, &ic.anchors)
+        } else {
+            // Scale by the size of the extension, capped so one filer cannot dominate.
+            let worst = flagged
+                .iter()
+                .map(|(_, r, _)| r.abs())
+                .fold(0.0f64, f64::max);
+            crate::score::interpolate(worst, &ic.anchors)
+        };
+        let value = flagged
+            .iter()
+            .map(|(_, r, _)| r.abs())
+            .fold(0.0f64, f64::max);
+
+        let verdict = if flagged.is_empty() {
+            "NO company flagged: no filer both extended its depreciation schedule materially and \
+             grew its asset base at the same time."
+                .to_string()
+        } else {
+            format!(
+                "FLAGGED: {} — extended their depreciation schedule while the asset base grew, \
+                 which flatters reported earnings without any change in the underlying business.",
+                flagged
+                    .iter()
+                    .map(|(t, r, g)| format!("{} ({:+.2}pt, PP&E {:.2}x)", t, r, g))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+                    .trim_end_matches('.')
+                    .to_string()
+            )
+        };
+
+        Reading::Scored {
+            stress,
+            value,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "{}. Measured across {} filers over the trailing four annual periods: {}. THE \
+                 GUARD MATTERS MORE THAN THE NUMBER: a naive rate test flags six of nine companies \
+                 including AAPL and AVGO, which show the same drift with no AI capex story at all \
+                 because a mechanical ratio drifts as older fully-depreciated assets age into the \
+                 denominator. Two stages are required — the gross-PP&E series must first pass a \
+                 health check, then the rate test is ANDed with an asset-growth condition. With \
+                 both, exactly one of nine flags. Rejected series: {}. LIMITATIONS: this detects a \
+                 CHANGE in a filer's depreciation convention, not an initially aggressive one, so \
+                 a company that always depreciated over six years never flags; and gross PP&E \
+                 aggregates buildings and hardware, so it cannot say which of the two the useful \
+                 life refers to.",
+                verdict,
+                measured.len(),
+                measured.join("; "),
+                if rejected.is_empty() {
+                    "none".to_string()
+                } else {
+                    rejected.join("; ")
+                }
+            ),
+            provenance: cohort_provenance(ctx, &newest),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

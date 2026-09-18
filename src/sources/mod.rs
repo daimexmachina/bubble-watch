@@ -221,6 +221,13 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // Peer filers for the depreciation test only. Fetched into a SEPARATE map so
+    // they cannot alter the five indicators that iterate `obs.edgar`.
+    for (ticker, cik, name) in edgar::ACCOUNTING_PEERS {
+        let cf = edgar::company(f, ticker, cik, name);
+        obs.edgar_peers.insert(ticker.to_string(), cf);
+    }
+
     for (ticker, cik, name) in edgar::COHORT {
         let cf = edgar::company(f, ticker, cik, name);
         // Record a failure when a filer yielded nothing at all, so the gap is

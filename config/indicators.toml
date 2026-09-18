@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.8"
+schema_version = "1.9"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -659,11 +659,55 @@ source = "fed-z1"
 # evidence of anything.
 rationale = "How much of the US equity market is held by foreign investors, expressed as a percentile of the series' own history. Capital Economics flags record foreign ownership of US equities as a late-stage marker, and the Fed's Z.1 Financial Accounts carry it directly: series FL263064105.Q, 'Rest of the world; U.S. corporate equities; asset', quarterly, free, no key, history from 1945. Measured 2026-09-17: $22.21tn at 2026:Q2, up 25.7% year over year, against $8.13tn at 2019:Q4. THIS INDICATOR WAS A DECLARED BLIND SPOT AT WEIGHT 0 UNTIL 2026-09-17, on the stated grounds that no free machine-readable series existed at the required timeliness — that claim was false, and the gap is retired rather than quietly dropped. Scored on the PERCENTILE of its own history, not the dollar level: the absolute stock grows with the market itself, so a raw level would rise in every bull market whether or not foreign participation actually increased. DIRECTION: a higher percentile reads as more stress, following Capital Economics' treatment of record foreign ownership as a late-stage marker — a market increasingly held by investors whose willingness to hold depends on returns continuing is more fragile. Limitation: Z.1 reports holdings including valuation changes, so a rising series partly reflects US equities outperforming rather than foreign investors buying more."
 anchors = [[5.0, 6.0], [25.0, 14.0], [50.0, 26.0], [70.0, 42.0], [85.0, 60.0], [95.0, 80.0], [99.0, 92.0]]
+# ---------------------------------------------------------------------------
+# Depreciation "capital subsidy" (NEW, methodology 1.9).
+#
+# Kshirsagar & Chen [L4] observe that AI accelerators have 1-3 year useful lives
+# against 5-6 year depreciation schedules, and that the gap is a quantified "capital
+# subsidy" which turns a ~$800bn revenue gap into more than $1.5tn. Mechanically: if
+# a company extends useful lives, annual depreciation falls relative to the asset
+# base and reported earnings are flattered without any improvement in the business.
+#
+# THE GUARD IS THE WHOLE INDICATOR, and it took five attempts to get right. A naive
+# "the rate fell" test flags SIX of nine companies — including AAPL and AVGO, which
+# show the same drift with no AI capex at all, because a mechanical ratio drifts as
+# older fully-depreciated assets age into the denominator — and it MISSED ORCL, the
+# actual signal. Two stages are required:
+#
+#   1. the gross-PP&E series must pass `series_health` (continuity, recency, density,
+#      definition stability). This rejects AMZN — an 1,827-day hole with a definition
+#      swap to a finance-lease-inclusive tag, whose apparent -12.99 point rate fall is
+#      a data artefact — plus META (abandoned the tag in 2020) and GOOGL (20 months
+#      stale). Three of nine fail.
+#   2. the rate test covers the trailing FOUR ANNUAL periods, deduplicated by date
+#      (EDGAR repeats a fact once per filing), ANDed with asset growth: the rate must
+#      fall more than half a point AND gross PP&E must more than 1.5x. The AND is what
+#      suppresses AAPL (-1.24pt, PP&E 1.10x) and AVGO (-1.35pt, 1.27x).
+#
+# Measured 2026-09-17. With both stages, exactly ONE of nine flags:
+#
+#   ORCL  rate 6.41% -> 6.22% while gross PP&E grew 4.28x   <- the anomaly
+#   MSFT  +1.23pt, PP&E 2.63x        AAPL  -1.24pt, 1.10x (suppressed)
+#   NVDA  +1.16pt, 2.61x             AVGO  -1.35pt, 1.27x (suppressed)
+#
+# Anchors map the SIZE of the rate extension in percentage points. The scale is
+# deliberately steep at the low end: a sub-half-point move does not clear the guard at
+# all, so it scores zero, and only multi-point extensions read as high stress.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "depreciation_subsidy"
+label = "Depreciation schedule extension (capital subsidy)"
+weight = 6.0
+unit = "percentage points the annual depreciation rate fell while the asset base grew"
+source = "edgar"
+rationale = "Tests the capital-subsidy claim from Kshirsagar & Chen: AI accelerators have 1-3 year useful lives while the schedules depreciate them over 5-6 years, so extending a useful life flatters reported earnings without any improvement in the business. Measured 2026-09-17 over the trailing four annual periods: ORCL's rate fell from 6.41% to 6.22% while gross PP&E grew 4.28x, the single flagged anomaly; MSFT and NVDA rates ROSE (+1.23pt, +1.16pt); AAPL (-1.24pt) and AVGO (-1.35pt) showed the same drift with no AI capex and are deliberately suppressed. THE GUARD IS THE WHOLE INDICATOR: a naive rate test flags six of nine companies and misses ORCL, because a mechanical ratio drifts as older fully-depreciated assets age into the denominator. Two stages are required — the gross-PP&E series must first pass a continuity/recency/density/definition-stability check (which rejects AMZN, a data artefact from a definition swap, plus META and GOOGL for staleness), and the rate test must then be ANDed with an asset-growth condition (which suppresses AAPL and AVGO). With both stages exactly one of nine flags. LIMITATIONS: this detects a CHANGE in a filer's depreciation convention rather than an initially aggressive one, so a company that always depreciated over six years never flags; and gross PP&E aggregates buildings and hardware, so the test cannot say which the useful life refers to."
+anchors = [[0.0, 0.0], [0.5, 0.0], [1.0, 14.0], [2.0, 30.0], [3.5, 52.0], [5.0, 72.0], [8.0, 92.0]]
+
 [[indicator]]
 id = "circularity"
 label = "Circular financing in the AI buildout (not measured)"
 weight = 0.0
 source = "none"
 unit = "share of counterparty revenue funded by the reporting company's own investment"
-rationale = "A real hole in the model, not a failed fetch. Named as a first-order concern by both the BIS [L1] and the IMF [L3], whose GFSR carries a figure captioned 'Artificial Intelligence Circularity'. The pattern: an investor takes a stake in an AI lab or neocloud, which then commits to buying chips, compute or cloud capacity back from the investor, so some reported revenue is the investor's own capital returning. This matters because it makes revenue less independent, and because it turns an equity risk into a revenue risk so a valuation fall hits balance sheet, revenue and earnings together. It is not scored because the measure required is a RELATIONSHIP between companies while every indicator here is a price or a single-company aggregate. SEC XBRL carries no reliable link from an investment to the revenue it generates: the customer-concentration tags that would (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP 404 for MSFT, that disclosure being 10-K narrative rather than a tagged concept. The two most central counterparties are also outside the scored set — NVIDIA is not in the cohort, and the large private AI labs file no public financials. NOTE: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and returns real values for the cohort, but it is mark-to-market P&L on stakes held, not the amount invested and not the revenue flowing back, so it is deliberately NOT used as a proxy. See [L1] and [L3]. EFFECT: this gap biases the composite toward 'calm', never toward alarm — recycled flows inflate capex and revenue together, so capex reads as genuine demand and capex/revenue is understated. Treat a low score as less reassuring than usual on this dimension."
+rationale = "A real hole in the model, not a failed fetch. Named as a first-order concern by both the BIS [L1] and the IMF [L3], whose GFSR carries a figure captioned 'Artificial Intelligence Circularity'. The pattern: an investor takes a stake in an AI lab or neocloud, which then commits to buying chips, compute or cloud capacity back from the investor, so some reported revenue is the investor's own capital returning. This matters because it makes revenue less independent, and because it turns an equity risk into a revenue risk so a valuation fall hits balance sheet, revenue and earnings together. It is not scored because the measure required is a RELATIONSHIP between companies while every indicator here is a price or a single-company aggregate. SEC XBRL carries no reliable link from an investment to the revenue it generates: the customer-concentration tags that would (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP 404 for MSFT, that disclosure being 10-K narrative rather than a tagged concept. THE COHORT IS A DELIBERATE CHOICE, NOT AN OVERSIGHT, AND IT WAS REVIEWED ON 2026-09-17: the five scored filers are the CAPITAL SPENDERS — the companies that build and operate the infrastructure. NVIDIA is the largest single node in the circular deals and is absent from those five, but it was measured and found to be structurally the wrong side of the trade to include in the capex indicators: it is FABLESS, with capex at 0.005x operating cash flow and 0.042x revenue against 0.512x and 0.268x for the cohort. Adding it would drag both capex ratios DOWN about 18% and make them measure the supplier rather than the spender, which is a category error rather than an improvement. The circularity gap therefore remains, and it remains for a stated reason. The large private AI labs (OpenAI, Anthropic) also file no public financials, so the counterparties that receive the circular investment are not measurable either. NOTE: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and returns real values for the cohort, but it is mark-to-market P&L on stakes held, not the amount invested and not the revenue flowing back, so it is deliberately NOT used as a proxy. See [L1] and [L3]. EFFECT: this gap biases the composite toward 'calm', never toward alarm — recycled flows inflate capex and revenue together, so capex reads as genuine demand and capex/revenue is understated. Treat a low score as less reassuring than usual on this dimension."
 anchors = [[0.0, 0.0], [100.0, 100.0]]

@@ -80,6 +80,11 @@ pub struct CompanyFacts {
     /// Contract liability / deferred revenue: cash billed but not yet recognised.
     /// The contrast with `rpo` is what reveals whether backlog converts to cash.
     pub deferred_revenue: Vec<EdgarFact>,
+    /// Annual depreciation, for the useful-life test.
+    pub depreciation: Vec<EdgarFact>,
+    /// Gross property, plant and equipment. UNRELIABLE across this cohort — always
+    /// pass through `series_health` before use.
+    pub ppe_gross: Vec<EdgarFact>,
     /// Long-term debt maturing within 1, 2 and 3 years, indexed 0..2.
     pub debt_due: [Vec<EdgarFact>; 3],
     /// Long-term debt maturing after five years.
@@ -128,12 +133,32 @@ impl CompanyFacts {
         annuals.last().map(|f| (f.val, TtmBasis::AnnualFallback))
     }
 
+    /// Deduplicate facts by period end, keeping one per date, sorted ascending.
+    ///
+    /// EDGAR returns the SAME fact once per filing that repeats it (10-K, then
+    /// 10-K/A), so a raw series contains duplicates that silently distort any
+    /// first-versus-last comparison. AAPL's FY2018 depreciation appears twice.
+    pub fn dedup_by_end(facts: &[EdgarFact]) -> Vec<EdgarFact> {
+        let mut seen: std::collections::BTreeMap<&str, &EdgarFact> =
+            std::collections::BTreeMap::new();
+        for f in facts {
+            seen.insert(f.end.as_str(), f);
+        }
+        seen.into_values().cloned().collect()
+    }
+
     /// Trailing-twelve-month sum as of `offset_q` quarters back from the latest.
     ///
     /// `offset_q = 0` is the ordinary TTM. `offset_q = 4` gives the TTM a year
     /// earlier, which is what makes a year-over-year comparison of aggregates
     /// possible without refetching anything. Returns None when there is not enough
     /// history rather than summing a shorter window and mislabelling it.
+    /// Deduplicate facts by period end, keeping one per date, sorted ascending.
+    ///
+    /// EDGAR returns the SAME fact once per filing that repeats it (10-K, then
+    /// 10-K/A), so a raw series contains duplicates that silently distort any
+    /// first-versus-last comparison. AAPL's FY2018 depreciation appears twice.
+
     /// Trailing-twelve-month sum as of `offset_q` quarters back from the latest.
     ///
     /// `offset_q = 0` is the ordinary TTM. `offset_q = 4` gives the TTM a year
@@ -320,8 +345,12 @@ pub struct Observations {
     /// a reading came from the keyed API or the anonymous CSV fallback.
     #[serde(default)]
     pub fred_transports: BTreeMap<String, crate::sources::fred::Transport>,
-    /// Keyed by ticker.
+    /// Keyed by ticker. Used by every indicator that describes the capex cohort.
     pub edgar: BTreeMap<String, CompanyFacts>,
+    /// Peer filers fetched ONLY for the depreciation test, kept out of `edgar` so
+    /// they cannot silently alter the five indicators that iterate it.
+    #[serde(default)]
+    pub edgar_peers: BTreeMap<String, CompanyFacts>,
     /// EDGAR AI-mention census: (form type, year, filing count). A census, not a
     /// sample, and therefore usable as a hype measure when most alternatives are
     /// samples of unclear provenance.

@@ -25,12 +25,59 @@ use crate::model::{CompanyFacts, EdgarFact};
 /// attempts is enough for a transient blip without stalling the run.
 pub const EDGAR_RETRIES: u32 = 2;
 
+/// The scored cohort: the five CAPITAL SPENDERS.
+///
+/// This is a deliberate choice, not an accident of convenience, and it was tested
+/// rather than assumed on 2026-09-17. The cohort is the companies that BUILD AND
+/// OPERATE the infrastructure, because the capex-based indicators measure spending.
+///
+/// **NVIDIA is deliberately excluded from these five.** It is the largest single node
+/// in the circular financing deals and it was measured for inclusion, but it is on
+/// the wrong side of the trade for a capex cohort: it is FABLESS, so its own capital
+/// spending is a rounding error against its cash flow.
+///
+///   capex / operating cash flow:  NVDA 0.005  vs cohort mean 0.512
+///   capex / revenue:              NVDA 0.042  vs cohort mean 0.268
+///
+/// Adding it would pull both ratios DOWN about 18% and turn them into a measure of
+/// the supplier rather than the spender — a category error, not an improvement.
+/// Nvidia's chips are fabricated by others (TSMC and similar), so the physical
+/// buildout it drives appears in the accounts of its suppliers and its customers,
+/// not its own.
+///
+/// This is recorded here rather than in a commit message because the question
+/// recurs: "why is the most important company in this story not in the cohort?"
+/// The answer is that the cohort was defined by a measurement, and the measurement
+/// puts Nvidia outside it.
 pub const COHORT: &[(&str, &str, &str)] = &[
     ("MSFT", "0000789019", "Microsoft"),
     ("GOOGL", "0001652044", "Alphabet"),
     ("AMZN", "0001018724", "Amazon"),
     ("META", "0001326801", "Meta"),
     ("ORCL", "0001341439", "Oracle"),
+];
+
+/// Accounting peer set, fetched ONLY for the depreciation test.
+///
+/// Kept SEPARATE from `COHORT` on purpose. The capex indicators iterate every entry
+/// in `Observations::edgar`, so adding peer companies there would silently change
+/// five other indicators — the kind of quiet, wide-reaching side effect this project
+/// is built to avoid. These filers exist to answer ONE question: is extending a
+/// depreciation schedule a sector-wide practice, or one filer's choice?
+///
+/// WHY THEY ARE NEEDED AT ALL. The question is about AI-exposed hardware accounting,
+/// not about the capex cohort, and restricting it to five filers left only TWO with a
+/// usable gross-PP&E series — too few for the guard to mean anything, and it meant the
+/// guard's suppression of the AAPL/AVGO false positives could not even be exercised.
+///
+/// They also serve as NEGATIVE CONTROLS: AAPL and AVGO show the same useful-life drift
+/// with no AI capex story, which is precisely why the asset-growth condition is ANDed
+/// into the rule.
+pub const ACCOUNTING_PEERS: &[(&str, &str, &str)] = &[
+    ("NVDA", "0001045810", "NVIDIA"),
+    ("AAPL", "0000320193", "Apple"),
+    ("AVGO", "0001730168", "Broadcom"),
+    ("TSLA", "0001318605", "Tesla"),
 ];
 
 /// Tag candidates by economic quantity, most-preferred first.
@@ -75,6 +122,25 @@ pub const TAGS_LEASE: &[&str] = &[
     "OperatingLeaseLiability",
     "OperatingLeaseLiabilityNoncurrent",
 ];
+
+/// Annual depreciation, for the useful-life / "capital subsidy" test.
+///
+/// `DepreciationDepletionAndAmortization` does not resolve for this cohort, so
+/// `Depreciation` is the only workable tag. Each filer is checked at evaluation time
+/// rather than assumed present.
+pub const TAGS_DEPRECIATION: &[&str] = &["Depreciation"];
+
+/// Gross property, plant and equipment — the denominator of the depreciation rate.
+///
+/// HAZARD, verified 2026-09-17: UNRELIABLE across this cohort and must always pass
+/// through `CompanyFacts::series_health` before use.
+///   * META ABANDONED it after 2020-09-30 (last fact 2,178 days old);
+///   * AMZN has an 1,827-day hole and its 2024-12-31 value is byte-identical to the
+///     finance-lease-ROU-inclusive tag, so the series changes MEANING mid-window;
+///   * GOOGL's latest fact is 535 days old.
+/// Three of nine filers fail, and a naive read of AMZN produces a false positive on
+/// exactly the accounting question this indicator exists to ask.
+pub const TAGS_PPE_GROSS: &[&str] = &["PropertyPlantAndEquipmentGross"];
 
 /// Long-term debt maturities by year, for the refinancing-timing question.
 ///
@@ -389,6 +455,12 @@ pub fn company(f: &Fetcher, ticker: &str, cik: &str, name: &str) -> CompanyFacts
     }
     if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_RPO), "USD", true) {
         cf.rpo = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_DEPRECIATION), "USD", false) {
+        cf.depreciation = v;
+    }
+    if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_PPE_GROSS), "USD", true) {
+        cf.ppe_gross = v;
     }
     if let Ok(Some(v)) = resolve(f, cik, &usgaap(TAGS_DEFERRED_REVENUE), "USD", true) {
         cf.deferred_revenue = v;
