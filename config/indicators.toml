@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.6"
+schema_version = "1.7"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -546,6 +546,41 @@ unit = "pct, year-over-year growth in US data-center construction spending"
 source = "census-c30"
 rationale = "The only PHYSICAL series in this model: dollars actually spent building data centres, from the US Census Bureau's Construction Spending survey, rather than a price or a credit spread that could move on sentiment alone. Measured 2026-09-17, full-year totals: 2015 $2,745M; 2019 $8,483M; 2021 $9,949M; 2022 $12,583M; 2023 $19,995M; 2024 $34,797M (+74.0%); 2025 $49,737M (+42.9%); latest month Jul-2026 $6,551M, up 58.5% year over year. Scored on year-over-year GROWTH rather than level, because a large and stable construction market is not a bubble signal whereas accelerating spend beyond what demand can absorb is. DELIBERATELY DOUBLE-EDGED, and the output says so: rapid construction growth is evidence the boom is real and large, which is precisely what makes an eventual bust costly, so a high reading is consistent with both the bubble thesis and a durable buildout. LIMITATIONS: measures buildings and not the IT hardware inside them; nominal dollars, not deflated, so input-cost inflation inflates the line without new capacity; Census added the line item only in the May 2024 release with estimates from January 2014, so no data-center series covers 2000 or 2008 and the scale describes this boom rather than a full cycle."
 anchors = [[-15.0, 5.0], [0.0, 12.0], [10.0, 21.0], [25.0, 34.0], [40.0, 50.0], [60.0, 68.0], [85.0, 84.0], [120.0, 95.0]]
+
+# ---------------------------------------------------------------------------
+# Grid cancellations (NEW, methodology 1.7).
+#
+# The binding physical constraint on the AI buildout is firm electricity, and the
+# practical bottleneck is the interconnection queue. This measures announced
+# generating capacity that was then ABANDONED — intent that did not survive contact
+# with reality, which turns before the spending does.
+#
+# Measured from this host 2026-09-17, EIA-860M July 2026 release:
+#   Planned               291,138 MW
+#   Canceled or Postponed 184,141 MW   ->  cancellation ratio 38.7%
+#   cancelled by technology: gas combined cycle 59,466 MW; gas combustion turbine
+#   31,064 MW; solar 28,517 MW; onshore wind 15,752 MW; coal 15,409 MW
+#
+# INTERPRETATION LIMIT, carried in the output as well as here: the EIA sheets are
+# cumulative INVENTORIES, not flows. A high ratio means many announced projects have
+# been abandoned across the whole accumulation window, NOT that cancellations are
+# spiking now. This is a LEVEL of abandoned intent. Catching the RATE would require
+# comparing successive monthly releases against each other, which is not
+# implemented and must not be implied.
+#
+# SOURCE: eia.gov/electricity/data/eia860m/ — xlsx only, and the keyless API is
+# inaccessible (api.eia.gov/v2 returns a "Missing Key" page and no EIA key is
+# configured). Read with the same xlsx reader built for Census C30. Sheets located
+# by NAME, never by position, so a reordering cannot silently read the wrong sheet.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "grid_cancellations"
+label = "Abandoned generating capacity (grid pipeline)"
+weight = 6.0
+unit = "pct, cancelled or postponed capacity as a share of announced plus cancelled capacity"
+source = "eia-860m"
+rationale = "How much announced power-plant capacity has been abandoned, measured against what is still planned. The grid is the binding physical constraint on the AI buildout and the interconnection queue is the practical bottleneck, so cancelled generation is intent that did not survive contact with reality and it turns before the spending does. Measured 2026-09-17 from the EIA-860M July 2026 release: 291,138 MW planned against 184,141 MW cancelled or postponed, a 38.7% ratio, with the largest abandoned categories being gas combined cycle (59,466 MW), gas combustion turbine (31,064 MW), solar (28,517 MW), onshore wind (15,752 MW) and coal (15,409 MW). INTERPRETATION LIMIT: the EIA sheets are cumulative INVENTORIES, not flows, so this is a LEVEL of abandoned intent accumulated over the window and NOT a rate of change — it does not show whether cancellations are rising now. Catching the direction of travel would require comparing successive monthly releases against each other, which is not implemented. A second limitation: the same accumulation applies to the planned side, so the denominator includes projects that will themselves be cancelled, which biases the ratio downward."
+anchors = [[5.0, 8.0], [12.0, 18.0], [20.0, 30.0], [30.0, 45.0], [40.0, 60.0], [55.0, 78.0], [75.0, 93.0]]
 
 [[indicator]]
 id = "foreign_interest"

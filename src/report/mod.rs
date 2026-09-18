@@ -525,7 +525,7 @@ mod tests {
         // must carry the disclaimer in plain words — matching the JSON's
         // is_probability:false rather than relying on a soft caveat.
         let c = cfg();
-        let mut obs = Observations::default();
+        let obs = Observations::default();
         let mut reading = scored("valuation_stretch", 14.0, 42.0);
         if let Reading::Scored { provenance, .. } = &mut reading.reading {
             provenance.endpoint = "t".into();

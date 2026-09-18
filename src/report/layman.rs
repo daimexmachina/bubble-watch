@@ -54,6 +54,7 @@ fn plain_name(id: &str) -> &'static str {
         "backlog_quality" => "whether the big orders companies have booked are turning into money actually collected",
         "private_credit_growth" => "how fast lending outside the public bond market is growing",
         "datacenter_construction" => "how fast data-centre building is growing, as measured by the government",
+        "grid_cancellations" => "how much announced power-plant capacity has been abandoned",
         _ => "one of the measurements",
     }
 }

@@ -322,6 +322,11 @@ pub struct Observations {
     pub fred_transports: BTreeMap<String, crate::sources::fred::Transport>,
     /// Keyed by ticker.
     pub edgar: BTreeMap<String, CompanyFacts>,
+    /// Cancellation ratio from EIA-860M: cancelled / (planned + cancelled), as a
+    /// percentage. Stored as the formatted value the source produced so the indicator
+    /// cannot silently reformat it.
+    #[serde(default)]
+    pub eia_ratio: Option<String>,
     pub failures: Vec<SourceFailure>,
     pub retrieved_at: String,
 }

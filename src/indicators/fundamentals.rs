@@ -1023,6 +1023,101 @@ impl Indicator for DataCenterConstruction {
     }
 }
 
+/// Announced generating capacity that was then abandoned, from EIA-860M.
+///
+/// WHY THIS IS HERE. The binding physical constraint on the AI buildout is firm
+/// electricity, and the practical bottleneck is the interconnection queue. This
+/// measures the pipeline developers have ANNOUNCED and then ABANDONED — intent that
+/// did not survive contact with reality, which moves before the spending does.
+///
+/// Measured from this host 2026-09-17, July 2026 release:
+///   Planned               291,138 MW
+///   Canceled or Postponed 184,141 MW
+///   cancellation ratio     38.7%
+///   cancelled by technology: gas combined cycle 59,466 MW, gas combustion turbine
+///   31,064 MW, solar 28,517 MW, onshore wind 15,752 MW, coal 15,409 MW
+///
+/// WHAT IT DOES NOT SAY, and the output repeats this because the number is easy to
+/// over-read: the EIA sheets are cumulative INVENTORIES, not flows. "Canceled or
+/// Postponed" accumulates every cancelled project currently listed, so a high ratio
+/// means many announced projects have been abandoned across the whole accumulation
+/// window — NOT that cancellations are spiking now. This measures a LEVEL of
+/// abandoned intent. Catching the RATE would require comparing successive monthly
+/// releases against each other, which is a real future step and not something to
+/// imply by accident.
+pub struct GridCancellations;
+
+impl Indicator for GridCancellations {
+    fn id(&self) -> &'static str {
+        "grid_cancellations"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        let Some(raw) = ctx.obs.eia_ratio.as_deref() else {
+            return Reading::Unavailable {
+                reason: "EIA-860M planned/cancelled inventories unavailable: the workbook could \
+                         not be retrieved or the sheets were not parseable"
+                    .into(),
+            };
+        };
+        let Ok(ratio) = raw.parse::<f64>() else {
+            return Reading::Unavailable {
+                reason: format!("EIA cancellation ratio '{}' was not numeric", raw),
+            };
+        };
+
+        let planned = ctx
+            .obs
+            .yahoo
+            .get("EIA_PLANNED")
+            .and_then(|s| s.latest_value());
+        let cancelled = ctx
+            .obs
+            .yahoo
+            .get("EIA_CANCELLED")
+            .and_then(|s| s.latest_value());
+        let provenance = ctx
+            .obs
+            .yahoo
+            .get("EIA_CANCELLED")
+            .map(|s| s.provenance.clone())
+            .unwrap_or(crate::model::Provenance {
+                source: "eia-860m".into(),
+                endpoint: super::super::sources::eia::URL.into(),
+                as_of: String::new(),
+                retrieved_at: crate::now_iso8601(),
+            });
+
+        let stress = crate::score::interpolate(ratio, &ic.anchors);
+        Reading::Scored {
+            stress,
+            value: ratio,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "{:.1}% of announced generating capacity has been cancelled or postponed \
+                 (${:.0} MW abandoned against {:.0} MW still planned). The grid is the binding \
+                 physical constraint on this buildout, so abandoned generation is intent that \
+                 did not survive contact with reality. INTERPRET CAREFULLY: the EIA sheets are \
+                 cumulative INVENTORIES, not flows, so this is a LEVEL of abandoned intent over \
+                 the whole accumulation window — it is NOT a rate of change and does NOT show \
+                 whether cancellations are rising now. Catching the direction of travel would \
+                 require comparing successive monthly releases, which is not implemented.",
+                ratio,
+                cancelled.unwrap_or(0.0),
+                planned.unwrap_or(0.0)
+            ),
+            provenance,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

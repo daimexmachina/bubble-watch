@@ -2,6 +2,7 @@
 
 pub mod census;
 pub mod edgar;
+pub mod eia;
 pub mod fred;
 pub mod fulltext;
 pub mod yahoo;
@@ -161,6 +162,22 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // EIA-860M planned vs cancelled generating capacity. The physical constraint on
+    // the buildout is firm electricity; this measures announced generation that was
+    // then abandoned, which turns before the spending does.
+    match eia::planned_vs_cancelled(f) {
+        Ok((planned, cancelled, ratio)) => {
+            obs.yahoo.insert("EIA_PLANNED".to_string(), planned);
+            obs.yahoo.insert("EIA_CANCELLED".to_string(), cancelled);
+            obs.eia_ratio = Some(ratio);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "eia-860m".into(),
+            endpoint: format!("{} :: Planned / Canceled or Postponed", eia::URL),
+            reason: e,
+        }),
+    }
+
     // Rest-of-world holdings of US corporate equities — the previously declared
     // "unmeasurable" blind spot. Same archive, different table; the Fetcher cache
     // means the 8MB download is reused rather than repeated.
@@ -214,6 +231,7 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
                 && !k.starts_with("PRIVATE_CREDIT")
                 && !k.starts_with("FOREIGN_US_EQUITY")
                 && !k.starts_with("DATACENTER")
+                && !k.starts_with("EIA_")
         })
         .count();
     let yahoo_fail = obs.failures.iter().filter(|x| x.source == "yahoo").count();
@@ -314,6 +332,20 @@ pub fn source_health(obs: &Observations) -> Vec<crate::model::SourceHealth> {
         .iter()
         .filter(|x| x.source == "census-c30")
         .count();
+    let eia_ok = obs.yahoo.keys().filter(|k| k.starts_with("EIA_")).count();
+    let eia_fail = obs
+        .failures
+        .iter()
+        .filter(|x| x.source == "eia-860m")
+        .count();
+    out.push(SourceHealth {
+        name: "eia-860m".into(),
+        status: status_for(eia_ok, eia_fail),
+        ok_count: eia_ok,
+        failed_count: eia_fail,
+        detail: "EIA-860M planned vs cancelled generating capacity (xlsx)".into(),
+    });
+
     out.push(SourceHealth {
         name: "census-c30".into(),
         status: status_for(c30_ok, c30_fail),

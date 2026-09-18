@@ -101,13 +101,57 @@ pub fn col_index(letters: &str) -> Option<usize> {
     Some(n - 1)
 }
 
+/// Read the shared-strings table and the first worksheet's `<sheetData>` out of an
+/// xlsx held in memory. Shared by every xlsx source, so the workbook handling has
+/// exactly one implementation.
+pub fn open_xlsx(bytes: &[u8]) -> Result<(Vec<String>, String), String> {
+    let mut ar = zip::ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|e| format!("not a readable xlsx: {}", e))?;
+    let mut read = |name: &str| -> Result<String, String> {
+        let mut e = ar
+            .by_name(name)
+            .map_err(|e| format!("{} missing from the workbook: {}", name, e))?;
+        let mut s = String::new();
+        e.read_to_string(&mut s)
+            .map_err(|e| format!("{} unreadable: {}", name, e))?;
+        Ok(s)
+    };
+    let shared = read("xl/sharedStrings.xml")?;
+    let sheet = read("xl/worksheets/sheet1.xml")?;
+    let mut strings = Vec::new();
+    let mut rest = shared.as_str();
+    while let Some(i) = rest.find("<si>") {
+        let body = &rest[i + 4..];
+        let Some(end) = body.find("</si>") else { break };
+        strings.push(si_text(&body[..end]));
+        rest = &body[end + 5..];
+    }
+    Ok((strings, sheet))
+}
+
+/// Split a worksheet into its rows' inner XML.
+pub fn xlsx_rows(sheet: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut rest = sheet;
+    while let Some(i) = rest.find("<row") {
+        let body = &rest[i..];
+        let Some(gt) = body.find('>') else { break };
+        let Some(close) = body.find("</row>") else {
+            break;
+        };
+        out.push(&body[gt + 1..close]);
+        rest = &body[close + 6..];
+    }
+    out
+}
+
 /// Read one cell: (column letters, resolved text, numeric value).
 ///
 /// Extracted as a single correct implementation because the inline version in the
 /// two loops advanced by the wrong offset and silently skipped every other cell —
 /// which made the first data row parse as all-empty while the header row happened
 /// to work.
-fn parse_cell(cell_xml: &str, strings: &[String]) -> (String, String, Option<f64>) {
+pub fn parse_cell(cell_xml: &str, strings: &[String]) -> (String, String, Option<f64>) {
     let letters: String = match cell_xml.find("r=\"") {
         Some(i) => cell_xml[i + 3..]
             .chars()
@@ -134,7 +178,7 @@ fn parse_cell(cell_xml: &str, strings: &[String]) -> (String, String, Option<f64
 }
 
 /// Split a row's XML into its cell elements, advancing past each CLOSING tag.
-fn row_cells(row: &str) -> Vec<&str> {
+pub fn row_cells(row: &str) -> Vec<&str> {
     let mut out = Vec::new();
     let mut rest = row;
     while let Some(i) = rest.find("<c ") {
@@ -150,7 +194,7 @@ fn row_cells(row: &str) -> Vec<&str> {
 }
 
 /// Extract `<t>` text from one `<si>` shared-string entry.
-fn si_text(si: &str) -> String {
+pub fn si_text(si: &str) -> String {
     let mut out = String::new();
     let mut rest = si;
     while let Some(i) = rest.find("<t") {
