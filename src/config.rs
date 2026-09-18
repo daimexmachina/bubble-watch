@@ -14,6 +14,8 @@ pub struct Config {
     pub coverage_floor: CoverageFloor,
     #[serde(default = "TrendCfg::defaults")]
     pub trend: TrendCfg,
+    #[serde(default)]
+    pub gsadf: GsadfCfg,
     pub analog: AnalogCfg,
     #[serde(default)]
     pub analog_band: Vec<AnalogBand>,
@@ -60,6 +62,39 @@ pub struct TrendCfg {
     pub coverage_tolerance_pp: f64,
     pub flat_band: f64,
     pub sparkline_points: usize,
+}
+
+/// Settings for the GSADF explosiveness test.
+#[derive(Debug, Clone, Deserialize)]
+pub struct GsadfCfg {
+    #[serde(default = "GsadfCfg::default_enabled")]
+    pub enabled: bool,
+    #[serde(default = "GsadfCfg::default_reps")]
+    pub monte_carlo_reps: usize,
+    #[serde(default = "GsadfCfg::default_seed")]
+    pub seed: u64,
+}
+
+impl GsadfCfg {
+    fn default_enabled() -> bool {
+        true
+    }
+    fn default_reps() -> usize {
+        200
+    }
+    fn default_seed() -> u64 {
+        20260917
+    }
+}
+
+impl Default for GsadfCfg {
+    fn default() -> Self {
+        GsadfCfg {
+            enabled: Self::default_enabled(),
+            monte_carlo_reps: Self::default_reps(),
+            seed: Self::default_seed(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -196,6 +231,13 @@ impl Config {
         if t.flat_band < 0.0 {
             return Err(ConfigError("trend.flat_band must not be negative".into()));
         }
+        if self.gsadf.enabled && self.gsadf.monte_carlo_reps < 20 {
+            return Err(ConfigError(
+                "gsadf.monte_carlo_reps must be at least 20 for the critical values to mean \
+                 anything"
+                    .into(),
+            ));
+        }
         if t.sparkline_points < 2 {
             return Err(ConfigError(
                 "trend.sparkline_points must be at least 2 to draw a line".into(),
@@ -241,6 +283,7 @@ mod tests {
                 high_above: 0.85,
             },
             trend: TrendCfg::defaults(),
+            gsadf: GsadfCfg::default(),
             analog: AnalogCfg {
                 method: "historical_analog".into(),
                 analogs: vec!["a".into()],

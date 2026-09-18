@@ -470,6 +470,30 @@ fn print_human(r: &bubble_watch::model::Report) {
     );
     println!("{}", "-".repeat(72));
     println!("{}", r.phase_label);
+
+    // The second, independent method. Printed next to the composite and never
+    // reconciled with it: if the two disagree, that IS the finding.
+    match &r.explosiveness {
+        Some(e) => {
+            println!();
+            println!(
+                "explosiveness test (GSADF): statistic {:.2}, {} (simulated 5% critical value {:.2})",
+                e.statistic, e.significance, e.critical.p95
+            );
+            println!(
+                "  window tested: {} to {} over {} observations",
+                e.window_start_date, e.window_end_date, e.observations
+            );
+            println!(
+                "  This is a formal hypothesis test on the price series, NOT part of the composite."
+            );
+            println!(
+                "  If it disagrees with the score above, that disagreement is the point: the two"
+            );
+            println!("  measure different things and neither is a forecast.");
+        }
+        None => {}
+    }
     match (r.analog.range_months, &r.analog.band) {
         (Some(rg), Some(b)) => println!(
             "historical analog: band '{}' — {:.0}-{:.0} months to a peak in the reference analogs (NOT a probability)",

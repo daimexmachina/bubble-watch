@@ -58,6 +58,34 @@ flat_band = 1.0
 sparkline_points = 30
 
 # ---------------------------------------------------------------------------
+# GSADF explosiveness test (methodology 1.3).
+#
+# A formal hypothesis test, NOT a scored indicator. It does not enter the
+# composite: it is a different KIND of evidence, and averaging it in would destroy
+# the value of having two independent methods.
+#
+# Reference: Phillips, Shi & Yu (2015), "Testing for Multiple Bubbles", Int. Econ.
+# Review; applied to AI/semiconductors by Sarkar & Wells (2026), Frontiers of
+# Mathematical Finance.
+#
+# The point is the DISAGREEMENT. "Composite: mid; explosiveness test: not
+# significant" is more informative than either number alone. The report shows both
+# and never reconciles them, because reconciling them would hide the tension a
+# reader should see.
+#
+# `monte_carlo_reps` controls simulated critical values. They are generated here
+# rather than taken from the published table, which is a real weakness stated in
+# the output: the simulation assumes a pure random walk with no drift and no fat
+# tails, whereas real equity returns have both.
+# ---------------------------------------------------------------------------
+[gsadf]
+enabled = true
+monte_carlo_reps = 200
+# Fixed seed so the critical values cannot move between runs. A threshold that
+# drifted run to run would make the whole report non-reproducible.
+seed = 20260917
+
+# ---------------------------------------------------------------------------
 # Historical-analog bands.
 #
 # IMPORTANT: state extremity is NOT timing. These bands map the composite score

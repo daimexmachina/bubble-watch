@@ -115,6 +115,7 @@ mod tests {
                 high_above: 0.85,
             },
             trend: TrendCfg::defaults(),
+            gsadf: GsadfCfg::default(),
             analog: AnalogCfg {
                 method: "historical_analog".into(),
                 analogs: vec![],

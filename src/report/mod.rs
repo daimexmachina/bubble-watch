@@ -65,6 +65,23 @@ pub fn build_with_history(
 
     let analog = crate::phase::analog_window(comp_opt, coverage, cfg);
 
+    // GSADF explosiveness test. A second, independent method: a formal test with
+    // a published pedigree, rather than an anchored judgement. Reported alongside
+    // the composite and never reconciled with it, because the tension between the
+    // two is exactly what a reader should see.
+    let explosiveness = if cfg.gsadf.enabled {
+        let series_key = if obs.yahoo.contains_key("SPX_MAX_mo") {
+            "SPX_MAX_mo"
+        } else {
+            "SPX_5y_mo"
+        };
+        obs.yahoo
+            .get(series_key)
+            .and_then(|s| crate::gsadf::run(&s.points, cfg.gsadf.monte_carlo_reps, cfg.gsadf.seed))
+    } else {
+        None
+    };
+
     // Direction of travel. Computed from the composite that was just produced,
     // and deliberately NOT fed back into it.
     let trend = {
@@ -285,6 +302,7 @@ pub fn build_with_history(
         },
         analog,
         trend,
+        explosiveness,
         indicators: readings,
         data_quality: DataQuality {
             total_weight,

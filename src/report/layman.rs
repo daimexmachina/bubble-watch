@@ -50,6 +50,8 @@ fn plain_name(id: &str) -> &'static str {
         "leverage" => "how much debt these companies are carrying",
         "foreign_interest" => "how much foreign money owns US shares",
         "circularity" => "money moving in circles between the companies involved",
+        "primary_market_supply" => "how many companies are filing to sell shares for the first time",
+        "backlog_quality" => "whether the big orders companies have booked are turning into money actually collected",
         _ => "one of the measurements",
     }
 }
@@ -450,6 +452,7 @@ mod tests {
                 band_note: None,
             },
             trend: Trend::empty("no history in this test"),
+            explosiveness: None,
             indicators: inds,
             data_quality: DataQuality {
                 total_weight: 100.0,
@@ -634,6 +637,32 @@ mod tests {
             "the biggest strain should be named: {}",
             s.what_is_stretched
         );
+    }
+
+    #[test]
+    fn every_configured_indicator_has_a_plain_name() {
+        // Regression guard. A new indicator that falls through to "one of the
+        // measurements" produces a summary sentence that names nothing, which is
+        // useless to the non-specialist this module exists for. Caught exactly
+        // that when backlog_quality shipped.
+        let path = std::path::Path::new("config/indicators.toml");
+        if !path.exists() {
+            return;
+        }
+        let text = std::fs::read_to_string(path).unwrap();
+        for line in text.lines() {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("id = \"") {
+                if let Some(id) = rest.strip_suffix('\"') {
+                    assert_ne!(
+                        plain_name(id),
+                        "one of the measurements",
+                        "indicator '{}' has no plain-English name; add it to plain_name()",
+                        id
+                    );
+                }
+            }
+        }
     }
 
     #[test]

@@ -27,6 +27,16 @@ pub const YAHOO_SPECS: &[YahooSpec] = &[
         range: "5y",
         interval: "1mo",
     },
+    // Long monthly history for the GSADF explosiveness test. The test needs a
+    // rolling window with enough observations to be meaningful, and a 5-year
+    // series gives only ~40 usable windows. Max range gives decades, which is
+    // what makes the test comparable to the published literature.
+    YahooSpec {
+        key: "SPX_MAX_mo",
+        symbol: "%5EGSPC",
+        range: "max",
+        interval: "1mo",
+    },
     YahooSpec {
         key: "SPX_1y_d",
         symbol: "%5EGSPC",
@@ -60,7 +70,16 @@ pub const YAHOO_SPECS: &[YahooSpec] = &[
 ];
 
 /// FRED series the model may want. All optional by construction.
-pub const FRED_SPECS: &[&str] = &["BAMLH0A0HYM2", "BAMLC0A0CM", "DGS10"];
+pub const FRED_SPECS: &[&str] = &[
+    "BAMLH0A0HYM2",
+    "BAMLC0A0CM",
+    "DGS10",
+    // Moody's Baa yield less the 10-year Treasury. Added because it carries
+    // history from 1986 whereas the ICE BofA spreads above only start in 2023,
+    // so the credit indicators otherwise have no 2000 or 2008 episode to
+    // compare against.
+    "BAA10Y",
+];
 
 /// Fetch everything. Partial failure is normal and expected: the returned
 /// `Observations` records what succeeded and what did not, and scoring proceeds

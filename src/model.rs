@@ -489,6 +489,13 @@ pub struct Report {
     /// Direction of travel since an eligible baseline. CONTEXT ONLY — it never
     /// enters the composite.
     pub trend: Trend,
+    /// GSADF explosiveness test on the price series. A different KIND of evidence
+    /// from every indicator here: a formal hypothesis test rather than a
+    /// hand-anchored judgement. Deliberately NOT folded into the composite, and
+    /// reported even when it disagrees with the composite, because the
+    /// disagreement is the informative part.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub explosiveness: Option<crate::gsadf::GsadfResult>,
     pub indicators: Vec<IndicatorReading>,
     pub data_quality: DataQuality,
     pub sources: Vec<SourceHealth>,

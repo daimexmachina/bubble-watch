@@ -5,6 +5,7 @@
 //! midpoint, and no silent fallback.
 
 pub mod config;
+pub mod gsadf;
 pub mod history;
 pub mod http;
 pub mod indicators;
