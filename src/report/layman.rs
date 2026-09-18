@@ -55,6 +55,7 @@ fn plain_name(id: &str) -> &'static str {
         "private_credit_growth" => "how fast lending outside the public bond market is growing",
         "datacenter_construction" => "how fast data-centre building is growing, as measured by the government",
         "grid_cancellations" => "how much announced power-plant capacity has been abandoned",
+        "narrative_saturation" => "how many companies are talking about AI in their official filings",
         _ => "one of the measurements",
     }
 }

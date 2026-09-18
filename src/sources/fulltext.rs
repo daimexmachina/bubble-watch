@@ -41,9 +41,25 @@ const UA: &str = "bubble-watch/0.1 (research tool; contact via repository)";
 /// zero" and "the count could not be obtained" are different facts, and treating
 /// the second as the first would silently report a collapsed primary market.
 pub fn count(f: &Fetcher, form: &str, start: &str, end: &str) -> Result<u64, String> {
+    count_query(f, "", form, start, end)
+}
+
+/// As `count`, but with an explicit `q=` value.
+///
+/// WHY THIS IS SEPARATE: `count` originally hardcoded `q=` as empty, so passing a
+/// phrase to it put the phrase into the `forms=` parameter instead. EDGAR then tried
+/// to parse the phrase as a JSON array of form types and rejected the whole request
+/// with HTTP 400. The bug was in the parameter wiring, not in the encoding.
+pub fn count_query(
+    f: &Fetcher,
+    query: &str,
+    form: &str,
+    start: &str,
+    end: &str,
+) -> Result<u64, String> {
     let url = format!(
-        "https://efts.sec.gov/LATEST/search-index?q=&forms={}&dateRange=custom&startdt={}&enddt={}",
-        form, start, end
+        "https://efts.sec.gov/LATEST/search-index?q={}&forms={}&dateRange=custom&startdt={}&enddt={}",
+        query, form, start, end
     );
     let body = f.get(&url, UA)?;
     parse_total(&body).ok_or_else(|| {
@@ -65,6 +81,51 @@ pub fn parse_total(body: &str) -> Option<u64> {
         return Some(n);
     }
     total.get("value")?.as_u64()
+}
+
+/// Count filings of one form type mentioning a phrase over a calendar year.
+///
+/// This is a CENSUS, not a sample: every filing of that form with the SEC in the
+/// period is indexed, so there is no sampling error and no panel-selection bias.
+/// That is what makes it usable as a hype measure when most alternatives (news
+/// volume, social chatter, search interest) are samples of unclear provenance.
+///
+/// The phrase must be quoted so the search treats it as a phrase rather than as
+/// separate terms.
+pub fn phrase_census(f: &Fetcher, phrase: &str, form: &str, year: i32) -> Result<u64, String> {
+    // The phrase must be wrapped in quotes so EDGAR treats it as a phrase, and the
+    // whole quoted expression percent-encoded. Building `%22phrase%22` and passing it
+    // raw made the server reject the query with HTTP 400 ("Could not parse payload
+    // into json"), because the unencoded quotes broke its parameter parsing.
+    let encoded = percent_encode_phrase(phrase);
+    count_query(
+        f,
+        &encoded,
+        form,
+        &format!("{}-01-01", year),
+        &format!("{}-12-31", year),
+    )
+    .map_err(|e| format!("{} {} {}: {}", phrase, form, year, e))
+}
+
+/// Percent-encode a phrase for the `q=` parameter, including the surrounding quotes
+/// that make it a phrase rather than a set of separate terms.
+///
+/// Verified against the live endpoint: passing `%22phrase%22` where the quotes are
+/// themselves left raw produces HTTP 400 ("Could not parse payload into json").
+pub fn percent_encode_phrase(phrase: &str) -> String {
+    let mut out = String::from("%22");
+    for b in phrase.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char)
+            }
+            b' ' => out.push('+'),
+            _ => out.push_str(&format!("%{:02X}", b)),
+        }
+    }
+    out.push_str("%22");
+    out
 }
 
 /// Calendar dates bounding a trailing window of `days`, ending at `today`.
@@ -134,6 +195,17 @@ mod tests {
         assert_eq!(parse_total("not json at all"), None);
         assert_eq!(parse_total(r#"{"hits":{"total":{"relation":"eq"}}}"#), None);
         assert_eq!(parse_total(""), None);
+    }
+
+    #[test]
+    fn phrase_encoding_wraps_in_quotes_and_encodes_spaces() {
+        assert_eq!(
+            percent_encode_phrase("artificial intelligence"),
+            "%22artificial+intelligence%22"
+        );
+        assert_eq!(percent_encode_phrase("bubble"), "%22bubble%22");
+        // A reserved character must not leak through raw.
+        assert!(percent_encode_phrase("a&b").contains("%26"));
     }
 
     #[test]

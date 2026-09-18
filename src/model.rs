@@ -322,6 +322,14 @@ pub struct Observations {
     pub fred_transports: BTreeMap<String, crate::sources::fred::Transport>,
     /// Keyed by ticker.
     pub edgar: BTreeMap<String, CompanyFacts>,
+    /// EDGAR AI-mention census: (form type, year, filing count). A census, not a
+    /// sample, and therefore usable as a hype measure when most alternatives are
+    /// samples of unclear provenance.
+    #[serde(default)]
+    pub ai_census: Vec<(String, u32, u64)>,
+    /// Provenance for the census, so the indicator can cite it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ai_census_provenance: Option<Provenance>,
     /// Cancellation ratio from EIA-860M: cancelled / (planned + cancelled), as a
     /// percentage. Stored as the formatted value the source produced so the indicator
     /// cannot silently reformat it.

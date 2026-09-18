@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.7"
+schema_version = "1.8"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -581,6 +581,43 @@ unit = "pct, cancelled or postponed capacity as a share of announced plus cancel
 source = "eia-860m"
 rationale = "How much announced power-plant capacity has been abandoned, measured against what is still planned. The grid is the binding physical constraint on the AI buildout and the interconnection queue is the practical bottleneck, so cancelled generation is intent that did not survive contact with reality and it turns before the spending does. Measured 2026-09-17 from the EIA-860M July 2026 release: 291,138 MW planned against 184,141 MW cancelled or postponed, a 38.7% ratio, with the largest abandoned categories being gas combined cycle (59,466 MW), gas combustion turbine (31,064 MW), solar (28,517 MW), onshore wind (15,752 MW) and coal (15,409 MW). INTERPRETATION LIMIT: the EIA sheets are cumulative INVENTORIES, not flows, so this is a LEVEL of abandoned intent accumulated over the window and NOT a rate of change — it does not show whether cancellations are rising now. Catching the direction of travel would require comparing successive monthly releases against each other, which is not implemented. A second limitation: the same accumulation applies to the planned side, so the denominator includes projects that will themselves be cancelled, which biases the ratio downward."
 anchors = [[5.0, 8.0], [12.0, 18.0], [20.0, 30.0], [30.0, 45.0], [40.0, 60.0], [55.0, 78.0], [75.0, 93.0]]
+
+# ---------------------------------------------------------------------------
+# Narrative saturation (NEW, methodology 1.8).
+#
+# How many companies discuss AI in their regulatory filings, from a CENSUS of SEC
+# full-text search. Measured from this host 2026-09-17:
+#
+#   10-K filings mentioning "artificial intelligence"
+#     2015     41        2021    848        2025  3,324
+#     2018    294        2023  1,295        (81x over the decade)
+#   8-K, same measure: 45 (2015) -> 4,690 (2025), 104x
+#
+# WHY THIS CENSUS AND NOT A NEWS/SEARCH MEASURE. This project refuses to guess, and
+# the usual hype proxies — news volume, social chatter, search interest — are SAMPLES
+# with unclear provenance and unstable definitions. EDGAR full-text search counts
+# EVERY filing of a form type in a period, so there is no sampling error and no
+# panel-selection bias, and the phrase can be pinned exactly. Verified to reproduce
+# to the filing: a second independent run returned identical counts for 2015, 2018,
+# 2021, 2023 and 2025.
+#
+# WHAT IT IS NOT: a valuation or a risk measure. A filing mentioning AI may come from
+# a chip designer or a bakery noting a supply-chain risk, and the count cannot tell
+# enthusiasm from caution. It measures narrative SATURATION — how far a theme has
+# spread into general disclosure — and is reported for that reason.
+#
+# SCORED ON YEAR-OVER-YEAR CHANGE, annualised. The count is bounded by the number of
+# filers and must saturate eventually. Annualising matters: without it, every run
+# before December would report a collapse in AI mentions as a calendar artefact.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "narrative_saturation"
+label = "AI narrative saturation (SEC filing census)"
+weight = 5.0
+unit = "pct, annualised year-over-year change in 10-K filings mentioning artificial intelligence"
+source = "edgar-fulltext"
+rationale = "How many companies discuss AI in their regulatory filings, used as a measure of narrative saturation rather than of valuation. EDGAR full-text search is a CENSUS, not a sample: every filing of a form type in the period is indexed, so unlike news volume, social chatter or search interest there is no sampling error, no panel-selection bias, and the phrase is pinned exactly. Measured 2026-09-17: 10-K filings mentioning 'artificial intelligence' ran 41 (2015) → 294 (2018) → 848 (2021) → 1,295 (2023) → 3,324 (2025), an 81x increase over the decade, and the 8-K equivalent ran 45 → 4,690, a 104x increase; a second independent run reproduced every figure exactly. WHAT IT DOES NOT MEASURE: it is not a valuation or a risk measure. A mention may come from a chip designer or from a bakery noting a supply-chain risk, and the count cannot distinguish enthusiasm from caution — so a high reading is equally consistent with hype spreading and with ordinary disclosure practice maturing. Scored on ANNUALISED year-over-year change, because the count is bounded by the number of filers and must saturate; annualising prevents every run before December reporting a calendar artefact as a collapse in AI mentions."
+anchors = [[-25.0, 6.0], [0.0, 14.0], [20.0, 26.0], [40.0, 42.0], [60.0, 58.0], [85.0, 75.0], [120.0, 92.0]]
 
 [[indicator]]
 id = "foreign_interest"

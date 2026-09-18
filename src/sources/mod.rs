@@ -162,6 +162,35 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // EDGAR AI-mention census: a genuine census of how many filings discuss AI,
+    // used as a hype measure with a long baseline. Two years are fetched so the
+    // indicator can form a growth rate without hardcoding history.
+    {
+        let this_year = crate::now_date()[0..4].parse::<i32>().unwrap_or(2026);
+        let mut census: Vec<(String, u32, u64)> = Vec::new();
+        for year in [this_year - 1, this_year] {
+            match fulltext::phrase_census(f, "artificial intelligence", "10-K", year) {
+                Ok(n) => census.push(("10-K".to_string(), year as u32, n)),
+                Err(e) => obs.failures.push(SourceFailure {
+                    source: "sec-edgar-fulltext".into(),
+                    endpoint: format!("10-K AI-mention census {}", year),
+                    reason: e,
+                }),
+            }
+        }
+        if !census.is_empty() {
+            obs.ai_census = census;
+            obs.ai_census_provenance = Some(crate::model::Provenance {
+                source: "sec-edgar-fulltext".into(),
+                endpoint: "efts.sec.gov/LATEST/search-index forms=10-K phrase=\"artificial \
+                           intelligence\""
+                    .into(),
+                as_of: crate::now_date(),
+                retrieved_at: crate::now_iso8601(),
+            });
+        }
+    }
+
     // EIA-860M planned vs cancelled generating capacity. The physical constraint on
     // the buildout is firm electricity; this measures announced generation that was
     // then abandoned, which turns before the spending does.

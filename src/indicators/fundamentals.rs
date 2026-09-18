@@ -1118,6 +1118,138 @@ impl Indicator for GridCancellations {
     }
 }
 
+/// How much of corporate America is talking about AI, from a census of SEC filings.
+///
+/// WHY THIS IS A HYPE MEASURE WORTH HAVING when most hype measures are not. The
+/// usual candidates — news volume, social chatter, search interest — are SAMPLES
+/// with unclear provenance and unstable definitions, and this project explicitly
+/// refuses to guess. EDGAR full-text search is different: it counts EVERY filing of
+/// a form type in a period, so there is no sampling error and no panel-selection
+/// bias, and the phrase can be pinned exactly. Measured from this host 2026-09-17:
+///
+///   10-K filings mentioning "artificial intelligence"
+///     2015     41        2021    848
+///     2018    294        2023  1,295
+///                         2025  3,324     <- 81x over the decade
+///   8-K the same measure: 45 (2015) -> 4,690 (2025), 104x
+///
+/// WHAT IT ACTUALLY MEASURES, and why that is not the same as "how bubbly the market
+/// is": it counts how many companies are DISCUSSING AI in a regulatory filing. That
+/// is a measure of narrative saturation — how far a theme has spread from specialists
+/// into every company's disclosure — and it is a genuine, checkable number.
+///
+/// IT IS NOT A VALUATION OR A RISK MEASURE, and the output says so. A filing that
+/// mentions AI may be a chip designer or a bakery noting a supply-chain risk. The
+/// count cannot distinguish enthusiasm from caution, which is why the same census can
+/// be read as hype spreading or as ordinary disclosure practice maturing. It is
+/// reported because narrative saturation is part of what a bubble looks like, and
+/// because unlike most narrative measures this one is exact.
+///
+/// SCORED ON YEAR-OVER-YEAR GROWTH of the count. The count is bounded by the number
+/// of filers, so it must saturate eventually; growth is the informative part, and a
+/// slowing count would be genuine evidence of the theme maturing rather than
+/// accelerating.
+pub struct NarrativeSaturation;
+
+impl Indicator for NarrativeSaturation {
+    fn id(&self) -> &'static str {
+        "narrative_saturation"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        // Take the two most recent years of the 10-K census.
+        let mut rows: Vec<(&String, u32, u64)> = ctx
+            .obs
+            .ai_census
+            .iter()
+            .map(|(f, y, n)| (f, *y, *n))
+            .filter(|(f, _, _)| f.as_str() == "10-K")
+            .collect();
+        rows.sort_by_key(|(_, y, _)| *y);
+        if rows.len() < 2 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the AI-mention census has {} year(s) of data; two are needed for a growth \
+                     rate",
+                    rows.len()
+                ),
+            };
+        }
+        let (_, prev_year, prev) = rows[rows.len() - 2];
+        let (_, cur_year, cur) = rows[rows.len() - 1];
+        if prev == 0 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the {} census returned zero, so no growth rate can be formed",
+                    prev_year
+                ),
+            };
+        }
+        // A partial current year understates the count, so scale it to an annual rate
+        // using elapsed months — otherwise every run before December would look like a
+        // collapse in AI mentions, which would be a systematic artefact of the calendar.
+        let today = crate::now_date();
+        let elapsed_months: f64 = if today.starts_with(&cur_year.to_string()) {
+            today[5..7].parse::<f64>().unwrap_or(12.0)
+        } else {
+            12.0
+        };
+        let annualised = cur as f64 / elapsed_months * 12.0;
+        let growth = (annualised / prev as f64 - 1.0) * 100.0;
+        let stress = crate::score::interpolate(growth, &ic.anchors);
+
+        let partial_note = if elapsed_months < 12.0 {
+            format!(
+                " {} is a PARTIAL year: {} filings so far, annualised to {:.0} using {:.0} \
+                 elapsed months, so every run before December would otherwise look like a \
+                 collapse in AI mentions.",
+                cur_year, cur, annualised, elapsed_months
+            )
+        } else {
+            String::new()
+        };
+
+        Reading::Scored {
+            stress,
+            value: growth,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "{} 10-K filings mentioned \"artificial intelligence\" in {}, against {} in \
+                 {} — a {:.0}% change. This is a CENSUS, not a sample: every filing of that \
+                 form type in the period is indexed, so unlike news volume or search interest \
+                 there is no sampling error and the phrase is pinned exactly. WHAT IT MEASURES: \
+                 how many companies discuss AI in a regulatory filing, which is narrative \
+                 SATURATION — how far a theme has spread from specialists into general \
+                 disclosure. IT IS NOT A VALUATION OR A RISK MEASURE: a mention may come from a \
+                 chip designer or from a bakery noting a supply-chain risk, and the count cannot \
+                 distinguish enthusiasm from caution. Scored on year-over-year change, since the \
+                 count is bounded by the number of filers and must saturate.{}",
+                cur, cur_year, prev, prev_year, growth, partial_note
+            ),
+            provenance: ctx
+                .obs
+                .ai_census_provenance
+                .clone()
+                .unwrap_or(crate::model::Provenance {
+                    source: "sec-edgar-fulltext".into(),
+                    endpoint: "efts.sec.gov/LATEST/search-index forms=10-K \"artificial \
+                               intelligence\""
+                        .into(),
+                    as_of: today,
+                    retrieved_at: crate::now_iso8601(),
+                }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
