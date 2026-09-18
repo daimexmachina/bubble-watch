@@ -139,6 +139,146 @@ fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
     )
 }
 
+/// The falsification panel: what would show the thesis is WRONG.
+///
+/// Placed directly after the score, deliberately high on the page. A reader who
+/// sees only "35/100, mid" and scrolls away has been given the alarm without the
+/// counter-evidence, which is the most misleading way to present this material.
+fn falsifiers_card(r: &Report) -> String {
+    if r.falsifiers.is_empty() {
+        return String::new();
+    }
+    let against = crate::falsifiers::counter_evidence_count(&r.falsifiers);
+    let total = r.falsifiers.len();
+
+    let mut rows = String::new();
+    for f in &r.falsifiers {
+        let (cls, label) = match f.verdict {
+            crate::falsifiers::Verdict::CounterEvidence => ("counter", "AGAINST"),
+            crate::falsifiers::Verdict::ConsistentWithBubble => ("forb", "for"),
+            crate::falsifiers::Verdict::Uninformative => ("uninf", "n/a"),
+        };
+        rows.push_str(&format!(
+            "<tr class='f-{cls}'><td class='f-mark'>{label}</td><td><div class='f-q'>{q}</div>\
+             <div class='f-r'>{reading}</div><div class='f-d'>{detail}</div></td></tr>",
+            cls = cls,
+            label = label,
+            q = esc(&f.question),
+            reading = esc(&f.reading),
+            detail = esc(&f.detail)
+        ));
+    }
+
+    format!(
+        "<div class='card fals'><h3 style='margin-top:0;font-size:15px'>What would show this is wrong</h3>\
+         <p style='margin:0 0 10px;font-size:13.5px'><b>{against} of {total}</b> of the tool's own \
+         falsification tests currently read as <b>counter-evidence</b> to the bubble thesis. These are \
+         measurements chosen to DISPROVE it, and the answers are reported whichever way they fall.</p>\
+         <table class='ftab'><tbody>{rows}</tbody></table>\
+         <p style='margin:12px 0 0;font-size:12px;color:#777'>These are <b>not</b> part of the score. \
+         Averaging evidence for and against into one number would merge opposite meanings, so they are \
+         reported beside it. &ldquo;n/a&rdquo; means the data cannot support a direction &mdash; stated rather than forced.</p></div>",
+        against = against,
+        total = total,
+        rows = rows
+    )
+}
+
+/// The GSADF explosiveness panel.
+///
+/// Printed next to the composite and never reconciled with it: when the two
+/// disagree, that disagreement is the finding.
+fn explosiveness_card(r: &Report) -> String {
+    let Some(e) = &r.explosiveness else {
+        return String::new();
+    };
+    let colour = if e.is_significant() {
+        "#c62828"
+    } else {
+        "#2e7d32"
+    };
+    format!(
+        "<div class='card expl'><h3 style='margin-top:0;font-size:15px'>Explosiveness test (GSADF)</h3>\
+         <div class='expl-stat' style='color:{col}'>{stat:.2}</div>\
+         <div style='font-size:13.5px;margin-bottom:6px'><b>{sig}</b> &mdash; simulated 5% critical value {p95:.2}</div>\
+         <div style='font-size:12.5px;color:#555'>Window tested: <b>{ws}</b> to <b>{we}</b> over {n} monthly observations.</div>\
+         <p style='margin:12px 0 0;font-size:12.5px;color:#777'>A formal hypothesis test on the price \
+         series &mdash; a different KIND of evidence from every indicator in the score above, which is a \
+         hand-anchored judgement. <b>It is deliberately not part of the composite.</b> If it disagrees with \
+         the score, that disagreement is the point: the two measure different things and neither is a \
+         forecast. Critical values are simulated here rather than taken from the published table, so treat \
+         them as indicative.</p></div>",
+        col = colour,
+        stat = e.statistic,
+        sig = esc(&e.significance),
+        p95 = e.critical.p95,
+        ws = esc(&e.window_start_date),
+        we = esc(&e.window_end_date),
+        n = e.observations
+    )
+}
+
+/// The per-company exposure table.
+///
+/// Three distinct absent-value states are rendered differently, because
+/// conflating them would be false: "not disclosed at all" (MSFT has no purchase
+/// obligation concept), "disclosed but stale" (AMZN's latest figure is 810 days
+/// old), and "not applicable". None is ever shown as 0.00.
+fn exposure_card(r: &Report) -> String {
+    if r.exposure.is_empty() {
+        return String::new();
+    }
+    let mut rows = String::new();
+    for (i, e) in r.exposure.iter().enumerate() {
+        let cell = |v: Option<f64>| match v {
+            Some(x) => format!("{:.2}", x),
+            None => "<span class='nd'>not disclosed</span>".to_string(),
+        };
+        rows.push_str(&format!(
+            "<tr><td class='num'>{rank}</td><td class='id'>{t}</td>\
+             <td class='num'>{debt}</td><td class='num'>{near}</td><td class='num'>{lease}</td>\
+             <td class='num'>{comm}</td><td class='num'>{rpo}</td></tr>",
+            rank = i + 1,
+            t = esc(&e.ticker),
+            debt = cell(e.debt_to_cfo),
+            near = cell(e.near_term_to_cfo),
+            lease = cell(e.lease_to_cfo),
+            comm = cell(e.commitments_to_cfo),
+            rpo = cell(e.rpo_to_revenue),
+        ));
+        // Notes go in their OWN row directly beneath the company, so each caveat
+        // stays attached to the figures it qualifies. Emitting them as a div
+        // inside tbody is invalid nesting and browsers hoisted them above the
+        // whole table, separating every caveat from its row.
+        if !e.notes.is_empty() {
+            let items: String = e
+                .notes
+                .iter()
+                .map(|n| format!("<li>{}</li>", esc(n)))
+                .collect();
+            rows.push_str(&format!(
+                "<tr class='exp-nr'><td></td><td colspan='6'><div class='exp-note'>\
+                 <span class='exp-nh'>{} caveats:</span><ul>{}</ul></div></td></tr>",
+                esc(&e.ticker),
+                items
+            ));
+        }
+    }
+    format!(
+        "<div class='card exp'><h3 style='margin-top:0;font-size:15px'>Who is most exposed</h3>\
+         <p style='margin:0 0 10px;font-size:13px'>Ratios to operating cash flow, most exposed first. \
+         This answers a different question from the score above &mdash; who carries the risk, rather than how \
+         bubble-like the configuration is &mdash; so it is <b>never folded into the composite</b>.</p>\
+         <table><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th><th>due&nbsp;&lt;1y/CFO</th>\
+         <th>leases/CFO</th><th>commitments/CFO</th><th>RPO/revenue</th></tr></thead><tbody>{rows}</tbody></table>\
+         <p style='margin:12px 0 0;font-size:12px;color:#777'>A missing figure is <b>named</b>, never shown as \
+         0.00: an absent disclosure is not a small number. Near-term debt is the &ldquo;who is tested first&rdquo; \
+         column, and for this cohort it is small for every company, so a maturity wall is not the \
+         mechanism in this cycle &mdash; the unconditional commitments are.</p></div>",
+        rows = rows
+    )
+}
+
 /// One block of the plain-English summary.
 fn layman_block(title: &str, body: &str) -> String {
     format!(
@@ -426,6 +566,38 @@ a:hover {{ text-decoration:underline; }}
 .spark-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
 code {{ background:#f1f1f1; padding:1px 5px; border-radius:3px; font-size:12.5px; }}
 .disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
+/* Falsification panel. Colour-coded by verdict so the AGAINST rows are
+   impossible to miss, since they are the ones a reader most needs to see. */
+.card.fals {{ border-left:4px solid #2e7d32; }}
+table.ftab {{ margin:0; }}
+table.ftab td {{ border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }}
+td.f-mark {{ font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }}
+tr.f-counter td.f-mark {{ color:#2e7d32; }}
+tr.f-forb td.f-mark {{ color:#ef6c00; }}
+tr.f-uninf td.f-mark {{ color:#888888; }}
+tr.f-counter {{ background:rgba(46,125,50,.05); }}
+.f-q {{ font-weight:600; font-size:13px; }}
+.f-r {{ font-size:12.5px; color:#333; margin-top:2px; }}
+.f-d {{ font-size:11.5px; color:#777; margin-top:4px; line-height:1.5; }}
+.card.expl {{ border-left:4px solid #1a73e8; }}
+details.tech {{ margin-top:10px; font-size:12px; }}
+details.tech summary {{ cursor:pointer; color:#777; }}
+details.tech .f-d {{ margin-top:6px; padding:8px 10px; background:#f7f7f7; border-radius:4px; }}
+@media (prefers-color-scheme: dark) {{ details.tech .f-d {{ background:#1e1e1e; }} }}
+.expl-stat {{ font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }}
+.card.exp {{ border-left:4px solid #6a1b9a; }}
+.nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
+.exp-note {{ font-size:11.5px; color:#777; }}
+.exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
+.exp-nh {{ font-weight:600; }}
+tr.exp-nr {{ background:rgba(179,38,30,.03); }}
+.exp-note ul {{ margin:2px 0 8px; padding-left:18px; }}
+.exp-note li {{ margin-bottom:2px; }}
+@media (prefers-color-scheme: dark) {{
+  table.ftab td {{ border-color:#2a2a2a; }}
+  .f-r {{ color:#ddd; }}
+  tr.f-counter {{ background:rgba(46,125,50,.12); }}
+}}
 svg .ax {{ fill:#5f5f5f; }}
 svg .band {{ opacity:1; }}
 svg .barlab {{ fill:#3c3c3c; }}
@@ -589,10 +761,19 @@ fn trend_card(r: &Report) -> String {
                 ind_table = ind_table
             )
         }
-        None => format!(
-            "<div class='note'>No comparison is shown. {}</div>",
-            esc(r.trend.reason.as_deref().unwrap_or("No reason recorded."))
-        ),
+        None => {
+            // The plain-English narrative above already explains the refusal in
+            // full. Repeating the raw technical reason here produced a wall of
+            // near-identical text, so the technical detail is collapsed into a
+            // footnote instead of a second paragraph.
+            let raw = r.trend.reason.as_deref().unwrap_or("No reason recorded.");
+            format!(
+                "<details class='tech'><summary>Technical reason ({} ineligible baseline(s) rejected)</summary>\
+                 <div class='f-d'>{}</div></details>",
+                raw.matches("; ").count() + 1,
+                esc(raw)
+            )
+        }
     };
 
     let warn = if r.trend.warnings.is_empty() {
@@ -744,6 +925,38 @@ li {{ margin-bottom:4px; font-size:13px; }}
   .lm-bottom {{ background:#1e2733; }}
 }}
 .disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
+/* Falsification panel. Colour-coded by verdict so the AGAINST rows are
+   impossible to miss, since they are the ones a reader most needs to see. */
+.card.fals {{ border-left:4px solid #2e7d32; }}
+table.ftab {{ margin:0; }}
+table.ftab td {{ border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }}
+td.f-mark {{ font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }}
+tr.f-counter td.f-mark {{ color:#2e7d32; }}
+tr.f-forb td.f-mark {{ color:#ef6c00; }}
+tr.f-uninf td.f-mark {{ color:#888888; }}
+tr.f-counter {{ background:rgba(46,125,50,.05); }}
+.f-q {{ font-weight:600; font-size:13px; }}
+.f-r {{ font-size:12.5px; color:#333; margin-top:2px; }}
+.f-d {{ font-size:11.5px; color:#777; margin-top:4px; line-height:1.5; }}
+.card.expl {{ border-left:4px solid #1a73e8; }}
+details.tech {{ margin-top:10px; font-size:12px; }}
+details.tech summary {{ cursor:pointer; color:#777; }}
+details.tech .f-d {{ margin-top:6px; padding:8px 10px; background:#f7f7f7; border-radius:4px; }}
+@media (prefers-color-scheme: dark) {{ details.tech .f-d {{ background:#1e1e1e; }} }}
+.expl-stat {{ font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }}
+.card.exp {{ border-left:4px solid #6a1b9a; }}
+.nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
+.exp-note {{ font-size:11.5px; color:#777; }}
+.exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
+.exp-nh {{ font-weight:600; }}
+tr.exp-nr {{ background:rgba(179,38,30,.03); }}
+.exp-note ul {{ margin:2px 0 8px; padding-left:18px; }}
+.exp-note li {{ margin-bottom:2px; }}
+@media (prefers-color-scheme: dark) {{
+  table.ftab td {{ border-color:#2a2a2a; }}
+  .f-r {{ color:#ddd; }}
+  tr.f-counter {{ background:rgba(46,125,50,.12); }}
+}}
 .spark-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
 @media (prefers-color-scheme: dark) {{ .spark-empty {{ background:#1e1e1e; color:#aaa; }} }}
 </style></head><body>
@@ -776,12 +989,18 @@ li {{ margin-bottom:4px; font-size:13px; }}
   <div style="margin-top:10px;font-size:12px;color:#777">{analogcaveat}</div>
 </div>
 
+{falscard}
+
+{explcard}
+
 {trendcard}
 
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Headline</h3>
   <p style="margin:0">{headline}</p>
 </div>
+
+{expcard}
 
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Indicators</h3>
@@ -828,6 +1047,9 @@ li {{ margin-bottom:4px; font-size:13px; }}
         analogcaveat = esc(&r.analog.caveat),
         headline = esc(&r.headline),
         trendcard = trend_card(r),
+        falscard = falsifiers_card(r),
+        explcard = explosiveness_card(r),
+        expcard = exposure_card(r),
         blind = esc(&r.layman.known_blind_spots),
         rows = rows,
         avail = r.data_quality.available_weight,
