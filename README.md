@@ -176,11 +176,29 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `breadth` | 5 | Equal-weight/cap-weight ratio vs its 200-day average | Yahoo |
 | `foreign_interest` | 5 | Rest-of-world US equity holdings, percentile of own history | Fed Z.1 |
 | `narrative_saturation` | 5 | 10-K filings mentioning AI, annualised YoY | EDGAR full-text |
+| `depreciation_subsidy` | 6 | Depreciation-rate extension while the asset base grows | SEC EDGAR |
 | `circularity` | 0 | **declared gap** — see below | — |
 
-Weight totals 134 across the 17 scored indicators. `circularity` is carried at weight 0 as an
+Weight totals 140 across the 18 scored indicators. `circularity` is carried at weight 0 as an
 explicitly acknowledged blind spot: no free source relates an equity investment to the revenue it
 generates, so it is declared rather than silently dropped.
+
+### Why NVIDIA is not in the cohort
+
+The cohort is the five **capital spenders** — the companies that build and operate the
+infrastructure — because the capex indicators measure spending. NVIDIA is the largest
+single node in the circular financing deals, and it was measured for inclusion and found
+to be on the wrong side of the trade: it is **fabless**.
+
+| | NVDA | cohort mean |
+|---|---|---|
+| capex / operating cash flow | **0.005** | 0.512 |
+| capex / revenue | **0.042** | 0.268 |
+
+Adding it would drag both ratios down ~18% and turn them into a measure of the supplier
+rather than the spender. Its chips are fabricated by others, so the buildout it drives
+shows up in its suppliers' and customers' accounts, not its own. This is a decision with
+its evidence recorded, not an oversight — see the `circularity` entry in the config.
 
 ### Two indicators are deliberately NOT in the composite
 

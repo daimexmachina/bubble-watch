@@ -380,3 +380,46 @@ cannot say "I was wrong" is not an instrument, it is a position.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
   nobody can see is not finished work.
+
+---
+
+## 13. v1.9 — the last two decisions
+
+### 13.1 NVIDIA is excluded from the capex cohort, on a measurement
+
+The circularity gap asserted that "NVIDIA is not in the cohort", which read as an
+oversight. It is a decision, and it was tested: NVIDIA is **fabless**, so its capex is
+0.005x operating cash flow against a cohort mean of 0.512, and 0.042x revenue against
+0.268. Adding it would pull both ratios down ~18% and convert them into a measure of the
+supplier rather than the spender. The claim was reworded from a fact into a decision, and
+the reasoning is recorded on `COHORT` in the source.
+
+### 13.2 The depreciation "capital subsidy" ships behind a two-stage guard
+
+Five attempts were needed, and the failures are the finding. A naive rate test flags six
+of nine companies — including AAPL and AVGO, which show the same drift with no AI capex —
+and misses ORCL, the real signal. Two data faults surfaced along the way: EDGAR repeats a
+fact once per filing that carries it, and a naive "first versus last period" compared 2017
+for one filer against 2008 for another.
+
+Working design requires both stages:
+
+1. `series_health` on gross PP&E first — rejects AMZN (gap + definition swap), META
+   (abandoned tag) and GOOGL (stale).
+2. A rate test over the trailing four annual periods, deduplicated by date, **ANDed with
+   asset growth**. The AND is what suppresses the negative controls.
+
+Result: exactly one of six flags (ORCL, −2.59pt with PP&E 4.28x).
+
+### 13.3 A structural lesson
+
+The first run measured only two filers, because the negative controls are not in the capex
+cohort — so the guard's suppression could not be exercised and the rationale claimed more
+than the code did. Fixed with a separate `ACCOUNTING_PEERS` set in its own map.
+
+Kept separate rather than folded into `COHORT` deliberately: five other indicators iterate
+the cohort, so adding peers there would have silently changed all of them.
+
+**General rule this establishes:** when a new indicator needs *different or additional
+data* than the cohort provides, give it its own source set. Widening a shared set is a
+quiet, wide-reaching change, and the blast radius is invisible at the call site.
