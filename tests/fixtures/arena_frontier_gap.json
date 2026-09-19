@@ -1,8 +1,8 @@
 {
  "source": "LMArena leaderboard dataset (huggingface.co/datasets/lmarena-ai/leaderboard-dataset), text/full parquet, category='overall'",
  "retrieved": "2026-09-19",
- "note": "Frontier-vs-open capability gap: best proprietary model rating minus best non-proprietary, per leaderboard publication date. 244 snapshots. Extracted once with pyarrow because the source is parquet; the RESULT is committed so the test suite needs no parquet reader.",
- "interpretation": "The frontier premium compressed from ~105-135 Elo (early 2024) to ~32.5 (2026-09), and briefly went NEGATIVE in Jan 2025.",
+ "note": "Frontier-vs-open capability gap: best proprietary model rating minus best non-proprietary, per leaderboard publication date. Extracted once because the source is parquet; the RESULT is committed so the test suite needs no parquet reader. Regenerate with scripts/refresh-frontier-gap.py.",
+ "interpretation": "The frontier premium compressed from ~135 Elo (2024-02) to ~32 (2026-09), and briefly went NEGATIVE in early 2025.",
  "series": [
   {
    "date": "2023-05-22",
