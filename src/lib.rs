@@ -4,6 +4,7 @@
 //! is explicitly reported as unavailable.** There is no imputation, no default
 //! midpoint, and no silent fallback.
 
+pub mod backtest;
 pub mod config;
 pub mod exposure;
 pub mod falsifiers;
