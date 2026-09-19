@@ -25,7 +25,7 @@ pub fn build(
     cfg: &Config,
     generated_at: &str,
 ) -> Report {
-    build_with_history(readings, obs, cfg, generated_at, &[], false)
+    build_with_history(readings, obs, cfg, generated_at, &[], false, false)
 }
 
 /// Assemble the final report, including direction of travel against a baseline
@@ -34,6 +34,13 @@ pub fn build(
 /// PURE — the caller loads the archive and appends the new run. `recorded`
 /// records whether this run was written to the archive, and `warnings` carries
 /// any non-fatal problems found while reading it.
+///
+/// `history_consulted` says whether the CALLER actually read the run archive.
+/// It exists because an empty slice is ambiguous: a command that never looks at
+/// history and a command that looked and found nothing both pass `&[]`, and the
+/// honest explanation of "no direction of travel" is completely different in
+/// the two cases. Passing `false` makes the report say so instead of claiming
+/// the history is empty.
 ///
 /// The trend NEVER enters the composite. It is derived from the composite, so
 /// scoring it inside the composite would make the score partly a function of its
@@ -46,6 +53,7 @@ pub fn build_with_history(
     generated_at: &str,
     archive: &[TrendPoint],
     recorded: bool,
+    history_consulted: bool,
 ) -> Report {
     let mut readings = readings;
     let (comp_opt, coverage) = crate::score::composite(&readings);
@@ -119,7 +127,17 @@ pub fn build_with_history(
 
     // Direction of travel. Computed from the composite that was just produced,
     // and deliberately NOT fed back into it.
-    let trend = {
+    let trend = if !history_consulted {
+        // This command path never reads the archive at all. Say THAT, rather than
+        // claiming no previous run exists — which would be false whenever a
+        // previous run does exist, and would promise a comparison that this
+        // command can never produce however many times it is re-run.
+        crate::model::Trend::empty(
+            "direction of travel was NOT computed because this command does not consult the \
+             run archive. Use `report` or `trend` for a comparison against a recorded run. \
+             This is a property of the command, not a statement about whether history exists.",
+        )
+    } else {
         let current = crate::history::point_from(
             &readings,
             composite,
@@ -268,16 +286,29 @@ pub fn build_with_history(
 
     // Direction of travel: state the comparability rule when no delta could be
     // produced, and state it as a REFUSAL rather than as missing data.
+    //
+    // The trailing rationale is attached ONLY when the refusal is actually about
+    // comparability. It used to be unconditional, which made it wrong in two cases:
+    // (a) the command never opened the archive, where nothing about coverage is
+    // relevant, and (b) a genuinely first-ever run, where there is simply nothing to
+    // compare against. Appending a fixed explanation of a cause that did not occur is
+    // the same class of error as inventing the number itself.
     if trend.delta.is_none() {
         if let Some(reason) = &trend.reason {
             // `trim_end_matches('.')`: reasons may end in a full stop, and
             // "{}. ..." would otherwise emit a doubled stop.
-            caveats.push(format!(
-                "DIRECTION OF TRAVEL NOT REPORTED: {}. This is deliberate — a change computed \
-                 across runs of unequal coverage would mix a real market move with the effect of \
-                 which sources happened to answer.",
-                reason.trim_end_matches('.')
-            ));
+            let body = reason.trim_end_matches('.');
+            let caveat = if reason.starts_with("No eligible baseline") {
+                format!(
+                    "DIRECTION OF TRAVEL NOT REPORTED: {}. This is deliberate — a change computed \
+                     across runs of unequal coverage would mix a real market move with the effect \
+                     of which sources happened to answer.",
+                    body
+                )
+            } else {
+                format!("DIRECTION OF TRAVEL NOT REPORTED: {}.", body)
+            };
+            caveats.push(caveat);
         }
     }
 

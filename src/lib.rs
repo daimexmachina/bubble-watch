@@ -77,7 +77,7 @@ pub fn pipeline_with_history(
     let generated_at = now_iso8601();
 
     let mut report =
-        report::build_with_history(readings, &obs, cfg, &generated_at, &archive, record);
+        report::build_with_history(readings, &obs, cfg, &generated_at, &archive, record, true);
 
     // Merge load warnings with the trend the report computed for itself.
     report.trend.warnings.append(&mut warnings);

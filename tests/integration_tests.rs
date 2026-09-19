@@ -297,6 +297,80 @@ fn a_fixture_backed_indicator_refuses_to_report_a_stale_value() {
 }
 
 #[test]
+fn a_genuinely_empty_archive_still_says_so_when_history_was_consulted() {
+    // The complement of the test below: when the caller DID open the archive and it is
+    // genuinely empty, the first-run explanation is the correct one. The fix must not
+    // have replaced an untrue message with a vague one.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixture absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = bubble_watch::indicators::Ctx { obs: &obs, cfg: &c };
+    let readings = bubble_watch::indicators::evaluate_all(&ctx);
+
+    let r = bubble_watch::report::build_with_history(
+        readings,
+        &obs,
+        &c,
+        "2026-09-19T00:00:00Z",
+        &[],
+        false,
+        true,
+    );
+    let reason = r.trend.reason.expect("reason present");
+    assert!(
+        reason.contains("No previous run is recorded yet"),
+        "a consulted-but-empty archive should get the first-run wording: {}",
+        reason
+    );
+}
+
+#[test]
+fn a_command_that_ignores_history_never_claims_history_is_empty() {
+    // `score` and `explain` never read the archive, but they render the same report
+    // structure as `report`. With an empty archive slice the report used to say "No
+    // previous run is recorded yet ... run the tool again on a later day and a comparison
+    // will appear." Both halves were false in that case: previous runs DID exist, and
+    // re-running the command could never produce a comparison because it does not open
+    // the archive at all.
+    //
+    // The property: a report built without consulting history must describe the COMMAND,
+    // not make a claim about the archive.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixture absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = bubble_watch::indicators::Ctx { obs: &obs, cfg: &c };
+    let readings = bubble_watch::indicators::evaluate_all(&ctx);
+
+    let ignored = bubble_watch::report::build(readings.clone(), &obs, &c, "2026-09-19T00:00:00Z");
+    let reason = ignored
+        .trend
+        .reason
+        .expect("a reason must be present when no delta is computed");
+
+    assert!(
+        !reason.contains("No previous run is recorded yet"),
+        "must not assert the archive is empty when the archive was never opened: {}",
+        reason
+    );
+    assert!(
+        !reason.contains("Run the tool again on a later day"),
+        "must not promise a comparison that this command can never produce: {}",
+        reason
+    );
+    assert!(
+        reason.contains("does not consult the run archive"),
+        "must say why, and it is a property of the command: {}",
+        reason
+    );
+    // And the delta must genuinely be absent, not a zero.
+    assert!(ignored.trend.delta.is_none());
+}
+
+#[test]
 fn history_never_changes_the_composite() {
     // THE load-bearing test for v1.1. The trend is derived FROM the composite,
     // so if it could also feed back into the composite, the score would partly
@@ -332,6 +406,7 @@ fn history_never_changes_the_composite() {
         &c,
         "2026-09-17T12:00:00Z",
         &archive,
+        true,
         true,
     );
 
@@ -381,6 +456,7 @@ fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
         "2026-09-17T12:00:00Z",
         &bad,
         true,
+        true,
     );
     assert!(
         r.trend.delta.is_none(),
@@ -409,6 +485,7 @@ fn a_delta_is_never_emitted_without_elapsed_days_or_matching_coverage() {
         &c,
         "2026-09-17T12:00:00Z",
         &good,
+        true,
         true,
     );
     if let Some(d) = &r2.trend.delta {
@@ -448,6 +525,7 @@ fn the_html_trend_card_needs_no_javascript_and_loads_nothing() {
         &c,
         "2026-09-17T12:00:00Z",
         &archive,
+        true,
         true,
     );
     let h = bubble_watch::report::html::render(&r);
