@@ -240,6 +240,130 @@ pub fn bottom_quartile(values: &[f64], window: usize) -> Vec<bool> {
         .collect()
 }
 
+/// Deterministic xorshift64*, so the null model is reproducible run to run. A
+/// randomised test that produced a different verdict each run would be worse than
+/// useless.
+fn next_rand(state: &mut u64) -> f64 {
+    *state ^= *state >> 12;
+    *state ^= *state << 25;
+    *state ^= *state >> 27;
+    (state.wrapping_mul(0x2545F4914F6CDD1D) >> 11) as f64 / (1u64 << 53) as f64
+}
+
+/// How many reference peaks a flag series precedes within `horizon` months.
+///
+/// An episode must have ENDED at or before the peak: a signal still running at the peak
+/// has not preceded it, or a permanently-on signal would "predict" every peak.
+pub fn peaks_preceded(set: &ShillerSet, flags: &[bool], horizon: i64) -> usize {
+    let mut caught = 0usize;
+    for (a, b) in episodes(flags) {
+        for pk in &set.peaks {
+            if let Some(pi) = set.index_of(pk) {
+                if b <= pi && (pi as i64 - a as i64) <= horizon {
+                    caught += 1;
+                    break;
+                }
+            }
+        }
+    }
+    caught
+}
+
+/// The result of a NULL-MODEL test: is a signal better than a coin with the same
+/// on-rate?
+///
+/// This is the test that matters, and the one the three-peak version could not run.
+/// "Caught N peaks" is meaningless alone: with a 0.7% base rate, a signal ON half the
+/// time sits before many peaks simply by covering many months. The right question is
+/// whether STRUCTURE beats a random signal firing the SAME NUMBER of months.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct NullTest {
+    pub signal: String,
+    pub months_on: usize,
+    pub peaks_caught: usize,
+    pub peaks_total: usize,
+    /// Median peaks caught by random signals with the same on-rate.
+    pub random_median: usize,
+    /// 95th percentile of that null distribution.
+    pub random_p95: usize,
+    /// Share of random draws that matched or beat the real signal. Near 1 = no signal.
+    pub p_value: f64,
+}
+
+impl NullTest {
+    pub fn beats_chance(&self) -> bool {
+        self.p_value < 0.05
+    }
+
+    pub fn verdict(&self) -> String {
+        if self.beats_chance() {
+            format!(
+                "beats chance at p={:.3} — worth investigating further, though one signal \
+                 surviving one test is not evidence of a usable predictor",
+                self.p_value
+            )
+        } else {
+            format!(
+                "INDISTINGUISHABLE FROM CHANCE (p={:.3}): a random signal firing the same {} months \
+                 catches a median of {} of {} peaks. The structure adds nothing.",
+                self.p_value, self.months_on, self.random_median, self.peaks_total
+            )
+        }
+    }
+}
+
+/// Run the null model: draw `trials` random flag sets with the SAME number of ON months
+/// and compare how many peaks each precedes.
+///
+/// Sampling is without replacement, so a draw cannot switch a month on twice and the
+/// on-rate is matched exactly — which is the whole point. Comparing against a random
+/// signal of DIFFERENT on-rate would prove nothing either way.
+pub fn null_test(
+    name: &str,
+    set: &ShillerSet,
+    flags: &[bool],
+    horizon: i64,
+    trials: usize,
+    seed: u64,
+) -> NullTest {
+    let n = flags.len();
+    let months_on = flags.iter().filter(|f| **f).count();
+    let observed = peaks_preceded(set, flags, horizon);
+
+    let mut state = seed | 1;
+    let mut pool: Vec<usize> = (0..n).collect();
+    let mut draws: Vec<usize> = Vec::with_capacity(trials);
+    for _ in 0..trials {
+        let mut picked = vec![false; n];
+        for placed in 0..months_on.min(n) {
+            // jitter the pool each trial so the draws are not identical
+            let j = placed + (next_rand(&mut state) * (n - placed) as f64) as usize;
+            let j = j.min(n - 1);
+            pool.swap(placed, j);
+            picked[pool[placed]] = true;
+        }
+        draws.push(peaks_preceded(set, &picked, horizon));
+    }
+    draws.sort_unstable();
+    let median = draws.get(draws.len() / 2).copied().unwrap_or(0);
+    let p95 = draws
+        .get(((draws.len() as f64 * 0.95) as usize).min(draws.len() - 1))
+        .copied()
+        .unwrap_or(0);
+    let at_least = draws.iter().filter(|d| **d >= observed).count();
+    let p_value = (at_least + 1) as f64 / (draws.len() + 1) as f64;
+
+    NullTest {
+        signal: name.to_string(),
+        months_on,
+        peaks_caught: observed,
+        peaks_total: set.peaks.len(),
+        random_median: median,
+        random_p95: p95,
+        p_value,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -397,5 +521,193 @@ mod tests {
             b.months_on_pct > 5.0,
             "it should be on often enough that catching peaks is unsurprising"
         );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SHILLER EXTENSION: 155 years instead of 36, and the null model that matters.
+// ---------------------------------------------------------------------------
+
+/// The Shiller reference set, loaded from the committed fixture.
+///
+/// 1,833 monthly observations (1871-01 to 2023-09) and 13 crash peaks, against the 3
+/// available from 1986 onward. Extracted from Shiller's `ie_data.xls`, which is legacy
+/// OLE2/BIFF rather than xlsx, so the extraction used a one-off Python step and the
+/// RESULT is committed as JSON — the test suite needs neither the download nor a
+/// legacy-format reader.
+pub struct ShillerSet {
+    pub months: Vec<String>,
+    pub prices: Vec<f64>,
+    pub peaks: Vec<String>,
+}
+
+impl ShillerSet {
+    /// Load from `tests/fixtures/shiller_spx.json`, or None when absent.
+    pub fn load() -> Option<ShillerSet> {
+        let path = std::path::Path::new("tests/fixtures/shiller_spx.json");
+        let text = std::fs::read_to_string(path).ok()?;
+        let v: serde_json::Value = serde_json::from_str(&text).ok()?;
+        let months = v
+            .get("months")?
+            .as_array()?
+            .iter()
+            .filter_map(|p| Some(p.as_array()?.first()?.as_str()?.to_string()))
+            .collect();
+        let prices = v
+            .get("months")?
+            .as_array()?
+            .iter()
+            .filter_map(|p| p.as_array()?.get(1)?.as_f64())
+            .collect();
+        let peaks = v
+            .get("peaks")?
+            .as_array()?
+            .iter()
+            .filter_map(|p| Some(p.get("peak")?.as_str()?.to_string()))
+            .collect();
+        Some(ShillerSet {
+            months,
+            prices,
+            peaks,
+        })
+    }
+
+    pub fn index_of(&self, month: &str) -> Option<usize> {
+        self.months.iter().position(|m| m == month)
+    }
+
+    /// Trailing 12-month return, in percent. NaN for the first 12 months.
+    pub fn momentum_12m(&self) -> Vec<f64> {
+        (0..self.prices.len())
+            .map(|i| {
+                if i < 12 {
+                    f64::NAN
+                } else {
+                    (self.prices[i] / self.prices[i - 12] - 1.0) * 100.0
+                }
+            })
+            .collect()
+    }
+
+    /// Months from `i` to the NEXT peak, or None if no peak follows.
+    pub fn months_to_next_peak(&self, i: usize) -> Option<i64> {
+        self.peaks
+            .iter()
+            .filter_map(|pk| self.index_of(pk))
+            .filter(|pi| *pi >= i)
+            .map(|pi| pi as i64 - i as i64)
+            .min()
+    }
+}
+
+#[cfg(test)]
+mod shiller_tests {
+    use super::*;
+    #[test]
+    fn the_shiller_fixture_loads_with_155_years_and_13_peaks() {
+        let Some(set) = ShillerSet::load() else {
+            eprintln!("SKIP: shiller fixture absent");
+            return;
+        };
+        assert!(
+            set.months.len() > 1800,
+            "expected ~1833 months, got {}",
+            set.months.len()
+        );
+        assert_eq!(set.months.len(), set.prices.len());
+        assert!(
+            set.peaks.len() >= 12,
+            "expected 13 peaks, got {}",
+            set.peaks.len()
+        );
+        assert_eq!(set.months[0], "1871-01");
+        // the famous ones must be present, or the peak rule is wrong
+        for pk in ["1929-09", "1987-08", "2000-08", "2007-10", "2021-12"] {
+            assert!(
+                set.peaks.contains(&pk.to_string()),
+                "missing reference peak {}",
+                pk
+            );
+        }
+    }
+
+    #[test]
+    fn a_signal_is_indistinguishable_from_chance_on_155_years() {
+        // THE headline finding. With 13 peaks over 155 years, a 12-month momentum
+        // threshold does not beat a random signal that fires the same number of months.
+        let Some(set) = ShillerSet::load() else {
+            eprintln!("SKIP: shiller fixture absent");
+            return;
+        };
+        let mom = set.momentum_12m();
+        let flags: Vec<bool> = mom.iter().map(|m| m.is_finite() && *m > 25.0).collect();
+        let t = null_test("12m return > 25%", &set, &flags, 24, 300, 12345);
+        assert!(
+            !t.beats_chance(),
+            "momentum must NOT beat chance on this data, got p={:.3} (caught {} vs random median {})",
+            t.p_value, t.peaks_caught, t.random_median
+        );
+        assert!(
+            t.months_on > 100,
+            "the signal should be on often enough that catching peaks is unsurprising"
+        );
+    }
+
+    #[test]
+    fn the_null_model_is_deterministic() {
+        // A randomised test that produced different verdicts run to run would be worse
+        // than useless, so the seed is fixed and this asserts it.
+        let Some(set) = ShillerSet::load() else {
+            eprintln!("SKIP: shiller fixture absent");
+            return;
+        };
+        let mom = set.momentum_12m();
+        let flags: Vec<bool> = mom.iter().map(|m| m.is_finite() && *m > 25.0).collect();
+        let a = null_test("x", &set, &flags, 24, 100, 7);
+        let b = null_test("x", &set, &flags, 24, 100, 7);
+        assert_eq!(a, b);
+        let c = null_test("x", &set, &flags, 24, 100, 8);
+        assert!(
+            c.random_median > 0,
+            "a different seed still draws random signals"
+        );
+    }
+
+    #[test]
+    fn a_random_signal_catches_peaks_by_construction() {
+        // Guards the reason the null model exists: a signal that is on more often
+        // catches more peaks, with no structure at all. If this ever fails, the null
+        // model itself is broken.
+        let Some(set) = ShillerSet::load() else {
+            eprintln!("SKIP: shiller fixture absent");
+            return;
+        };
+        let n = set.months.len();
+        let rare: Vec<bool> = (0..n).map(|i| i % 50 == 0).collect(); // ~2% on
+        let often: Vec<bool> = (0..n).map(|i| i % 3 == 0).collect(); // ~33% on
+        let t_rare = null_test("rare", &set, &rare, 24, 200, 1);
+        let t_often = null_test("often", &set, &often, 24, 200, 1);
+        assert!(
+            t_often.peaks_caught > t_rare.peaks_caught,
+            "being on more often should catch more peaks purely by coverage: {} vs {}",
+            t_often.peaks_caught,
+            t_rare.peaks_caught
+        );
+    }
+
+    #[test]
+    fn months_to_next_peak_is_none_after_the_final_peak() {
+        let Some(set) = ShillerSet::load() else {
+            eprintln!("SKIP: shiller fixture absent");
+            return;
+        };
+        let last = set.months.len() - 1;
+        // 2021-12 is the final reference peak, so the last month follows it
+        assert!(set.months[last] > "2021-12".to_string());
+        assert!(set.months_to_next_peak(last).is_none());
+        // and a month before the 1929 peak must resolve to something
+        if let Some(i) = set.index_of("1929-01") {
+            assert!(set.months_to_next_peak(i).is_some());
+        }
     }
 }
