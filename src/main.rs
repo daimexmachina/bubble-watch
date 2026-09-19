@@ -471,6 +471,31 @@ fn print_human(r: &bubble_watch::model::Report) {
     println!("{}", "-".repeat(72));
     println!("{}", r.phase_label);
 
+    // Declared judgment. Printed after the falsifiers: the reader has seen what would
+    // disprove the thesis, and now sees what the tool DOES NOT claim to measure.
+    if !r.judgments.is_empty() {
+        let against = bubble_watch::subjective::against_count(&r.judgments);
+        let jonly = bubble_watch::subjective::judgment_only_count(&r.judgments);
+        println!();
+        println!(
+            "DECLARED JUDGMENT AND UNSCORED EVIDENCE ({} entries; {} bear against the thesis, {} are judgment only)",
+            r.judgments.len(), against, jonly
+        );
+        println!("  NOT part of the composite. A belief averaged into a measurement would destroy");
+        println!("  the distinction between the two, so judgment is declared here instead.");
+        for j in &r.judgments {
+            println!(
+                "  [{} / {} / {}] {}",
+                j.bears.as_str(),
+                j.basis.as_str(),
+                j.confidence.as_str(),
+                j.claim
+            );
+            println!("      evidence : {}", j.evidence);
+            println!("      falsifier: {}", j.must_not);
+        }
+    }
+
     // Falsification tests. Printed BEFORE the exposure table and after the score,
     // because the reader should see what would prove the tool wrong before they
     // see a number that might otherwise only reassure them one way.

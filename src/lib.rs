@@ -17,6 +17,7 @@ pub mod phase;
 pub mod report;
 pub mod score;
 pub mod sources;
+pub mod subjective;
 
 /// Current UTC time as ISO-8601, or a clear marker if the clock is unusable.
 pub fn now_iso8601() -> String {

@@ -70,6 +70,9 @@ pub fn build_with_history(
     // and never folded in.
     let exposure = crate::exposure::build(obs, &crate::history::date_of(generated_at));
 
+    // Declared judgment. Reported beside the composite, never inside it.
+    let judgments = crate::subjective::build();
+
     // Falsification tests. Reported beside the composite, never inside it.
     let falsifiers = crate::falsifiers::build(obs);
 
@@ -341,6 +344,7 @@ pub fn build_with_history(
         trend,
         exposure,
         falsifiers,
+        judgments,
         explosiveness,
         indicators: readings,
         data_quality: DataQuality {

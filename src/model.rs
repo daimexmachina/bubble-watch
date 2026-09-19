@@ -601,6 +601,12 @@ pub struct Report {
     /// enters a market-level composite.
     #[serde(default)]
     pub exposure: Vec<crate::exposure::CompanyExposure>,
+    /// Declared subjective judgment and measured-but-unscored evidence. CONTEXT ONLY,
+    /// never in the composite: averaging a belief into a measurement would destroy the
+    /// distinction the project rests on. Every entry names its evidence class and how it
+    /// could be shown wrong.
+    #[serde(default)]
+    pub judgments: Vec<crate::subjective::Judgment>,
     /// Falsification tests: measurements that could show the bubble thesis is
     /// WRONG. Deliberately NOT in the composite — averaging "evidence for" and
     /// "evidence against" into one number would be a category error.

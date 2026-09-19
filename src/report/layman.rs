@@ -459,6 +459,7 @@ mod tests {
             trend: Trend::empty("no history in this test"),
             exposure: Vec::new(),
             falsifiers: Vec::new(),
+            judgments: Vec::new(),
             explosiveness: None,
             indicators: inds,
             data_quality: DataQuality {

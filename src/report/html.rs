@@ -139,6 +139,57 @@ fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
     )
 }
 
+/// The declared-judgment panel.
+///
+/// Placed AFTER the falsifiers and before the indicator tables. Deliberately grouped
+/// with the other out-of-composite material so the report has a clear shape: score,
+/// then what would disprove it, then what is belief rather than measurement.
+fn judgments_card(r: &Report) -> String {
+    if r.judgments.is_empty() {
+        return String::new();
+    }
+    let against = crate::subjective::against_count(&r.judgments);
+    let jonly = crate::subjective::judgment_only_count(&r.judgments);
+    let mut rows = String::new();
+    for j in &r.judgments {
+        let cls = match j.bears {
+            crate::subjective::Bears::Supports => "j-sup",
+            crate::subjective::Bears::Against => "j-aga",
+            crate::subjective::Bears::Ambiguous => "j-amb",
+        };
+        rows.push_str(&format!(
+            "<tr class='{cls}'><td><div class='j-claim'>{claim}</div>\
+             <div class='j-meta'>{bears} &middot; {basis} &middot; {conf} confidence</div>\
+             <div class='j-ev'><b>Evidence:</b> {ev}</div>\
+             <div class='j-fal'><b>How this could be wrong:</b> {fal}</div></td></tr>",
+            cls = cls,
+            claim = esc(&j.claim),
+            bears = esc(j.bears.as_str()),
+            basis = esc(j.basis.as_str()),
+            conf = esc(j.confidence.as_str()),
+            ev = esc(&j.evidence),
+            fal = esc(&j.must_not)
+        ));
+    }
+    format!(
+        "<div class='card judg'><h3 style='margin-top:0;font-size:15px'>Declared judgment and \
+         unscored evidence</h3>\
+         <p style='margin:0 0 10px;font-size:13.5px'>{n} entries: <b>{against}</b> bear against the \
+         bubble thesis, <b>{jonly}</b> are interpretation with no measured number behind them. \
+         Every entry states how it could be shown wrong &mdash; an entry that could not be \
+         falsified would make any outcome confirm it, which is the reasoning this report exists \
+         to refuse.</p>\
+         <table class='jtab'><tbody>{rows}</tbody></table>\
+         <p style='margin:12px 0 0;font-size:12px;color:#777'>This section is <b>not</b> part of \
+         the score. Judgment is declared here rather than hidden inside the indicator anchors, \
+         where it would be indistinguishable from arithmetic.</p></div>",
+        n = r.judgments.len(),
+        against = against,
+        jonly = jonly,
+        rows = rows
+    )
+}
+
 /// The falsification panel: what would show the thesis is WRONG.
 ///
 /// Placed directly after the score, deliberately high on the page. A reader who
@@ -586,6 +637,18 @@ details.tech .f-d {{ margin-top:6px; padding:8px 10px; background:#f7f7f7; borde
 @media (prefers-color-scheme: dark) {{ details.tech .f-d {{ background:#1e1e1e; }} }}
 .expl-stat {{ font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }}
 .card.exp {{ border-left:4px solid #6a1b9a; }}
+.card.judg {{ border-left:4px solid #5f6368; }}
+table.jtab td {{ border-bottom:1px solid #eee; padding:10px 8px; vertical-align:top; }}
+.j-claim {{ font-weight:600; font-size:13px; }}
+.j-meta {{ font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:#888; margin:2px 0 5px; }}
+.j-ev, .j-fal {{ font-size:12px; color:#444; margin-top:4px; line-height:1.5; }}
+.j-fal {{ color:#7a3e12; }}
+tr.j-sup {{ background:rgba(239,108,0,.05); }}
+tr.j-aga {{ background:rgba(46,125,50,.06); }}
+@media (prefers-color-scheme: dark) {{
+  table.jtab td {{ border-color:#2a2a2a; }}
+  .j-ev {{ color:#ccc; }} .j-fal {{ color:#e0a878; }}
+}}
 .nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
 .exp-note {{ font-size:11.5px; color:#777; }}
 .exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
@@ -945,6 +1008,18 @@ details.tech .f-d {{ margin-top:6px; padding:8px 10px; background:#f7f7f7; borde
 @media (prefers-color-scheme: dark) {{ details.tech .f-d {{ background:#1e1e1e; }} }}
 .expl-stat {{ font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }}
 .card.exp {{ border-left:4px solid #6a1b9a; }}
+.card.judg {{ border-left:4px solid #5f6368; }}
+table.jtab td {{ border-bottom:1px solid #eee; padding:10px 8px; vertical-align:top; }}
+.j-claim {{ font-weight:600; font-size:13px; }}
+.j-meta {{ font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:#888; margin:2px 0 5px; }}
+.j-ev, .j-fal {{ font-size:12px; color:#444; margin-top:4px; line-height:1.5; }}
+.j-fal {{ color:#7a3e12; }}
+tr.j-sup {{ background:rgba(239,108,0,.05); }}
+tr.j-aga {{ background:rgba(46,125,50,.06); }}
+@media (prefers-color-scheme: dark) {{
+  table.jtab td {{ border-color:#2a2a2a; }}
+  .j-ev {{ color:#ccc; }} .j-fal {{ color:#e0a878; }}
+}}
 .nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
 .exp-note {{ font-size:11.5px; color:#777; }}
 .exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
@@ -988,6 +1063,8 @@ tr.exp-nr {{ background:rgba(179,38,30,.03); }}
   <div style="margin-top:6px;font-size:13px">{analog}</div>
   <div style="margin-top:10px;font-size:12px;color:#777">{analogcaveat}</div>
 </div>
+
+{judgcard}
 
 {falscard}
 
@@ -1048,6 +1125,7 @@ tr.exp-nr {{ background:rgba(179,38,30,.03); }}
         headline = esc(&r.headline),
         trendcard = trend_card(r),
         falscard = falsifiers_card(r),
+        judgcard = judgments_card(r),
         explcard = explosiveness_card(r),
         expcard = exposure_card(r),
         blind = esc(&r.layman.known_blind_spots),
