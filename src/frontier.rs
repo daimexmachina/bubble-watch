@@ -191,6 +191,25 @@ mod tests {
     }
 
     #[test]
+    fn staleness_is_measurable_from_the_series_itself() {
+        // The guard in the indicator needs to know the age of the newest snapshot
+        // relative to the run. That arithmetic lives here so it is testable without
+        // constructing a whole Observations.
+        let p = vec![GapPoint {
+            date: "2026-09-13".into(),
+            best_proprietary: 1507.6,
+            best_open: 1475.1,
+            gap: 32.5,
+            best_proprietary_model: "a".into(),
+            best_open_model: "b".into(),
+        }];
+        let last = p.last().unwrap();
+        // 120-day limit: fresh on the day, stale well past it
+        assert!(crate::sources::edgar::days_between(&last.date, "2026-09-19") < 120);
+        assert!(crate::sources::edgar::days_between(&last.date, "2027-06-01") > 120);
+    }
+
+    #[test]
     fn points_convert_for_the_shared_plumbing() {
         let g = vec![GapPoint {
             date: "2026-09-13".into(),

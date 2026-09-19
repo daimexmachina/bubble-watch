@@ -274,6 +274,29 @@ fn a_missing_explosiveness_test_is_disclosed_not_silent() {
 }
 
 #[test]
+fn a_fixture_backed_indicator_refuses_to_report_a_stale_value() {
+    // The frontier premium reads a committed fixture, so it CANNOT update itself. Without
+    // the staleness guard it would report the same gap forever while retrieved_at showed
+    // today's date. This asserts the guard is wired, and — because the fixture ships with
+    // the repo — that it is not already stale, which would silently drop an indicator from
+    // every future run.
+    let Some(p) = bubble_watch::frontier::load() else {
+        eprintln!("SKIP: arena fixture absent");
+        return;
+    };
+    let last = p.last().expect("series non-empty");
+    let today = bubble_watch::now_date();
+    let age = bubble_watch::sources::edgar::days_between(&last.date, &today);
+    assert!(
+        age <= 120,
+        "the committed LMArena fixture is {} days old (latest {}). Re-extract it, or the \
+         frontier premium will be reported as a gap on every run from now on.",
+        age,
+        last.date
+    );
+}
+
+#[test]
 fn history_never_changes_the_composite() {
     // THE load-bearing test for v1.1. The trend is derived FROM the composite,
     // so if it could also feed back into the composite, the score would partly

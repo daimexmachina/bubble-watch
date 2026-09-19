@@ -1512,6 +1512,34 @@ impl Indicator for FrontierPremium {
                 reason: "the frontier-gap series is empty".into(),
             };
         };
+
+        // STALENESS GUARD. This indicator reads a committed fixture rather than the
+        // network, so it cannot update itself — and without this check it would report
+        // the same gap value forever while `retrieved_at` showed today's date. A frozen
+        // number wearing a fresh timestamp is exactly the stale-presented-as-current
+        // failure the honesty contract forbids, and it would be invisible to a reader.
+        //
+        // The age is measured against the run's own retrieval time, and past the limit
+        // the indicator becomes a REPORTED GAP that names the fixture's vintage and says
+        // how to refresh it. Refusing to score beats scoring something outdated.
+        const MAX_AGE_DAYS: i64 = 120;
+        let run_date = crate::history::date_of(&ctx.obs.retrieved_at);
+        let age = crate::sources::edgar::days_between(&last.date, &run_date);
+        if age > MAX_AGE_DAYS {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the LMArena frontier-gap fixture is STALE: its latest snapshot is {} \
+                     ({} days before this run, limit {}). This indicator reads a committed \
+                     fixture rather than the network, so it must be re-extracted to update. \
+                     Reported as a gap rather than scored, because a frozen value presented \
+                     with a fresh retrieval timestamp would be stale data read as current. \
+                     To refresh: re-download the LMArena parquet, re-run the extraction, and \
+                     commit the updated fixture.",
+                    last.date, age, MAX_AGE_DAYS
+                ),
+            };
+        }
+
         let compression = crate::frontier::compression_from_peak_pct(&series).unwrap_or(0.0);
         // INVERTED: a narrow gap scores as high stress. Anchors are on the gap in Elo.
         let stress = crate::score::interpolate(last.gap, &ic.anchors);
@@ -1532,13 +1560,17 @@ impl Indicator for FrontierPremium {
                  that generate the revenue; a 'Proprietary' licence is not literally 'weights \
                  unreleased'; and the gap is between the single best model on each side, so one \
                  release moves it sharply. The series also went briefly NEGATIVE in early 2025, \
-                 when the best open model outranked the best closed one outright.",
+                 when the best open model outranked the best closed one outright. READ FROM A \
+                 COMMITTED FIXTURE ({} vintage), so it does not update itself: the staleness \
+                 guard converts it to a reported gap past {} days.",
                 last.best_proprietary_model,
                 last.best_open_model,
                 last.gap,
                 pk.gap,
                 pk.date,
-                compression
+                compression,
+                last.date,
+                MAX_AGE_DAYS
             ),
             provenance: crate::model::Provenance {
                 source: "lmarena".into(),
