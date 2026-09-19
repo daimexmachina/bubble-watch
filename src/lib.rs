@@ -8,6 +8,7 @@ pub mod backtest;
 pub mod config;
 pub mod exposure;
 pub mod falsifiers;
+pub mod frontier;
 pub mod gsadf;
 pub mod history;
 pub mod http;

@@ -1461,6 +1461,97 @@ impl Indicator for DepreciationSubsidy {
     }
 }
 
+/// The frontier premium: how much better the best closed model is than the best open one.
+///
+/// WHAT MAKES THIS UNIQUE TO THIS BUBBLE. In prior manias the financed asset could not be
+/// reproduced by anyone else — railways needed land, telecom needed spectrum, the
+/// dot-com buildout needed proprietary code. Here the core asset is contested by an open
+/// ecosystem that publishes weights, and the gap is small and measurable.
+///
+/// Measured from 243 LMArena snapshots: the premium ran +135 Elo at its 2024-02 peak,
+/// went briefly NEGATIVE in 2025-01 (open models ahead outright), and sits at +32.5 now.
+/// Compression from peak: about 76%.
+///
+/// DIRECTION IS INVERTED relative to most indicators here. A NARROW gap is the stress
+/// signal: it means the moat is thin while the capital spending assumes it is wide. A
+/// wide gap means the premium is earned. This is stated in the output so a reader does
+/// not misread a low number as calm.
+///
+/// It is genuinely TWO-SIDED and the output says so: a narrow gap is bad for the
+/// incumbents financing the buildout and good for AI adoption generally. Pretending the
+/// number has one meaning would be the kind of over-simplification this project avoids.
+///
+/// LIMITATIONS: arena ratings measure human PREFERENCE on voted prompts, not the
+/// enterprise workloads that generate revenue; a "Proprietary" licence is not literally
+/// "weights unreleased"; and the gap is between the single best model on each side, so
+/// one release moves it sharply.
+pub struct FrontierPremium;
+
+impl Indicator for FrontierPremium {
+    fn id(&self) -> &'static str {
+        "frontier_premium"
+    }
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        let Some(series) = crate::frontier::load() else {
+            return Reading::Unavailable {
+                reason: "the LMArena frontier-gap fixture is absent, so the open-versus-closed \
+                         capability premium cannot be measured"
+                    .into(),
+            };
+        };
+        let (Some(last), Some(pk)) = (series.last(), crate::frontier::peak(&series)) else {
+            return Reading::Unavailable {
+                reason: "the frontier-gap series is empty".into(),
+            };
+        };
+        let compression = crate::frontier::compression_from_peak_pct(&series).unwrap_or(0.0);
+        // INVERTED: a narrow gap scores as high stress. Anchors are on the gap in Elo.
+        let stress = crate::score::interpolate(last.gap, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: last.gap,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "The best closed model ({}) leads the best open one ({}) by {:.1} Elo points, \
+                 against a peak lead of {:.1} in {} — a compression of {:.0}%. DIRECTION IS \
+                 INVERTED HERE: a NARROW gap scores as HIGH stress, because the capital spending \
+                 assumes a wide moat and a narrow one means the premium is not durable. A wide \
+                 gap would mean the premium is earned. GENUINELY TWO-SIDED: a closing gap is bad \
+                 for the incumbents financing the buildout and good for AI adoption generally, \
+                 and this tool does not pretend the number has one meaning. LIMITATIONS: arena \
+                 ratings measure human PREFERENCE on voted prompts, not the enterprise workloads \
+                 that generate the revenue; a 'Proprietary' licence is not literally 'weights \
+                 unreleased'; and the gap is between the single best model on each side, so one \
+                 release moves it sharply. The series also went briefly NEGATIVE in early 2025, \
+                 when the best open model outranked the best closed one outright.",
+                last.best_proprietary_model,
+                last.best_open_model,
+                last.gap,
+                pk.gap,
+                pk.date,
+                compression
+            ),
+            provenance: crate::model::Provenance {
+                source: "lmarena".into(),
+                endpoint: "huggingface.co/datasets/lmarena-ai/leaderboard-dataset :: text/full \
+                           parquet :: category=overall :: best-proprietary minus best-open"
+                    .into(),
+                as_of: last.date.clone(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

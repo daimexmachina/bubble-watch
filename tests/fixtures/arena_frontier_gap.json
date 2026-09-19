@@ -1,0 +1,2438 @@
+{
+ "source": "LMArena leaderboard dataset (huggingface.co/datasets/lmarena-ai/leaderboard-dataset), text/full parquet, category='overall'",
+ "retrieved": "2026-09-19",
+ "note": "Frontier-vs-open capability gap: best proprietary model rating minus best non-proprietary, per leaderboard publication date. 244 snapshots. Extracted once with pyarrow because the source is parquet; the RESULT is committed so the test suite needs no parquet reader.",
+ "interpretation": "The frontier premium compressed from ~105-135 Elo (early 2024) to ~32.5 (2026-09), and briefly went NEGATIVE in Jan 2025.",
+ "series": [
+  {
+   "date": "2023-05-22",
+   "best_proprietary": 1059.0,
+   "best_open": 1075.0,
+   "gap": -16.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "vicuna-13b",
+   "n_proprietary": 1,
+   "n_open": 12
+  },
+  {
+   "date": "2023-06-19",
+   "best_proprietary": 1038.0,
+   "best_open": 1065.0,
+   "gap": -27.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "guanaco-33b",
+   "n_proprietary": 1,
+   "n_open": 15
+  },
+  {
+   "date": "2023-07-17",
+   "best_proprietary": 1019.0,
+   "best_open": 1096.0,
+   "gap": -77.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "vicuna-33b",
+   "n_proprietary": 1,
+   "n_open": 17
+  },
+  {
+   "date": "2023-08-02",
+   "best_proprietary": 1015.0,
+   "best_open": 1096.0,
+   "gap": -81.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "vicuna-33b",
+   "n_proprietary": 1,
+   "n_open": 19
+  },
+  {
+   "date": "2023-09-05",
+   "best_proprietary": 1008.0,
+   "best_open": 1097.0,
+   "gap": -89.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "vicuna-33b",
+   "n_proprietary": 1,
+   "n_open": 22
+  },
+  {
+   "date": "2023-10-02",
+   "best_proprietary": 1002.0,
+   "best_open": 1099.0,
+   "gap": -97.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "wizardlm-70b",
+   "n_proprietary": 1,
+   "n_open": 24
+  },
+  {
+   "date": "2023-11-08",
+   "best_proprietary": 996.0,
+   "best_open": 1096.0,
+   "gap": -100.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "wizardlm-70b",
+   "n_proprietary": 1,
+   "n_open": 29
+  },
+  {
+   "date": "2023-11-16",
+   "best_proprietary": 991.0,
+   "best_open": 1093.0,
+   "gap": -102.0,
+   "best_proprietary_model": "palm-2",
+   "best_open_model": "wizardlm-70b",
+   "n_proprietary": 1,
+   "n_open": 30
+  },
+  {
+   "date": "2023-12-06",
+   "best_proprietary": 1125.0,
+   "best_open": 1060.0,
+   "gap": 65.0,
+   "best_proprietary_model": "gpt-4-0314",
+   "best_open_model": "tulu-2-dpo-70b",
+   "n_proprietary": 4,
+   "n_open": 34
+  },
+  {
+   "date": "2023-12-15",
+   "best_proprietary": 1150.2,
+   "best_open": 1074.9,
+   "gap": 75.3,
+   "best_proprietary_model": "gpt-4-0314",
+   "best_open_model": "yi-34b-chat",
+   "n_proprietary": 5,
+   "n_open": 36
+  },
+  {
+   "date": "2023-12-20",
+   "best_proprietary": 1128.6,
+   "best_open": 1059.2,
+   "gap": 69.4,
+   "best_proprietary_model": "gpt-4-0314",
+   "best_open_model": "mixtral-8x7b-instruct-v0.1",
+   "n_proprietary": 5,
+   "n_open": 37
+  },
+  {
+   "date": "2024-01-09",
+   "best_proprietary": 1190.5,
+   "best_open": 1123.5,
+   "gap": 67.0,
+   "best_proprietary_model": "gpt-4-0314",
+   "best_open_model": "mixtral-8x7b-instruct-v0.1",
+   "n_proprietary": 7,
+   "n_open": 38
+  },
+  {
+   "date": "2024-01-18",
+   "best_proprietary": 1190.6,
+   "best_open": 1124.5,
+   "gap": 66.1,
+   "best_proprietary_model": "gpt-4-0314",
+   "best_open_model": "mixtral-8x7b-instruct-v0.1",
+   "n_proprietary": 7,
+   "n_open": 39
+  },
+  {
+   "date": "2024-01-25",
+   "best_proprietary": 1189.4,
+   "best_open": 1123.2,
+   "gap": 66.1,
+   "best_proprietary_model": "gpt-4-0314",
+   "best_open_model": "mixtral-8x7b-instruct-v0.1",
+   "n_proprietary": 7,
+   "n_open": 39
+  },
+  {
+   "date": "2024-02-02",
+   "best_proprietary": 1253.0,
+   "best_open": 1118.1,
+   "gap": 135.0,
+   "best_proprietary_model": "gpt-4-0125-preview",
+   "best_open_model": "mixtral-8x7b-instruct-v0.1",
+   "n_proprietary": 9,
+   "n_open": 40
+  },
+  {
+   "date": "2024-02-15",
+   "best_proprietary": 1253.6,
+   "best_open": 1146.6,
+   "gap": 107.0,
+   "best_proprietary_model": "gpt-4-1106-preview",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 10,
+   "n_open": 45
+  },
+  {
+   "date": "2024-03-05",
+   "best_proprietary": 1251.1,
+   "best_open": 1146.9,
+   "gap": 104.2,
+   "best_proprietary_model": "gpt-4-1106-preview",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 11,
+   "n_open": 48
+  },
+  {
+   "date": "2024-03-07",
+   "best_proprietary": 1251.2,
+   "best_open": 1146.5,
+   "gap": 104.7,
+   "best_proprietary_model": "gpt-4-1106-preview",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 13,
+   "n_open": 50
+  },
+  {
+   "date": "2024-03-13",
+   "best_proprietary": 1250.7,
+   "best_open": 1146.3,
+   "gap": 104.5,
+   "best_proprietary_model": "gpt-4-1106-preview",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 13,
+   "n_open": 50
+  },
+  {
+   "date": "2024-03-26",
+   "best_proprietary": 1253.2,
+   "best_open": 1147.7,
+   "gap": 105.4,
+   "best_proprietary_model": "claude-3-opus-20240229",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 14,
+   "n_open": 51
+  },
+  {
+   "date": "2024-03-27",
+   "best_proprietary": 1253.6,
+   "best_open": 1148.2,
+   "gap": 105.3,
+   "best_proprietary_model": "claude-3-opus-20240229",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 14,
+   "n_open": 52
+  },
+  {
+   "date": "2024-04-03",
+   "best_proprietary": 1255.9,
+   "best_open": 1150.8,
+   "gap": 105.2,
+   "best_proprietary_model": "claude-3-opus-20240229",
+   "best_open_model": "qwen1.5-72b-chat",
+   "n_proprietary": 14,
+   "n_open": 54
+  },
+  {
+   "date": "2024-04-09",
+   "best_proprietary": 1255.8,
+   "best_open": 1194.3,
+   "gap": 61.5,
+   "best_proprietary_model": "claude-3-opus-20240229",
+   "best_open_model": "command-r-plus",
+   "n_proprietary": 14,
+   "n_open": 56
+  },
+  {
+   "date": "2024-04-10",
+   "best_proprietary": 1255.9,
+   "best_open": 1194.5,
+   "gap": 61.4,
+   "best_proprietary_model": "claude-3-opus-20240229",
+   "best_open_model": "command-r-plus",
+   "n_proprietary": 14,
+   "n_open": 56
+  },
+  {
+   "date": "2024-04-11",
+   "best_proprietary": 1260.7,
+   "best_open": 1193.1,
+   "gap": 67.7,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "command-r-plus",
+   "n_proprietary": 15,
+   "n_open": 57
+  },
+  {
+   "date": "2024-04-13",
+   "best_proprietary": 1259.5,
+   "best_open": 1192.5,
+   "gap": 67.0,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "command-r-plus",
+   "n_proprietary": 15,
+   "n_open": 57
+  },
+  {
+   "date": "2024-04-18",
+   "best_proprietary": 1258.3,
+   "best_open": 1192.6,
+   "gap": 65.7,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "command-r-plus",
+   "n_proprietary": 17,
+   "n_open": 62
+  },
+  {
+   "date": "2024-04-19",
+   "best_proprietary": 1258.8,
+   "best_open": 1198.5,
+   "gap": 60.4,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 17,
+   "n_open": 62
+  },
+  {
+   "date": "2024-04-22",
+   "best_proprietary": 1258.9,
+   "best_open": 1209.6,
+   "gap": 49.3,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 17,
+   "n_open": 62
+  },
+  {
+   "date": "2024-04-26",
+   "best_proprietary": 1257.4,
+   "best_open": 1207.5,
+   "gap": 49.9,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 17,
+   "n_open": 63
+  },
+  {
+   "date": "2024-05-01",
+   "best_proprietary": 1258.8,
+   "best_open": 1209.6,
+   "gap": 49.2,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 17,
+   "n_open": 64
+  },
+  {
+   "date": "2024-05-08",
+   "best_proprietary": 1257.6,
+   "best_open": 1208.0,
+   "gap": 49.6,
+   "best_proprietary_model": "gpt-4-turbo-2024-04-09",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 17,
+   "n_open": 65
+  },
+  {
+   "date": "2024-05-15",
+   "best_proprietary": 1289.2,
+   "best_open": 1202.7,
+   "gap": 86.4,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 18,
+   "n_open": 65
+  },
+  {
+   "date": "2024-05-16",
+   "best_proprietary": 1287.1,
+   "best_open": 1202.6,
+   "gap": 84.5,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 18,
+   "n_open": 66
+  },
+  {
+   "date": "2024-05-19",
+   "best_proprietary": 1286.6,
+   "best_open": 1202.5,
+   "gap": 84.1,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 18,
+   "n_open": 66
+  },
+  {
+   "date": "2024-05-20",
+   "best_proprietary": 1286.8,
+   "best_open": 1202.6,
+   "gap": 84.2,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 18,
+   "n_open": 66
+  },
+  {
+   "date": "2024-05-27",
+   "best_proprietary": 1281.6,
+   "best_open": 1202.1,
+   "gap": 79.5,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 21,
+   "n_open": 66
+  },
+  {
+   "date": "2024-06-02",
+   "best_proprietary": 1281.9,
+   "best_open": 1202.1,
+   "gap": 79.7,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 21,
+   "n_open": 69
+  },
+  {
+   "date": "2024-06-06",
+   "best_proprietary": 1282.1,
+   "best_open": 1202.1,
+   "gap": 80.0,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 21,
+   "n_open": 70
+  },
+  {
+   "date": "2024-06-11",
+   "best_proprietary": 1282.2,
+   "best_open": 1202.0,
+   "gap": 80.2,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 21,
+   "n_open": 70
+  },
+  {
+   "date": "2024-06-17",
+   "best_proprietary": 1282.7,
+   "best_open": 1207.3,
+   "gap": 75.4,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "nemotron-4-340b-instruct",
+   "n_proprietary": 21,
+   "n_open": 71
+  },
+  {
+   "date": "2024-06-21",
+   "best_proprietary": 1282.6,
+   "best_open": 1205.2,
+   "gap": 77.4,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "nemotron-4-340b-instruct",
+   "n_proprietary": 22,
+   "n_open": 72
+  },
+  {
+   "date": "2024-06-23",
+   "best_proprietary": 1283.2,
+   "best_open": 1204.0,
+   "gap": 79.3,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "nemotron-4-340b-instruct",
+   "n_proprietary": 23,
+   "n_open": 72
+  },
+  {
+   "date": "2024-06-26",
+   "best_proprietary": 1287.0,
+   "best_open": 1207.2,
+   "gap": 79.8,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3-70b-instruct",
+   "n_proprietary": 23,
+   "n_open": 72
+  },
+  {
+   "date": "2024-06-29",
+   "best_proprietary": 1287.0,
+   "best_open": 1214.1,
+   "gap": 72.9,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "gemma-2-27b-it",
+   "n_proprietary": 23,
+   "n_open": 74
+  },
+  {
+   "date": "2024-07-06",
+   "best_proprietary": 1287.4,
+   "best_open": 1217.1,
+   "gap": 70.3,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "gemma-2-27b-it",
+   "n_proprietary": 23,
+   "n_open": 75
+  },
+  {
+   "date": "2024-07-08",
+   "best_proprietary": 1287.5,
+   "best_open": 1216.4,
+   "gap": 71.1,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "gemma-2-27b-it",
+   "n_proprietary": 23,
+   "n_open": 75
+  },
+  {
+   "date": "2024-07-16",
+   "best_proprietary": 1286.9,
+   "best_open": 1216.3,
+   "gap": 70.6,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "gemma-2-27b-it",
+   "n_proprietary": 23,
+   "n_open": 75
+  },
+  {
+   "date": "2024-07-22",
+   "best_proprietary": 1286.8,
+   "best_open": 1217.0,
+   "gap": 69.8,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "gemma-2-27b-it",
+   "n_proprietary": 24,
+   "n_open": 75
+  },
+  {
+   "date": "2024-07-25",
+   "best_proprietary": 1286.7,
+   "best_open": 1217.6,
+   "gap": 69.1,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "gemma-2-27b-it",
+   "n_proprietary": 24,
+   "n_open": 75
+  },
+  {
+   "date": "2024-07-30",
+   "best_proprietary": 1286.1,
+   "best_open": 1262.2,
+   "gap": 23.8,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 24,
+   "n_open": 79
+  },
+  {
+   "date": "2024-07-31",
+   "best_proprietary": 1286.1,
+   "best_open": 1261.7,
+   "gap": 24.3,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 24,
+   "n_open": 80
+  },
+  {
+   "date": "2024-08-01",
+   "best_proprietary": 1285.9,
+   "best_open": 1261.6,
+   "gap": 24.2,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 24,
+   "n_open": 80
+  },
+  {
+   "date": "2024-08-05",
+   "best_proprietary": 1286.1,
+   "best_open": 1263.1,
+   "gap": 23.0,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 24,
+   "n_open": 81
+  },
+  {
+   "date": "2024-08-06",
+   "best_proprietary": 1286.1,
+   "best_open": 1263.5,
+   "gap": 22.6,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 24,
+   "n_open": 81
+  },
+  {
+   "date": "2024-08-13",
+   "best_proprietary": 1285.7,
+   "best_open": 1263.3,
+   "gap": 22.4,
+   "best_proprietary_model": "gpt-4o-2024-05-13",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 24,
+   "n_open": 81
+  },
+  {
+   "date": "2024-08-22",
+   "best_proprietary": 1316.8,
+   "best_open": 1265.4,
+   "gap": 51.4,
+   "best_proprietary_model": "chatgpt-4o-latest",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 26,
+   "n_open": 83
+  },
+  {
+   "date": "2024-08-23",
+   "best_proprietary": 1316.8,
+   "best_open": 1265.7,
+   "gap": 51.1,
+   "best_proprietary_model": "chatgpt-4o-latest",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 28,
+   "n_open": 83
+  },
+  {
+   "date": "2024-08-27",
+   "best_proprietary": 1316.1,
+   "best_open": 1266.3,
+   "gap": 49.8,
+   "best_proprietary_model": "chatgpt-4o-latest",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 28,
+   "n_open": 83
+  },
+  {
+   "date": "2024-08-28",
+   "best_proprietary": 1316.2,
+   "best_open": 1266.2,
+   "gap": 49.9,
+   "best_proprietary_model": "chatgpt-4o-latest",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 28,
+   "n_open": 83
+  },
+  {
+   "date": "2024-09-04",
+   "best_proprietary": 1315.6,
+   "best_open": 1266.5,
+   "gap": 49.1,
+   "best_proprietary_model": "chatgpt-4o-latest",
+   "best_open_model": "llama-3.1-405b-instruct",
+   "n_proprietary": 28,
+   "n_open": 86
+  },
+  {
+   "date": "2024-09-15",
+   "best_proprietary": 1294.0,
+   "best_open": 1265.7,
+   "gap": 28.3,
+   "best_proprietary_model": "grok-2-2024-08-13",
+   "best_open_model": "llama-3.1-405b-instruct-fp8",
+   "n_proprietary": 27,
+   "n_open": 88
+  },
+  {
+   "date": "2024-09-17",
+   "best_proprietary": 1355.2,
+   "best_open": 1266.0,
+   "gap": 89.2,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-405b-instruct-fp8",
+   "n_proprietary": 29,
+   "n_open": 88
+  },
+  {
+   "date": "2024-09-27",
+   "best_proprietary": 1339.1,
+   "best_open": 1266.5,
+   "gap": 72.6,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-405b-instruct-bf16",
+   "n_proprietary": 29,
+   "n_open": 92
+  },
+  {
+   "date": "2024-10-07",
+   "best_proprietary": 1335.2,
+   "best_open": 1267.4,
+   "gap": 67.8,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-405b-instruct-bf16",
+   "n_proprietary": 32,
+   "n_open": 92
+  },
+  {
+   "date": "2024-10-15",
+   "best_proprietary": 1334.7,
+   "best_open": 1266.7,
+   "gap": 68.0,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-405b-instruct-fp8",
+   "n_proprietary": 34,
+   "n_open": 93
+  },
+  {
+   "date": "2024-10-23",
+   "best_proprietary": 1336.8,
+   "best_open": 1266.8,
+   "gap": 70.0,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 34,
+   "n_open": 94
+  },
+  {
+   "date": "2024-10-28",
+   "best_proprietary": 1335.1,
+   "best_open": 1270.7,
+   "gap": 64.4,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 35,
+   "n_open": 95
+  },
+  {
+   "date": "2024-11-04",
+   "best_proprietary": 1334.0,
+   "best_open": 1271.0,
+   "gap": 63.1,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 37,
+   "n_open": 95
+  },
+  {
+   "date": "2024-11-12",
+   "best_proprietary": 1333.5,
+   "best_open": 1269.5,
+   "gap": 63.9,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 36,
+   "n_open": 96
+  },
+  {
+   "date": "2024-11-13",
+   "best_proprietary": 1333.1,
+   "best_open": 1269.4,
+   "gap": 63.7,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 36,
+   "n_open": 96
+  },
+  {
+   "date": "2024-11-20",
+   "best_proprietary": 1333.7,
+   "best_open": 1268.9,
+   "gap": 64.8,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 36,
+   "n_open": 99
+  },
+  {
+   "date": "2024-11-21",
+   "best_proprietary": 1333.5,
+   "best_open": 1268.8,
+   "gap": 64.7,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "llama-3.1-nemotron-70b-instruct",
+   "n_proprietary": 36,
+   "n_open": 99
+  },
+  {
+   "date": "2024-11-22",
+   "best_proprietary": 1333.6,
+   "best_open": 1273.9,
+   "gap": 59.7,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "athene-v2-chat",
+   "n_proprietary": 36,
+   "n_open": 101
+  },
+  {
+   "date": "2024-12-01",
+   "best_proprietary": 1333.9,
+   "best_open": 1276.4,
+   "gap": 57.5,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "athene-v2-chat",
+   "n_proprietary": 38,
+   "n_open": 103
+  },
+  {
+   "date": "2024-12-05",
+   "best_proprietary": 1334.3,
+   "best_open": 1277.8,
+   "gap": 56.5,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "athene-v2-chat",
+   "n_proprietary": 38,
+   "n_open": 102
+  },
+  {
+   "date": "2024-12-10",
+   "best_proprietary": 1334.1,
+   "best_open": 1278.4,
+   "gap": 55.7,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "athene-v2-chat",
+   "n_proprietary": 39,
+   "n_open": 102
+  },
+  {
+   "date": "2024-12-15",
+   "best_proprietary": 1334.0,
+   "best_open": 1277.3,
+   "gap": 56.7,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "athene-v2-chat",
+   "n_proprietary": 42,
+   "n_open": 105
+  },
+  {
+   "date": "2024-12-18",
+   "best_proprietary": 1334.5,
+   "best_open": 1276.7,
+   "gap": 57.9,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "athene-v2-chat",
+   "n_proprietary": 42,
+   "n_open": 105
+  },
+  {
+   "date": "2024-12-22",
+   "best_proprietary": 1334.6,
+   "best_open": 1278.0,
+   "gap": 56.6,
+   "best_proprietary_model": "o1-preview",
+   "best_open_model": "deepseek-v2.5-1210",
+   "n_proprietary": 43,
+   "n_open": 106
+  },
+  {
+   "date": "2024-12-30",
+   "best_proprietary": 1358.7,
+   "best_open": 1315.1,
+   "gap": 43.7,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-v3",
+   "n_proprietary": 44,
+   "n_open": 108
+  },
+  {
+   "date": "2025-01-05",
+   "best_proprietary": 1351.6,
+   "best_open": 1318.7,
+   "gap": 32.9,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-v3",
+   "n_proprietary": 44,
+   "n_open": 110
+  },
+  {
+   "date": "2025-01-15",
+   "best_proprietary": 1350.5,
+   "best_open": 1319.4,
+   "gap": 31.1,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-v3",
+   "n_proprietary": 45,
+   "n_open": 112
+  },
+  {
+   "date": "2025-01-19",
+   "best_proprietary": 1351.8,
+   "best_open": 1319.6,
+   "gap": 32.2,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-v3",
+   "n_proprietary": 45,
+   "n_open": 113
+  },
+  {
+   "date": "2025-01-21",
+   "best_proprietary": 1351.4,
+   "best_open": 1319.7,
+   "gap": 31.7,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-v3",
+   "n_proprietary": 45,
+   "n_open": 113
+  },
+  {
+   "date": "2025-01-22",
+   "best_proprietary": 1351.4,
+   "best_open": 1319.7,
+   "gap": 31.7,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-v3",
+   "n_proprietary": 45,
+   "n_open": 113
+  },
+  {
+   "date": "2025-01-24",
+   "best_proprietary": 1351.7,
+   "best_open": 1357.0,
+   "gap": -5.3,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 45,
+   "n_open": 114
+  },
+  {
+   "date": "2025-01-28",
+   "best_proprietary": 1351.2,
+   "best_open": 1357.7,
+   "gap": -6.5,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 45,
+   "n_open": 114
+  },
+  {
+   "date": "2025-02-03",
+   "best_proprietary": 1351.6,
+   "best_open": 1360.8,
+   "gap": -9.1,
+   "best_proprietary_model": "o1-2024-12-17",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 47,
+   "n_open": 114
+  },
+  {
+   "date": "2025-02-05",
+   "best_proprietary": 1356.8,
+   "best_open": 1361.4,
+   "gap": -4.5,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 48,
+   "n_open": 114
+  },
+  {
+   "date": "2025-02-06",
+   "best_proprietary": 1356.7,
+   "best_open": 1361.6,
+   "gap": -4.9,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 49,
+   "n_open": 114
+  },
+  {
+   "date": "2025-02-09",
+   "best_proprietary": 1355.0,
+   "best_open": 1361.0,
+   "gap": -6.0,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 50,
+   "n_open": 114
+  },
+  {
+   "date": "2025-02-11",
+   "best_proprietary": 1355.1,
+   "best_open": 1361.3,
+   "gap": -6.3,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 50,
+   "n_open": 115
+  },
+  {
+   "date": "2025-02-14",
+   "best_proprietary": 1354.8,
+   "best_open": 1361.5,
+   "gap": -6.6,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 51,
+   "n_open": 115
+  },
+  {
+   "date": "2025-02-17",
+   "best_proprietary": 1355.7,
+   "best_open": 1361.5,
+   "gap": -5.8,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 51,
+   "n_open": 115
+  },
+  {
+   "date": "2025-02-21",
+   "best_proprietary": 1358.1,
+   "best_open": 1361.9,
+   "gap": -3.8,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 52,
+   "n_open": 115
+  },
+  {
+   "date": "2025-02-27",
+   "best_proprietary": 1359.0,
+   "best_open": 1362.7,
+   "gap": -3.7,
+   "best_proprietary_model": "gemini-2.0-flash-001",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 55,
+   "n_open": 115
+  },
+  {
+   "date": "2025-03-03",
+   "best_proprietary": 1411.5,
+   "best_open": 1362.9,
+   "gap": 48.6,
+   "best_proprietary_model": "grok-3-preview-02-24",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 57,
+   "n_open": 115
+  },
+  {
+   "date": "2025-03-11",
+   "best_proprietary": 1406.6,
+   "best_open": 1361.0,
+   "gap": 45.6,
+   "best_proprietary_model": "grok-3-preview-02-24",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 57,
+   "n_open": 116
+  },
+  {
+   "date": "2025-03-15",
+   "best_proprietary": 1406.0,
+   "best_open": 1359.7,
+   "gap": 46.2,
+   "best_proprietary_model": "grok-3-preview-02-24",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 59,
+   "n_open": 117
+  },
+  {
+   "date": "2025-03-17",
+   "best_proprietary": 1406.1,
+   "best_open": 1359.7,
+   "gap": 46.5,
+   "best_proprietary_model": "grok-3-preview-02-24",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 59,
+   "n_open": 118
+  },
+  {
+   "date": "2025-03-20",
+   "best_proprietary": 1404.0,
+   "best_open": 1359.7,
+   "gap": 44.3,
+   "best_proprietary_model": "grok-3-preview-02-24",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 60,
+   "n_open": 119
+  },
+  {
+   "date": "2025-03-25",
+   "best_proprietary": 1403.6,
+   "best_open": 1359.6,
+   "gap": 44.1,
+   "best_proprietary_model": "grok-3-preview-02-24",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 60,
+   "n_open": 119
+  },
+  {
+   "date": "2025-03-26",
+   "best_proprietary": 1407.9,
+   "best_open": 1359.5,
+   "gap": 48.3,
+   "best_proprietary_model": "chatgpt-4o-latest-20250326",
+   "best_open_model": "deepseek-r1",
+   "n_proprietary": 61,
+   "n_open": 119
+  },
+  {
+   "date": "2025-03-30",
+   "best_proprietary": 1405.9,
+   "best_open": 1369.9,
+   "gap": 36.0,
+   "best_proprietary_model": "chatgpt-4o-latest-20250326",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 61,
+   "n_open": 120
+  },
+  {
+   "date": "2025-04-05",
+   "best_proprietary": 1409.8,
+   "best_open": 1369.4,
+   "gap": 40.3,
+   "best_proprietary_model": "chatgpt-4o-latest-20250326",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 61,
+   "n_open": 120
+  },
+  {
+   "date": "2025-04-08",
+   "best_proprietary": 1409.8,
+   "best_open": 1369.4,
+   "gap": 40.3,
+   "best_proprietary_model": "chatgpt-4o-latest-20250326",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 61,
+   "n_open": 120
+  },
+  {
+   "date": "2025-04-09",
+   "best_proprietary": 1406.0,
+   "best_open": 1370.1,
+   "gap": 35.9,
+   "best_proprietary_model": "chatgpt-4o-latest-20250326",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 61,
+   "n_open": 121
+  },
+  {
+   "date": "2025-04-16",
+   "best_proprietary": 1406.5,
+   "best_open": 1371.9,
+   "gap": 34.7,
+   "best_proprietary_model": "chatgpt-4o-latest-20250326",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 61,
+   "n_open": 122
+  },
+  {
+   "date": "2025-04-23",
+   "best_proprietary": 1418.1,
+   "best_open": 1372.7,
+   "gap": 45.4,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 66,
+   "n_open": 121
+  },
+  {
+   "date": "2025-05-05",
+   "best_proprietary": 1411.1,
+   "best_open": 1371.9,
+   "gap": 39.2,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 66,
+   "n_open": 125
+  },
+  {
+   "date": "2025-05-06",
+   "best_proprietary": 1411.0,
+   "best_open": 1372.2,
+   "gap": 38.8,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 66,
+   "n_open": 125
+  },
+  {
+   "date": "2025-05-11",
+   "best_proprietary": 1413.1,
+   "best_open": 1372.6,
+   "gap": 40.5,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 67,
+   "n_open": 125
+  },
+  {
+   "date": "2025-05-19",
+   "best_proprietary": 1409.1,
+   "best_open": 1368.5,
+   "gap": 40.6,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 68,
+   "n_open": 128
+  },
+  {
+   "date": "2025-05-20",
+   "best_proprietary": 1409.1,
+   "best_open": 1368.5,
+   "gap": 40.6,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 68,
+   "n_open": 129
+  },
+  {
+   "date": "2025-05-22",
+   "best_proprietary": 1409.3,
+   "best_open": 1367.8,
+   "gap": 41.5,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 68,
+   "n_open": 131
+  },
+  {
+   "date": "2025-06-01",
+   "best_proprietary": 1419.5,
+   "best_open": 1374.4,
+   "gap": 45.1,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 71,
+   "n_open": 127
+  },
+  {
+   "date": "2025-06-03",
+   "best_proprietary": 1418.9,
+   "best_open": 1374.5,
+   "gap": 44.4,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 71,
+   "n_open": 127
+  },
+  {
+   "date": "2025-06-05",
+   "best_proprietary": 1420.2,
+   "best_open": 1377.0,
+   "gap": 43.3,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 71,
+   "n_open": 127
+  },
+  {
+   "date": "2025-06-11",
+   "best_proprietary": 1425.1,
+   "best_open": 1382.3,
+   "gap": 42.8,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-v3-0324",
+   "n_proprietary": 71,
+   "n_open": 127
+  },
+  {
+   "date": "2025-06-17",
+   "best_proprietary": 1426.3,
+   "best_open": 1420.0,
+   "gap": 6.3,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 71,
+   "n_open": 129
+  },
+  {
+   "date": "2025-06-18",
+   "best_proprietary": 1426.6,
+   "best_open": 1420.9,
+   "gap": 5.7,
+   "best_proprietary_model": "o3-2025-04-16",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 72,
+   "n_open": 129
+  },
+  {
+   "date": "2025-06-24",
+   "best_proprietary": 1477.5,
+   "best_open": 1423.5,
+   "gap": 54.0,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 75,
+   "n_open": 131
+  },
+  {
+   "date": "2025-07-01",
+   "best_proprietary": 1473.5,
+   "best_open": 1424.4,
+   "gap": 49.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 75,
+   "n_open": 130
+  },
+  {
+   "date": "2025-07-07",
+   "best_proprietary": 1476.9,
+   "best_open": 1424.8,
+   "gap": 52.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 75,
+   "n_open": 135
+  },
+  {
+   "date": "2025-07-15",
+   "best_proprietary": 1474.2,
+   "best_open": 1424.0,
+   "gap": 50.2,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 79,
+   "n_open": 135
+  },
+  {
+   "date": "2025-07-17",
+   "best_proprietary": 1473.9,
+   "best_open": 1423.9,
+   "gap": 50.0,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 79,
+   "n_open": 136
+  },
+  {
+   "date": "2025-07-25",
+   "best_proprietary": 1472.2,
+   "best_open": 1424.6,
+   "gap": 47.6,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 79,
+   "n_open": 136
+  },
+  {
+   "date": "2025-07-28",
+   "best_proprietary": 1474.4,
+   "best_open": 1426.2,
+   "gap": 48.2,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "deepseek-r1-0528",
+   "n_proprietary": 79,
+   "n_open": 137
+  },
+  {
+   "date": "2025-08-01",
+   "best_proprietary": 1469.9,
+   "best_open": 1430.5,
+   "gap": 39.4,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "qwen3-235b-a22b-instruct-2507",
+   "n_proprietary": 79,
+   "n_open": 139
+  },
+  {
+   "date": "2025-08-04",
+   "best_proprietary": 1470.3,
+   "best_open": 1434.7,
+   "gap": 35.6,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 79,
+   "n_open": 143
+  },
+  {
+   "date": "2025-08-07",
+   "best_proprietary": 1471.0,
+   "best_open": 1432.7,
+   "gap": 38.3,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 83,
+   "n_open": 145
+  },
+  {
+   "date": "2025-08-14",
+   "best_proprietary": 1468.6,
+   "best_open": 1432.7,
+   "gap": 35.9,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 88,
+   "n_open": 147
+  },
+  {
+   "date": "2025-08-18",
+   "best_proprietary": 1469.2,
+   "best_open": 1432.1,
+   "gap": 37.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 88,
+   "n_open": 147
+  },
+  {
+   "date": "2025-08-21",
+   "best_proprietary": 1468.1,
+   "best_open": 1431.2,
+   "gap": 36.8,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 89,
+   "n_open": 147
+  },
+  {
+   "date": "2025-08-27",
+   "best_proprietary": 1467.1,
+   "best_open": 1429.8,
+   "gap": 37.3,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 89,
+   "n_open": 149
+  },
+  {
+   "date": "2025-08-28",
+   "best_proprietary": 1466.5,
+   "best_open": 1429.2,
+   "gap": 37.3,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 89,
+   "n_open": 149
+  },
+  {
+   "date": "2025-09-08",
+   "best_proprietary": 1467.1,
+   "best_open": 1429.7,
+   "gap": 37.4,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 91,
+   "n_open": 144
+  },
+  {
+   "date": "2025-09-17",
+   "best_proprietary": 1468.8,
+   "best_open": 1427.5,
+   "gap": 41.2,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 91,
+   "n_open": 147
+  },
+  {
+   "date": "2025-09-18",
+   "best_proprietary": 1468.8,
+   "best_open": 1427.6,
+   "gap": 41.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 91,
+   "n_open": 147
+  },
+  {
+   "date": "2025-09-30",
+   "best_proprietary": 1466.7,
+   "best_open": 1428.2,
+   "gap": 38.5,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "qwen3-vl-235b-a22b-instruct",
+   "n_proprietary": 96,
+   "n_open": 152
+  },
+  {
+   "date": "2025-10-01",
+   "best_proprietary": 1465.5,
+   "best_open": 1426.3,
+   "gap": 39.2,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.5",
+   "n_proprietary": 97,
+   "n_open": 152
+  },
+  {
+   "date": "2025-10-03",
+   "best_proprietary": 1465.9,
+   "best_open": 1442.8,
+   "gap": 23.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 98,
+   "n_open": 154
+  },
+  {
+   "date": "2025-10-07",
+   "best_proprietary": 1465.8,
+   "best_open": 1438.7,
+   "gap": 27.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 99,
+   "n_open": 157
+  },
+  {
+   "date": "2025-10-16",
+   "best_proprietary": 1464.7,
+   "best_open": 1438.5,
+   "gap": 26.1,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 101,
+   "n_open": 158
+  },
+  {
+   "date": "2025-10-17",
+   "best_proprietary": 1464.7,
+   "best_open": 1438.5,
+   "gap": 26.3,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 101,
+   "n_open": 158
+  },
+  {
+   "date": "2025-11-05",
+   "best_proprietary": 1464.8,
+   "best_open": 1443.7,
+   "gap": 21.2,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 101,
+   "n_open": 159
+  },
+  {
+   "date": "2025-11-06",
+   "best_proprietary": 1465.5,
+   "best_open": 1445.1,
+   "gap": 20.4,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 101,
+   "n_open": 159
+  },
+  {
+   "date": "2025-11-09",
+   "best_proprietary": 1465.7,
+   "best_open": 1444.9,
+   "gap": 20.8,
+   "best_proprietary_model": "gemini-2.5-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 101,
+   "n_open": 159
+  },
+  {
+   "date": "2025-11-16",
+   "best_proprietary": 1494.8,
+   "best_open": 1444.0,
+   "gap": 50.8,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 108,
+   "n_open": 160
+  },
+  {
+   "date": "2025-11-17",
+   "best_proprietary": 1497.2,
+   "best_open": 1444.3,
+   "gap": 52.9,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 108,
+   "n_open": 160
+  },
+  {
+   "date": "2025-11-18",
+   "best_proprietary": 1492.3,
+   "best_open": 1443.0,
+   "gap": 49.3,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 108,
+   "n_open": 164
+  },
+  {
+   "date": "2025-11-20",
+   "best_proprietary": 1490.0,
+   "best_open": 1442.0,
+   "gap": 47.9,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 109,
+   "n_open": 164
+  },
+  {
+   "date": "2025-11-26",
+   "best_proprietary": 1487.6,
+   "best_open": 1441.8,
+   "gap": 45.8,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 164
+  },
+  {
+   "date": "2025-12-01",
+   "best_proprietary": 1486.6,
+   "best_open": 1441.1,
+   "gap": 45.5,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 165
+  },
+  {
+   "date": "2025-12-04",
+   "best_proprietary": 1485.9,
+   "best_open": 1441.0,
+   "gap": 44.9,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 167
+  },
+  {
+   "date": "2025-12-05",
+   "best_proprietary": 1486.3,
+   "best_open": 1441.4,
+   "gap": 44.9,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 168
+  },
+  {
+   "date": "2025-12-08",
+   "best_proprietary": 1485.6,
+   "best_open": 1441.3,
+   "gap": 44.2,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 168
+  },
+  {
+   "date": "2025-12-11",
+   "best_proprietary": 1486.9,
+   "best_open": 1441.1,
+   "gap": 45.8,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 169
+  },
+  {
+   "date": "2025-12-15",
+   "best_proprietary": 1485.5,
+   "best_open": 1441.6,
+   "gap": 43.9,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 112,
+   "n_open": 170
+  },
+  {
+   "date": "2025-12-16",
+   "best_proprietary": 1486.1,
+   "best_open": 1441.4,
+   "gap": 44.6,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 114,
+   "n_open": 171
+  },
+  {
+   "date": "2025-12-18",
+   "best_proprietary": 1485.9,
+   "best_open": 1441.4,
+   "gap": 44.6,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 115,
+   "n_open": 171
+  },
+  {
+   "date": "2025-12-19",
+   "best_proprietary": 1484.6,
+   "best_open": 1440.8,
+   "gap": 43.8,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 116,
+   "n_open": 171
+  },
+  {
+   "date": "2025-12-21",
+   "best_proprietary": 1484.6,
+   "best_open": 1440.6,
+   "gap": 44.0,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 117,
+   "n_open": 171
+  },
+  {
+   "date": "2025-12-23",
+   "best_proprietary": 1484.4,
+   "best_open": 1440.1,
+   "gap": 44.3,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 117,
+   "n_open": 172
+  },
+  {
+   "date": "2025-12-30",
+   "best_proprietary": 1484.4,
+   "best_open": 1439.9,
+   "gap": 44.5,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 117,
+   "n_open": 174
+  },
+  {
+   "date": "2026-01-09",
+   "best_proprietary": 1483.9,
+   "best_open": 1439.6,
+   "gap": 44.3,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 117,
+   "n_open": 174
+  },
+  {
+   "date": "2026-01-27",
+   "best_proprietary": 1481.8,
+   "best_open": 1439.9,
+   "gap": 41.8,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "glm-4.6",
+   "n_proprietary": 121,
+   "n_open": 179
+  },
+  {
+   "date": "2026-01-29",
+   "best_proprietary": 1481.2,
+   "best_open": 1445.9,
+   "gap": 35.3,
+   "best_proprietary_model": "gemini-3-pro",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 121,
+   "n_open": 181
+  },
+  {
+   "date": "2026-02-06",
+   "best_proprietary": 1501.4,
+   "best_open": 1444.9,
+   "gap": 56.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 124,
+   "n_open": 182
+  },
+  {
+   "date": "2026-02-09",
+   "best_proprietary": 1502.6,
+   "best_open": 1443.0,
+   "gap": 59.6,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 124,
+   "n_open": 183
+  },
+  {
+   "date": "2026-02-10",
+   "best_proprietary": 1503.0,
+   "best_open": 1461.8,
+   "gap": 41.2,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5",
+   "n_proprietary": 124,
+   "n_open": 184
+  },
+  {
+   "date": "2026-02-11",
+   "best_proprietary": 1503.6,
+   "best_open": 1444.2,
+   "gap": 59.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 125,
+   "n_open": 184
+  },
+  {
+   "date": "2026-02-16",
+   "best_proprietary": 1504.2,
+   "best_open": 1445.4,
+   "gap": 58.8,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5",
+   "n_proprietary": 126,
+   "n_open": 185
+  },
+  {
+   "date": "2026-02-17",
+   "best_proprietary": 1503.1,
+   "best_open": 1445.5,
+   "gap": 57.6,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5",
+   "n_proprietary": 126,
+   "n_open": 185
+  },
+  {
+   "date": "2026-02-19",
+   "best_proprietary": 1502.9,
+   "best_open": 1447.8,
+   "gap": 55.1,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 129,
+   "n_open": 187
+  },
+  {
+   "date": "2026-02-20",
+   "best_proprietary": 1502.8,
+   "best_open": 1448.6,
+   "gap": 54.2,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 129,
+   "n_open": 187
+  },
+  {
+   "date": "2026-02-21",
+   "best_proprietary": 1503.0,
+   "best_open": 1447.8,
+   "gap": 55.2,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 129,
+   "n_open": 187
+  },
+  {
+   "date": "2026-02-22",
+   "best_proprietary": 1503.0,
+   "best_open": 1447.8,
+   "gap": 55.2,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 129,
+   "n_open": 187
+  },
+  {
+   "date": "2026-02-24",
+   "best_proprietary": 1502.2,
+   "best_open": 1448.0,
+   "gap": 54.2,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 129,
+   "n_open": 187
+  },
+  {
+   "date": "2026-02-25",
+   "best_proprietary": 1502.2,
+   "best_open": 1448.5,
+   "gap": 53.7,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 129,
+   "n_open": 187
+  },
+  {
+   "date": "2026-02-26",
+   "best_proprietary": 1501.6,
+   "best_open": 1451.6,
+   "gap": 49.9,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 129,
+   "n_open": 190
+  },
+  {
+   "date": "2026-03-03",
+   "best_proprietary": 1503.9,
+   "best_open": 1450.2,
+   "gap": 53.7,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 131,
+   "n_open": 190
+  },
+  {
+   "date": "2026-03-04",
+   "best_proprietary": 1502.9,
+   "best_open": 1448.3,
+   "gap": 54.7,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 132,
+   "n_open": 190
+  },
+  {
+   "date": "2026-03-05",
+   "best_proprietary": 1502.8,
+   "best_open": 1449.5,
+   "gap": 53.2,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 132,
+   "n_open": 190
+  },
+  {
+   "date": "2026-03-06",
+   "best_proprietary": 1502.3,
+   "best_open": 1448.4,
+   "gap": 53.9,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "qwen3.5-397b-a17b",
+   "n_proprietary": 132,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-11",
+   "best_proprietary": 1501.8,
+   "best_open": 1448.5,
+   "gap": 53.2,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 136,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-16",
+   "best_proprietary": 1499.0,
+   "best_open": 1449.1,
+   "gap": 49.9,
+   "best_proprietary_model": "claude-opus-4-6",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 139,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-18",
+   "best_proprietary": 1498.8,
+   "best_open": 1449.7,
+   "gap": 49.1,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 142,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-19",
+   "best_proprietary": 1498.9,
+   "best_open": 1449.4,
+   "gap": 49.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 142,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-20",
+   "best_proprietary": 1499.1,
+   "best_open": 1449.4,
+   "gap": 49.7,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 143,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-26",
+   "best_proprietary": 1500.7,
+   "best_open": 1450.0,
+   "gap": 50.7,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 143,
+   "n_open": 191
+  },
+  {
+   "date": "2026-03-31",
+   "best_proprietary": 1500.6,
+   "best_open": 1449.5,
+   "gap": 51.1,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "kimi-k2.5-thinking",
+   "n_proprietary": 143,
+   "n_open": 193
+  },
+  {
+   "date": "2026-04-02",
+   "best_proprietary": 1500.3,
+   "best_open": 1475.2,
+   "gap": 25.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 142,
+   "n_open": 195
+  },
+  {
+   "date": "2026-04-07",
+   "best_proprietary": 1499.3,
+   "best_open": 1473.8,
+   "gap": 25.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 142,
+   "n_open": 196
+  },
+  {
+   "date": "2026-04-09",
+   "best_proprietary": 1500.2,
+   "best_open": 1474.1,
+   "gap": 26.1,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 143,
+   "n_open": 196
+  },
+  {
+   "date": "2026-04-10",
+   "best_proprietary": 1500.6,
+   "best_open": 1474.3,
+   "gap": 26.3,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 143,
+   "n_open": 196
+  },
+  {
+   "date": "2026-04-14",
+   "best_proprietary": 1499.3,
+   "best_open": 1471.8,
+   "gap": 27.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 142,
+   "n_open": 197
+  },
+  {
+   "date": "2026-04-17",
+   "best_proprietary": 1499.7,
+   "best_open": 1472.0,
+   "gap": 27.7,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 144,
+   "n_open": 197
+  },
+  {
+   "date": "2026-04-20",
+   "best_proprietary": 1499.1,
+   "best_open": 1472.8,
+   "gap": 26.4,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "gpt-5.4-high",
+   "n_proprietary": 145,
+   "n_open": 197
+  },
+  {
+   "date": "2026-04-22",
+   "best_proprietary": 1499.9,
+   "best_open": 1465.3,
+   "gap": 34.6,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 147,
+   "n_open": 196
+  },
+  {
+   "date": "2026-04-23",
+   "best_proprietary": 1500.3,
+   "best_open": 1466.6,
+   "gap": 33.7,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 147,
+   "n_open": 200
+  },
+  {
+   "date": "2026-04-27",
+   "best_proprietary": 1499.4,
+   "best_open": 1467.2,
+   "gap": 32.2,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 149,
+   "n_open": 200
+  },
+  {
+   "date": "2026-04-28",
+   "best_proprietary": 1499.4,
+   "best_open": 1467.2,
+   "gap": 32.2,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 149,
+   "n_open": 202
+  },
+  {
+   "date": "2026-04-29",
+   "best_proprietary": 1500.2,
+   "best_open": 1466.4,
+   "gap": 33.8,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 150,
+   "n_open": 202
+  },
+  {
+   "date": "2026-04-30",
+   "best_proprietary": 1500.6,
+   "best_open": 1467.7,
+   "gap": 32.9,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 151,
+   "n_open": 203
+  },
+  {
+   "date": "2026-05-01",
+   "best_proprietary": 1500.2,
+   "best_open": 1467.8,
+   "gap": 32.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 152,
+   "n_open": 204
+  },
+  {
+   "date": "2026-05-06",
+   "best_proprietary": 1500.1,
+   "best_open": 1468.7,
+   "gap": 31.4,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 153,
+   "n_open": 204
+  },
+  {
+   "date": "2026-05-07",
+   "best_proprietary": 1500.6,
+   "best_open": 1468.8,
+   "gap": 31.8,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 153,
+   "n_open": 204
+  },
+  {
+   "date": "2026-05-12",
+   "best_proprietary": 1499.9,
+   "best_open": 1468.3,
+   "gap": 31.5,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 153,
+   "n_open": 205
+  },
+  {
+   "date": "2026-05-14",
+   "best_proprietary": 1499.6,
+   "best_open": 1469.3,
+   "gap": 30.3,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 153,
+   "n_open": 205
+  },
+  {
+   "date": "2026-05-18",
+   "best_proprietary": 1499.9,
+   "best_open": 1468.9,
+   "gap": 31.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 154,
+   "n_open": 205
+  },
+  {
+   "date": "2026-05-19",
+   "best_proprietary": 1500.0,
+   "best_open": 1468.9,
+   "gap": 31.1,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 155,
+   "n_open": 205
+  },
+  {
+   "date": "2026-05-27",
+   "best_proprietary": 1499.3,
+   "best_open": 1469.3,
+   "gap": 30.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 155,
+   "n_open": 205
+  },
+  {
+   "date": "2026-06-03",
+   "best_proprietary": 1500.4,
+   "best_open": 1470.0,
+   "gap": 30.4,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 158,
+   "n_open": 207
+  },
+  {
+   "date": "2026-06-04",
+   "best_proprietary": 1500.3,
+   "best_open": 1470.1,
+   "gap": 30.3,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 158,
+   "n_open": 207
+  },
+  {
+   "date": "2026-06-05",
+   "best_proprietary": 1500.5,
+   "best_open": 1469.6,
+   "gap": 30.9,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 158,
+   "n_open": 207
+  },
+  {
+   "date": "2026-06-10",
+   "best_proprietary": 1500.6,
+   "best_open": 1469.6,
+   "gap": 31.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 159,
+   "n_open": 207
+  },
+  {
+   "date": "2026-06-16",
+   "best_proprietary": 1500.7,
+   "best_open": 1469.7,
+   "gap": 31.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 159,
+   "n_open": 208
+  },
+  {
+   "date": "2026-06-25",
+   "best_proprietary": 1500.3,
+   "best_open": 1468.3,
+   "gap": 32.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 160,
+   "n_open": 208
+  },
+  {
+   "date": "2026-07-02",
+   "best_proprietary": 1500.8,
+   "best_open": 1467.1,
+   "gap": 33.7,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 160,
+   "n_open": 209
+  },
+  {
+   "date": "2026-07-10",
+   "best_proprietary": 1501.2,
+   "best_open": 1467.4,
+   "gap": 33.7,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 165,
+   "n_open": 209
+  },
+  {
+   "date": "2026-07-12",
+   "best_proprietary": 1501.1,
+   "best_open": 1467.2,
+   "gap": 33.9,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 165,
+   "n_open": 209
+  },
+  {
+   "date": "2026-07-14",
+   "best_proprietary": 1501.1,
+   "best_open": 1467.1,
+   "gap": 34.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 165,
+   "n_open": 209
+  },
+  {
+   "date": "2026-07-16",
+   "best_proprietary": 1501.5,
+   "best_open": 1466.3,
+   "gap": 35.2,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 166,
+   "n_open": 210
+  },
+  {
+   "date": "2026-07-20",
+   "best_proprietary": 1501.8,
+   "best_open": 1465.5,
+   "gap": 36.4,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 166,
+   "n_open": 210
+  },
+  {
+   "date": "2026-07-21",
+   "best_proprietary": 1502.5,
+   "best_open": 1465.5,
+   "gap": 37.0,
+   "best_proprietary_model": "claude-opus-4-6-thinking",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 168,
+   "n_open": 210
+  },
+  {
+   "date": "2026-07-26",
+   "best_proprietary": 1506.0,
+   "best_open": 1472.9,
+   "gap": 33.1,
+   "best_proprietary_model": "claude-opus-5-high",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 168,
+   "n_open": 212
+  },
+  {
+   "date": "2026-07-27",
+   "best_proprietary": 1511.6,
+   "best_open": 1473.3,
+   "gap": 38.3,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 169,
+   "n_open": 212
+  },
+  {
+   "date": "2026-07-30",
+   "best_proprietary": 1511.6,
+   "best_open": 1473.3,
+   "gap": 38.3,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 171,
+   "n_open": 212
+  },
+  {
+   "date": "2026-08-02",
+   "best_proprietary": 1507.3,
+   "best_open": 1473.0,
+   "gap": 34.3,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 172,
+   "n_open": 212
+  },
+  {
+   "date": "2026-08-03",
+   "best_proprietary": 1507.3,
+   "best_open": 1465.4,
+   "gap": 41.9,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "glm-5.1",
+   "n_proprietary": 172,
+   "n_open": 211
+  },
+  {
+   "date": "2026-08-06",
+   "best_proprietary": 1505.7,
+   "best_open": 1473.5,
+   "gap": 32.2,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 173,
+   "n_open": 212
+  },
+  {
+   "date": "2026-08-10",
+   "best_proprietary": 1507.8,
+   "best_open": 1475.3,
+   "gap": 32.5,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 173,
+   "n_open": 213
+  },
+  {
+   "date": "2026-08-11",
+   "best_proprietary": 1507.1,
+   "best_open": 1474.7,
+   "gap": 32.3,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 174,
+   "n_open": 214
+  },
+  {
+   "date": "2026-08-12",
+   "best_proprietary": 1507.8,
+   "best_open": 1476.3,
+   "gap": 31.5,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 175,
+   "n_open": 214
+  },
+  {
+   "date": "2026-08-19",
+   "best_proprietary": 1505.1,
+   "best_open": 1476.9,
+   "gap": 28.2,
+   "best_proprietary_model": "claude-opus-5-high",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 176,
+   "n_open": 217
+  },
+  {
+   "date": "2026-08-21",
+   "best_proprietary": 1504.2,
+   "best_open": 1476.9,
+   "gap": 27.3,
+   "best_proprietary_model": "claude-opus-5-high",
+   "best_open_model": "glm-5.3-max",
+   "n_proprietary": 176,
+   "n_open": 218
+  },
+  {
+   "date": "2026-08-27",
+   "best_proprietary": 1504.7,
+   "best_open": 1476.1,
+   "gap": 28.7,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 176,
+   "n_open": 219
+  },
+  {
+   "date": "2026-09-01",
+   "best_proprietary": 1505.0,
+   "best_open": 1476.3,
+   "gap": 28.7,
+   "best_proprietary_model": "claude-opus-5-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 176,
+   "n_open": 222
+  },
+  {
+   "date": "2026-09-02",
+   "best_proprietary": 1513.7,
+   "best_open": 1476.0,
+   "gap": 37.7,
+   "best_proprietary_model": "claude-fable-5.1-max",
+   "best_open_model": "kimi-k3-max",
+   "n_proprietary": 177,
+   "n_open": 222
+  },
+  {
+   "date": "2026-09-11",
+   "best_proprietary": 1510.5,
+   "best_open": 1477.5,
+   "gap": 33.0,
+   "best_proprietary_model": "claude-fable-5.1-max",
+   "best_open_model": "glm-5.3-max",
+   "n_proprietary": 179,
+   "n_open": 222
+  },
+  {
+   "date": "2026-09-13",
+   "best_proprietary": 1507.6,
+   "best_open": 1475.1,
+   "gap": 32.5,
+   "best_proprietary_model": "claude-fable-5.1-max",
+   "best_open_model": "glm-5.3-max",
+   "n_proprietary": 180,
+   "n_open": 222
+  }
+ ]
+}

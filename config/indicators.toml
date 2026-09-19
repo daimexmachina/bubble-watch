@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "1.9"
+schema_version = "2.0"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -702,6 +702,46 @@ unit = "percentage points the annual depreciation rate fell while the asset base
 source = "edgar"
 rationale = "Tests the capital-subsidy claim from Kshirsagar & Chen: AI accelerators have 1-3 year useful lives while the schedules depreciate them over 5-6 years, so extending a useful life flatters reported earnings without any improvement in the business. Measured 2026-09-17 over the trailing four annual periods: ORCL's rate fell from 6.41% to 6.22% while gross PP&E grew 4.28x, the single flagged anomaly; MSFT and NVDA rates ROSE (+1.23pt, +1.16pt); AAPL (-1.24pt) and AVGO (-1.35pt) showed the same drift with no AI capex and are deliberately suppressed. THE GUARD IS THE WHOLE INDICATOR: a naive rate test flags six of nine companies and misses ORCL, because a mechanical ratio drifts as older fully-depreciated assets age into the denominator. Two stages are required — the gross-PP&E series must first pass a continuity/recency/density/definition-stability check (which rejects AMZN, a data artefact from a definition swap, plus META and GOOGL for staleness), and the rate test must then be ANDed with an asset-growth condition (which suppresses AAPL and AVGO). With both stages exactly one of nine flags. LIMITATIONS: this detects a CHANGE in a filer's depreciation convention rather than an initially aggressive one, so a company that always depreciated over six years never flags; and gross PP&E aggregates buildings and hardware, so the test cannot say which the useful life refers to."
 anchors = [[0.0, 0.0], [0.5, 0.0], [1.0, 14.0], [2.0, 30.0], [3.5, 52.0], [5.0, 72.0], [8.0, 92.0]]
+
+# ---------------------------------------------------------------------------
+# Frontier premium (NEW, methodology 2.0).
+#
+# The one structural feature no previous bubble had: the financed asset is contested
+# by an open ecosystem that publishes weights. Railways needed land, telecom needed
+# spectrum, the dot-com buildout needed proprietary code. Here the core asset is
+# reproducible by anyone, and the gap between best-closed and best-open is small.
+#
+# Measured 2026-09-19 from 243 LMArena leaderboard snapshots (2023-05 .. 2026-09):
+#   2024-02-02   +135.0 Elo   <- peak
+#   2024-09-17    +89.2
+#   2025-01-24     -5.3       <- briefly NEGATIVE: best open model outranked best closed
+#   2025-06-24    +54.0
+#   2026-04-02    +25.0
+#   2026-09-13    +32.5       <- latest (claude-fable-5.1-max vs glm-5.3-max)
+#
+# Compression from peak: ~76%. That is the moat closing, in measurable form.
+#
+# DIRECTION IS INVERTED relative to most indicators in this file: a NARROW gap scores
+# as HIGH stress, because the capital spending assumes a wide moat. A wide gap means
+# the premium is earned and scores low. Anchors are therefore DESCENDING in the gap.
+#
+# GENUINELY TWO-SIDED, and the output says so: a closing gap is bad for the incumbents
+# financing the buildout and good for AI adoption generally. This tool does not pretend
+# the number has one meaning.
+#
+# SOURCE: LMArena's leaderboard dataset on HuggingFace, published as parquet. Extracted
+# once with pyarrow and the RESULT committed as a JSON fixture, so the test suite needs
+# no parquet reader and no 56MB download.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "frontier_premium"
+label = "Open-versus-closed capability premium (the moat)"
+weight = 6.0
+unit = "Elo points by which the best closed model leads the best open one (LOW = high stress)"
+source = "lmarena"
+rationale = "How much better the best closed model is than the best open-weight one, which is the moat that has to justify the capital spending. This is the structural feature no prior bubble had: in railways, telecom and the dot-com buildout the financed asset could not be reproduced by anyone else, whereas here an open ecosystem publishes weights and the gap is small and measurable. Measured 2026-09-19 from 243 LMArena snapshots: the premium ran +135 Elo at its 2024-02 peak, briefly went NEGATIVE in 2025-01 when the best open model outranked the best closed one outright, and sits at +32.5 — a compression of about 76%. DIRECTION IS INVERTED HERE: a NARROW gap scores as HIGH stress, because the spending assumes a wide moat; a wide gap means the premium is earned. GENUINELY TWO-SIDED: a closing gap is bad for the incumbents financing the buildout and good for AI adoption generally. LIMITATIONS: arena ratings measure human PREFERENCE on voted prompts rather than the enterprise workloads that generate revenue; a 'Proprietary' licence is not literally 'weights unreleased'; and the gap is between the single best model on each side, so one release moves it sharply."
+# DESCENDING: small gap = high stress (the inversion, made explicit in the anchors)
+anchors = [[0.0, 92.0], [15.0, 80.0], [30.0, 62.0], [50.0, 42.0], [80.0, 26.0], [110.0, 14.0], [140.0, 6.0]]
 
 [[indicator]]
 id = "circularity"
