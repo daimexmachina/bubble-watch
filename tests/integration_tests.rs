@@ -407,6 +407,37 @@ fn the_docs_do_not_contradict_the_build() {
         total
     );
 
+    // NEITHER DOCUMENT MAY STATE AN AGGREGATE EXPOSURE TOTAL.
+    //
+    // An earlier revision claimed a combined figure that was written without being derived, and
+    // checking it showed no single total is honest: the set mixes dollar figures with percentage
+    // shares, restates some commitments, includes third-party capital that sits on OTHER balance
+    // sheets, and contains two REFUTATIONS that must contribute nothing. See SPEC 15.8.
+    //
+    // This asserts the rule survives future edits. It looks for the SHAPE of an aggregate claim —
+    // a dollar figure immediately followed by a total-ish phrase — rather than an exact string,
+    // so rewording the surrounding prose will not defeat it.
+    for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
+        let lower = doc.to_lowercase();
+        for phrase in [
+            "of disclosed exposure",
+            "combined exposure",
+            "total exposure",
+            "of exposure across",
+        ] {
+            if let Some(i) = lower.find(phrase) {
+                let window = &lower[i.saturating_sub(60)..i];
+                assert!(
+                    !window.contains('$') || !window.chars().any(|c| c.is_ascii_digit()),
+                    "{} appears to state an aggregate exposure total near {:?} — no single total \
+                     is honest here (SPEC 15.8). State each figure with its source instead.",
+                    name,
+                    &doc[i.saturating_sub(60)..(i + phrase.len()).min(doc.len())]
+                );
+            }
+        }
+    }
+
     // And neither document may still call circularity a declared gap.
     for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
         assert!(

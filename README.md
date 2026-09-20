@@ -192,8 +192,10 @@ a keyword count into a directed edge.
 
 It is scored from a **rubric**, not a ratio — the rubric and its point values are printed in the
 report so a reader can disagree with them. Every scored entry carries a citation to a filing that
-was read, a magnitude, and a **written falsifier**. Thirteen entries, roughly **$884B** of
-disclosed exposure:
+was read, a magnitude, and a **written falsifier**. Thirteen entries. Each magnitude below is quoted from the filing rather than summed, because
+**the set contains both dollar figures and percentage shares, several entries restate the same
+commitment, and two entries are REFUTATIONS that contribute nothing** — so any single headline
+total would be a number this tool has not earned:
 
 | Edge | Points | What was read |
 |---|---|---|

@@ -574,7 +574,7 @@ raises it, and a refutation lowers it.
 ### 15.4 What the filings actually disclosed
 
 Thirteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
-Roughly $384B+ of disclosed exposure, including:
+The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
   Brookfield, Goldman Sachs and KKR (announced, "subject to definitive agreements"); $279B of
@@ -613,3 +613,30 @@ The method cannot see a relationship a filer declines to name. Oracle discloses 
 and compliantly. No amount of further reading resolves it, because the identity is not in the
 filing. Anonymity on one side can sometimes be read from the counterparty's — that is how the
 CoreWeave links were established, from the other end of the relationship.
+
+### 15.8 Why there is no headline total
+
+An earlier revision of this document and the README stated a combined exposure figure. **It was
+wrong, and the error is instructive enough to record rather than quietly delete.**
+
+The number was written without being derived. Checking it showed the honest total is not a single
+number at all, for four reasons:
+
+1. **The set mixes units.** AMD's entry is a share count (9.8% of AMD's shares outstanding) and
+   CoreWeave's is a revenue share (67% from Microsoft). Neither is a dollar figure and neither can
+   be added to one.
+2. **Entries restate the same commitment.** Amazon's $100B cloud expansions appear in two separate
+   edges, by counterparty; adding them is correct, but the $38B existing commitment is a different
+   figure describing the same relationship and is easy to double-count.
+3. **Two entries are REFUTATIONS and must contribute NOTHING.** Oracle's $638B of RPO is the
+   largest figure in the research and it is explicitly a LIMIT, not exposure. A naive sum of every
+   number in the file reaches roughly $2 trillion and is meaningless; a proper dedup by scored edge
+   gives roughly $1.16 trillion — and even that figure is not comparable to the others, because
+   $500B of NVIDIA's total is third-party institutional capital that sits on OTHER balance sheets,
+   while the $105B guarantee is a contingent exposure of NVIDIA's own.
+
+**The rule this establishes**: state each figure with its source and its nature, and refuse to
+aggregate across units, across contingent and committed items, or across scored and refuted
+entries. A combined total would be exactly the kind of confident, unauditable number this project
+exists to refuse — and it was produced here by the maintainer, in the documentation, which is why
+the rule is written down rather than assumed.
