@@ -1518,7 +1518,6 @@ impl Indicator for CircularFinancing {
         }
 
         let total = crate::circular_rubric::rubric_total();
-        let ceiling = crate::circular_rubric::rubric_ceiling();
         let n = crate::circular_rubric::VERIFIED.len();
         let read = crate::circular_rubric::VERIFIED
             .iter()
@@ -1569,10 +1568,14 @@ impl Indicator for CircularFinancing {
             value: fraction_pct,
             unit: ic.unit.clone(),
             detail: format!(
-                "Rubric total {:.0} of a present ceiling of {:.0} — {:.0}% of the expressible \
-                 scale, which is the SCORED quantity (see below). Structures verified by reading \
-                 primary filings: {}. {} of {} edges disclose a magnitude that can be scaled; the \
-                 rest are marked UNQUANTIFIED rather than assumed mild. Of {} edges, {} are \
+                "MEAN SEVERITY {:.0}% — the average points per read edge against the maximum a \
+                 single edge can express, and this is the SCORED quantity. Cumulative rubric total \
+                 {:.0} across {} entries. Reported per edge rather than as a share of a running \
+                 total, because the total grows with the number of edges READ and would otherwise \
+                 make the score rise from reading effort rather than from the market. Structures \
+                 verified by reading primary filings: {}. {} of {} edges disclose a magnitude that \
+                 can be scaled; the rest are marked UNQUANTIFIED rather than assumed mild. Of {} \
+                 edges, {} are \
                  real structures and {} was READ AND REFUTED — Oracle names OpenAI only as a \
                  model-provider list, so its RPO growth of 359% to $455B is not attributable to \
                  a named counterparty. That refutation is retained deliberately: it is the \
@@ -1584,13 +1587,12 @@ impl Indicator for CircularFinancing {
                  edge also carries a BOUNDED scale term (0/2/5/8 points, by the disclosed exposure \
                  against the filer's market cap), capped BELOW the weakest structure so the rubric \
                  cannot become a size contest. WHY \
-                 THE FRACTION AND NOT THE TOTAL IS SCORED: the rubric total rises every time an \
-                 edge is read, so scoring it directly would let READING EFFORT raise the reading \
-                 and conflate 'more verified' with 'worse'. The fraction is stable — a refutation \
-                 adds to the ceiling and nothing to the total, so it LOWERS the score.",
+                 THE MEAN AND NOT THE TOTAL IS SCORED, for the reason above. A refutation adds \
+                 zero points while still counting as an edge, so it LOWERS the mean — which is \
+                 what makes this a measurement rather than an alarm.",
+                fraction_pct,
                 total,
-                ceiling,
-                total / ceiling * 100.0,
+                n,
                 crate::circular_rubric::summary(),
                 crate::circular_rubric::VERIFIED
                     .iter()
