@@ -40,7 +40,17 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
-    /// THREE THINGS AT ONCE, which is why it ranks highest: the vendor takes an equity stake
+    /// THE AMPLIFIER, and the largest single number in the model. The vendor commits upstream
+    /// to buy supply on the belief that the demand it is itself financing is real. If the
+    /// financed customer fails, the vendor holds BOTH a guarantee over the customer's leases
+    /// AND a supply commitment it may no longer need.
+    ///
+    /// Ranked above the guarantee because it is larger, and because it is NOT contingent on a
+    /// default: a guarantee becomes payable if something goes wrong, whereas a supply
+    /// commitment has already been made. NVIDIA's supply and capacity commitments rose from
+    /// $119B to $279B in one quarter.
+    SupplyCommitmentScaledToFinancedDemand,
+    /// THREE THINGS AT ONCE: the vendor takes an equity stake
     /// in the developer, extends CONTINGENT CREDIT SUPPORT (a guarantee) over the
     /// infrastructure the customer will occupy, and thereby finances the demand for its own
     /// product. NVIDIA -> SB Energy/OpenAI at PORTS-Pike.
@@ -75,6 +85,7 @@ impl Structure {
     /// and a finer scale would imply a precision this evidence cannot support.
     pub fn points(self) -> f64 {
         match self {
+            Structure::SupplyCommitmentScaledToFinancedDemand => 50.0,
             Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
             Structure::AbsorbedUnitDebt => 30.0,
@@ -86,6 +97,9 @@ impl Structure {
 
     pub fn label(self) -> &'static str {
         match self {
+            Structure::SupplyCommitmentScaledToFinancedDemand => {
+                "upstream supply commitments scaled to demand the vendor itself finances"
+            }
             Structure::SupplierGuaranteeAndInvestment => {
                 "supplier guaranteeing and investing in its customer's infrastructure"
             }
@@ -170,6 +184,32 @@ pub struct VerifiedEdge {
 /// THE VERIFIED SET. Adding an entry is a deliberate act: it requires having READ a filing,
 /// extracted a magnitude, and written what would falsify it.
 pub const VERIFIED: &[VerifiedEdge] = &[
+    VerifiedEdge {
+        filer: "NVDA",
+        counterparty: "(upstream supply chain)",
+        structure: Structure::SupplyCommitmentScaledToFinancedDemand,
+        scale: Scale::Severe,
+        citation: "NVIDIA FY2027 Q2 10-Q (filed 2026-08-26), Note 8 commitments, verbatim: \
+                   \"We have significantly increased our supply and capacity commitments from \
+                   $119 billion last quarter to $279 billion as of July 26, 2026 to meet future \
+                   demand.\" And on the financing side: \"In August 2026, we entered into \
+                   memoranda of understanding with large capital providers regarding independent \
+                   financing platforms through which the providers would raise and deploy \
+                   third-party capital for the buildout of AI infrastructure.\"",
+        magnitude: "$279 BILLION of supply and capacity commitments as of 2026-07-26, up from \
+                    $119 billion the prior quarter — an increase of $160 BILLION (+134%) in a \
+                    single quarter. This is the largest single figure in the model and it EXCEEDS \
+                    the $105B guarantee. The capital-provider MOUs are NOT quantified, and NVIDIA \
+                    states they 'may not lead to definitive agreements.'",
+        falsifier:
+            "Shown wrong if the supply commitments are cancellable or reschedulable without \
+                    penalty — NVIDIA states elsewhere that 'these agreements may be cancelable, \
+                    rescheduled, or adjustable for our business needs prior to placing firm \
+                    orders', which would make this inventory flexibility rather than a fixed \
+                    obligation — or if the demand materialises so the supply is consumed as \
+                    planned. The counter-fact is specific and material, and it is why this edge is \
+                    recorded with its own falsifier rather than folded into the guarantee.",
+    },
     VerifiedEdge {
         filer: "NVDA",
         counterparty: "OpenAI",
@@ -322,6 +362,7 @@ pub fn rubric_ceiling() -> f64 {
     // structure in future raises the ceiling automatically instead of silently understating
     // how much of the scale the present evidence occupies.
     let max = [
+        Structure::SupplyCommitmentScaledToFinancedDemand,
         Structure::SupplierGuaranteeAndInvestment,
         Structure::EquityForPurchases,
         Structure::AbsorbedUnitDebt,
@@ -393,6 +434,33 @@ mod tests {
     }
 
     #[test]
+    fn the_upstream_amplifier_ranks_above_the_guarantee() {
+        // The supply commitment is larger than the guarantee AND is not contingent on a
+        // default — a guarantee becomes payable if something goes wrong, whereas a supply
+        // commitment has already been made. The ordering says so.
+        assert!(
+            Structure::SupplyCommitmentScaledToFinancedDemand.points()
+                > Structure::SupplierGuaranteeAndInvestment.points()
+        );
+        let e = VERIFIED
+            .iter()
+            .find(|e| e.structure == Structure::SupplyCommitmentScaledToFinancedDemand)
+            .expect("the supply-commitment edge must be present");
+        assert!(
+            e.magnitude.contains("$279 BILLION"),
+            "the size must be stated: {}",
+            e.magnitude
+        );
+        // And the counter-fact must be recorded, because NVIDIA itself says the agreements may
+        // be cancellable — which is the difference between a fixed obligation and flexibility.
+        assert!(
+            e.falsifier.contains("cancelable") || e.falsifier.contains("cancelable"),
+            "the cancellability counter-fact must be recorded: {}",
+            e.falsifier
+        );
+    }
+
+    #[test]
     fn a_quantified_exposure_outweighs_an_unquantified_one_of_the_same_shape() {
         // A flat per-structure score would treat a $105B guarantee and an unquantified one as
         // equally severe. The scale term differentiates them, and it is BOUNDED so that a
@@ -423,7 +491,12 @@ mod tests {
         // A one-sided entry would report the largest number in the model and omit the six
         // limits NVIDIA states in the same note. The falsifier field is where those live, and
         // this asserts they are actually there.
-        let n = VERIFIED.iter().find(|e| e.filer == "NVDA").unwrap();
+        // Target the GUARANTEE edge specifically: NVIDIA now has two entries, and finding
+        // "the first NVDA edge" would silently test the wrong one after any reordering.
+        let n = VERIFIED
+            .iter()
+            .find(|e| e.filer == "NVDA" && e.structure == Structure::SupplierGuaranteeAndInvestment)
+            .expect("the guarantee edge must exist");
         assert!(
             n.magnitude.contains("$105 BILLION"),
             "the size must be stated"
@@ -480,9 +553,15 @@ mod tests {
         // implicit: handing a customer your own stock to make it buy from you is a stronger
         // circularity than buying components from an affiliate.
         assert!(
-            Structure::EquityForPurchases.points() > Structure::AbsorbedUnitDebt.points(),
-            "equity-as-consideration is the strongest form"
+            Structure::SupplyCommitmentScaledToFinancedDemand.points()
+                > Structure::SupplierGuaranteeAndInvestment.points(),
+            "the upstream amplifier outranks the guarantee"
         );
+        assert!(
+            Structure::SupplierGuaranteeAndInvestment.points()
+                > Structure::EquityForPurchases.points()
+        );
+        assert!(Structure::EquityForPurchases.points() > Structure::AbsorbedUnitDebt.points());
         assert!(
             Structure::AbsorbedUnitDebt.points() > Structure::RelatedPartyRevenueWithStake.points()
         );
@@ -556,5 +635,11 @@ mod tests {
         assert!(VERIFIED
             .iter()
             .any(|e| e.filer == "SPCX" && e.structure == Structure::AbsorbedUnitDebt));
+        assert!(
+            VERIFIED
+                .iter()
+                .any(|e| e.filer == "NVDA"
+                    && e.structure == Structure::SupplierGuaranteeAndInvestment)
+        );
     }
 }
