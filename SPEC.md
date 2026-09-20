@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 277 tests green offline; live assertions opt-in.
+- 278 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -577,7 +577,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Twenty-two verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Twenty-three verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -587,6 +587,12 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **AMZN / Lambda — REFUTED, and the most instructive case in the set: A PRODUCT NAME MATCHED AS
+  A COMPANY.** "Lambda MicroVMs, a new flavor of the popular **AWS Lambda** serverless compute
+  service" — Lambda is AMAZON'S OWN PRODUCT. The detector matched a product against the counterparty
+  list. Disambiguating this requires **WORLD KNOWLEDGE**, not evidence in the filing: no reading of
+  the passage alone reveals that AWS Lambda exists and is unrelated to the GPU neocloud of the same
+  name. That is the honest limit of a name-based detector, recorded rather than papered over.
 - **META / Anthropic — REFUTED, a LITIGATION CAPTION.** Meta's FY2025 10-K names Anthropic as a
   CO-DEFENDANT: "Carreyrou et al. v. Anthropic PBC, et al." The names co-occur because they share a
   docket category, not a contract. This is the failure mode a name-matching detector is MOST likely

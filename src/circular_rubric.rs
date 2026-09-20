@@ -687,6 +687,37 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     in a commercial context rather than in the risk factors. At present the mention \
                     carries no commercial content at all.",
     },
+    // SEVENTH REFUTATION, AND THE MOST INSTRUCTIVE OF THEM ALL: A PRODUCT NAME MATCHED AS A
+    // COMPANY. Amazon's Q2 2026 earnings release names Lambda — because "Lambda" is AMAZON'S OWN
+    // SERVICE:
+    //
+    //   "Lambda MicroVMs, a new flavor of the popular AWS Lambda serverless compute service"
+    //
+    // The detector matched a PRODUCT against the counterparty list and produced an apparent
+    // relationship between Amazon and Lambda, the GPU neocloud. They are unrelated entities that
+    // share a word.
+    //
+    // This is the failure mode that no amount of reading a single passage would catch if the reader
+    // did not already know AWS Lambda exists — which is exactly why the entry records the mechanism
+    // rather than just the conclusion. It also shows the limit of a name-based detector: the
+    // disambiguation requires WORLD KNOWLEDGE, not evidence in the filing.
+    VerifiedEdge {
+        filer: "AMZN",
+        counterparty: "Lambda",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation: "Amazon Q2 2026 earnings release (Form 8-K Exhibit 99.1, filed 2026-07-30), \
+                   verbatim: \"Lambda MicroVMs, a new flavor of the popular AWS Lambda serverless \
+                   compute service\" — LAMBDA IS AMAZON'S OWN PRODUCT. The detector matched a product \
+                   name against the counterparty list and produced an apparent Amazon-Lambda \
+                   relationship. Amazon and Lambda (the GPU neocloud) are unrelated entities sharing \
+                   a word; AWS Lambda predates the company by years.",
+        magnitude: "none attributable to a circular structure — this is a product-name collision.",
+        falsifier: "Shown wrong if a filing names Lambda, Inc. as a customer, supplier or investee \
+                    in a commercial context rather than as the AWS service. The disambiguation is by \
+                    world knowledge — knowing AWS Lambda exists — rather than by anything in the \
+                    text, which is the limitation this entry documents.",
+    },
     // SIXTH REFUTATION, AND A THIRD KIND OF FALSE POSITIVE: a LITIGATION CAPTION.
     //
     // Meta's FY2025 10-K names Anthropic — but as a CO-DEFENDANT in someone else's suit:
