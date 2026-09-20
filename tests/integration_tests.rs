@@ -364,6 +364,112 @@ fn every_scored_value_is_commensurate_with_its_own_unit() {
 }
 
 #[test]
+fn the_rendered_report_states_no_impossible_figure() {
+    // FOUND ON THE LIVE SITE, NOT BY A TEST: the served dashboard said
+    //
+    //   "Rubric total 504 of a present ceiling of 58 — 869% of the expressible scale"
+    //
+    // 869% OF A SCALE CANNOT EXIST, and it was on the user-facing artifact. The cause was detail
+    // text written for an older model still dividing by a ceiling the code no longer used.
+    //
+    // Nothing caught it because no test read the RENDERED TEXT — the CLI's short output does not
+    // print indicator details, so the defect existed only in the HTML. This closes that gap for
+    // the whole report rather than for this one indicator: any percentage in a rendered detail
+    // must be between 0 and 100, and any "N/M" share must not have N greater than M.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixture absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-20T00:00:00Z");
+    let html = bubble_watch::report::html::render(&r);
+
+    // Strip tags so we read what a person reads.
+    let mut text = String::with_capacity(html.len());
+    let mut in_tag = false;
+    for ch in html.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                text.push(' ');
+            }
+            _ if !in_tag => text.push(ch),
+            _ => {}
+        }
+    }
+
+    // 1. Every percentage must be 0-100. The only legitimate >100 sequence would be inside a
+    //    larger number written without a space, which the boundary check below excludes.
+    let bytes: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == '%' {
+            // walk back over the digits
+            let mut j = i;
+            while j > 0 && (bytes[j - 1].is_ascii_digit() || bytes[j - 1] == '.') {
+                j -= 1;
+            }
+            let num: String = bytes[j..i].iter().collect();
+            let starts_number = j == 0 || !bytes[j - 1].is_ascii_alphanumeric();
+            if starts_number {
+                if let Ok(v) = num.parse::<f64>() {
+                    // A PERCENTAGE CAN BE A SHARE OR A RATE, AND ONLY SHARES ARE BOUNDED 0-100.
+                    // This assertion failed on its first run against "up 359%" — Oracle's RPO
+                    // growth, which legitimately exceeds 100% because it is a MULTIPLE. The test
+                    // was wrong; the report was right.
+                    // CHAR-INDEXED lookback, not bytes. `j` and `i` index a Vec<char> while the
+                    // text contains em-dashes and curly quotes, so slicing the String by those
+                    // indices mis-measures the context — which is exactly why the first fix
+                    // looked at the wrong window and still failed.
+                    let lo = j.saturating_sub(140);
+                    let before: String = bytes[lo..j].iter().collect::<String>().to_lowercase();
+                    let is_rate = [
+                        "up ", "down ", "growth", "increase", "decrease", "change", "yoy",
+                        "higher", "lower", "surge", "rise", "fall", "expand",
+                    ]
+                    .iter()
+                    .any(|k| before.contains(k));
+                    if !is_rate {
+                        assert!(
+                        (0.0..=100.0).contains(&v),
+                        "the rendered report states {}% with no rate context, and a bare percentage cannot exceed 100 as a share of anything. Context: {:?}",
+                        v,
+                        &bytes[j.saturating_sub(140)..(i + 1).min(bytes.len())]
+                            .iter()
+                            .collect::<String>()
+                    );
+                    }
+                }
+            }
+            i += 1;
+        } else {
+            i += 1;
+        }
+    }
+
+    // 2. No "N of M" claim may have N greater than M — the same impossibility in another shape.
+    //    This is what would have caught "504 of a present ceiling of 58" directly.
+    let words: Vec<&str> = text.split_whitespace().collect();
+    for w in words.windows(4) {
+        if w[1].parse::<f64>().is_ok() && w[2] == "of" && w[3].parse::<f64>().is_ok() {
+            let a: f64 = w[1].parse().unwrap();
+            let b: f64 = w[3].parse().unwrap();
+            assert!(
+                a <= b || b == 0.0,
+                "the rendered report claims {} of {} — the first cannot exceed the second. \
+                 Context: {:?}",
+                a,
+                b,
+                w.join(" ")
+            );
+        }
+    }
+}
+
+#[test]
 fn the_docs_do_not_contradict_the_build() {
     // DOCS THAT STATE NUMBERS DRIFT THE MOMENT THOSE NUMBERS CHANGE, AND NOTHING FAILS WHEN THEY DO.
     // This has now happened twice on this project — README claimed 234 tests and weight 146, then
