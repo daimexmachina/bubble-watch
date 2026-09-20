@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 263 tests green offline; live assertions opt-in.
+- 264 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -529,6 +529,8 @@ disagree with it**. This does the second. Points:
 
 | structure | pts |
 |---|---|
+| upstream supply commitments scaled to demand the vendor finances | 50 |
+| vendor organising third-party capital to fund demand for its own product | 42 |
 | supplier guaranteeing AND investing in its customer's infrastructure | 45 |
 | vendor investing in, contracting with, and lending to the same counterparty | 48 |
 | equity issued as consideration for the customer's purchases | 40 |
@@ -541,6 +543,12 @@ disagree with it**. This does the second. Points:
 Plus a **bounded scale term** (0/2/5/8 points) by disclosed exposure against the filer's market
 cap, **capped below the weakest structure** so the rubric cannot become a size contest. A test
 asserts that cap.
+
+**Rank is decided by commitment, not by size.** NVIDIA's announced $500B of third-party capital is
+the largest figure in the research and ranks BELOW its signed $279B supply commitment, because it
+is "subject to definitive agreements" and because the balance-sheet risk sits with the institutions
+rather than with NVIDIA. A test asserts that ordering AND that the qualifier is recorded — dropping
+it would make the biggest number in the model read as a committed obligation.
 
 ### 15.3 Four measurement defects found in this module, all by testing properties
 
@@ -565,10 +573,12 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Twelve verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Thirteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 Roughly $384B+ of disclosed exposure, including:
 
-- **NVDA** — $279B of upstream supply commitments (up $160B in one quarter) and a **$105B**
+- **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
+  Brookfield, Goldman Sachs and KKR (announced, "subject to definitive agreements"); $279B of
+  upstream supply commitments (up $160B in one quarter) and a **$105B**
   guarantee over 20-year OpenAI leases, which NVIDIA classifies as a credit derivative.
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.

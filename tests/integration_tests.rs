@@ -364,6 +364,60 @@ fn every_scored_value_is_commensurate_with_its_own_unit() {
 }
 
 #[test]
+fn the_docs_do_not_contradict_the_build() {
+    // DOCS THAT STATE NUMBERS DRIFT THE MOMENT THOSE NUMBERS CHANGE, AND NOTHING FAILS WHEN THEY DO.
+    // This has now happened twice on this project — README claimed 234 tests and weight 146, then
+    // 263 and twelve entries, after the build had moved past both. Each time the stale figure was
+    // in a PUBLIC document describing the model's own weights, which is the worst place for it.
+    //
+    // The test reads what the docs CLAIM and compares against what the build IS, for the facts
+    // that change most often: the test count is excluded (it changes on every test added, which
+    // would make this test self-defeating), but the WEIGHT TOTAL and the VERIFIED EDGE COUNT are
+    // both asserted, because those are substantive model facts a reader would rely on.
+    use std::fs;
+    let readme = fs::read_to_string("README.md").expect("README.md must exist");
+    let spec = fs::read_to_string("SPEC.md").expect("SPEC.md must exist");
+
+    // The rubric's entry count must match what SPEC claims.
+    let n_entries = bubble_watch::circular_rubric::VERIFIED.len();
+    let words = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    ];
+    let word = words.get(n_entries).copied().unwrap_or("many");
+    let claimed = format!("{} verified", word);
+    // Case-insensitive: the docs write "Thirteen verified" at the start of a sentence and
+    // "thirteen" mid-sentence. Demanding one casing would break on a copy-edit that changed
+    // nothing substantive, which is the kind of brittle assertion that trains people to edit
+    // tests instead of reading failures.
+    assert!(
+        spec.to_lowercase().contains(&claimed),
+        "SPEC must describe the verified edge count correctly: expected the phrase {:?} for {} \
+         entries. If the count changed, update SPEC (and README's table).",
+        claimed,
+        n_entries
+    );
+
+    // The weight total must match what README claims.
+    let c = cfg();
+    let total = c.total_weight();
+    assert!(
+        readme.contains(&format!("Weight totals {}", total)),
+        "README must state the real weight total ({}). Update it if weights changed.",
+        total
+    );
+
+    // And neither document may still call circularity a declared gap.
+    for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
+        assert!(
+            !doc.contains("`circularity` | 0 |"),
+            "{} still lists circularity at weight 0 — it is scored now",
+            name
+        );
+    }
+}
+
+#[test]
 fn the_pre_v11_trend_defaults_match_the_shipped_config() {
     // `TrendCfg::defaults()` exists so a config written before v1.1 still loads and behaves
     // the same way, and its doc comment claims it matches the shipped `[trend]` block. Once

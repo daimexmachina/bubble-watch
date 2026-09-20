@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 263 tests, no network required
+cargo test                                         # 264 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -192,10 +192,12 @@ a keyword count into a directed edge.
 
 It is scored from a **rubric**, not a ratio — the rubric and its point values are printed in the
 report so a reader can disagree with them. Every scored entry carries a citation to a filing that
-was read, a magnitude, and a **written falsifier**:
+was read, a magnitude, and a **written falsifier**. Thirteen entries, roughly **$884B** of
+disclosed exposure:
 
 | Edge | Points | What was read |
 |---|---|---|
+| NVDA-organised third-party capital | 42+8 | **$500B** from 6 named institutions (*announced*) |
 | NVDA upstream supply commitments | 50+8 | **$279B** (+$160B in one quarter) |
 | AMZN → Anthropic | 48+8 | $8B stake + **>$100B** cloud + **$20B** facility |
 | AMZN → OpenAI | 48+8 | $38B + **$100B** cloud + $28.7B carrying value |
@@ -210,6 +212,10 @@ was read, a magnitude, and a **written falsifier**:
 | ORCL backlog counterparty | **0** | **$638B** of RPO, no counterparty named |
 
 **Microsoft → OpenAI → CoreWeave → Microsoft is a closed loop**, with every leg in a filing.
+
+**Rankings are argued, not asserted.** The announced $500B ranks BELOW the signed $279B supply
+commitment, because it is "subject to definitive agreements" and the balance-sheet risk sits with
+the institutions rather than with NVIDIA. Size does not decide rank.
 
 **Two refutations are kept deliberately**, because they prove the reading can fall. Oracle's $638B
 — the largest figure in the research — contributes **nothing**, because a number with no named
