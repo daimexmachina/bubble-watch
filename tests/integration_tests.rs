@@ -486,9 +486,41 @@ fn the_docs_do_not_contradict_the_build() {
 
     // The rubric's entry count must match what SPEC claims.
     let n_entries = bubble_watch::circular_rubric::VERIFIED.len();
+    // Extended past fifteen: the list ran out and the test reported "many verified" rather than
+    // failing usefully, which is a poor failure mode for a check whose whole purpose is to state
+    // a count. Sized generously so adding entries does not immediately exhaust it again.
     let words = [
-        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-        "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty",
+        "twenty-one",
+        "twenty-two",
+        "twenty-three",
+        "twenty-four",
+        "twenty-five",
+        "twenty-six",
+        "twenty-seven",
+        "twenty-eight",
+        "twenty-nine",
+        "thirty",
     ];
     let word = words.get(n_entries).copied().unwrap_or("many");
     let claimed = format!("{} verified", word);

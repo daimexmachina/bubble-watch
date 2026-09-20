@@ -40,6 +40,16 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
+    /// THE SUPPLIER HOLDS ITS CUSTOMER'S TRADABLE EQUITY. The vendor sells into a company whose
+    /// shares it owns, so its own P&L moves with the customer's valuation and the customer's
+    /// ability to keep buying is supported by the vendor's own balance sheet. Distinct from a
+    /// private stake because the position is MARKED TO MARKET: the vendor's earnings now include
+    /// the market's estimate of its customer's prospects.
+    ///
+    /// Ranked low for its size — NVIDIA disclosed the position as an investment without a
+    /// material gain — but recorded because the RELATIONSHIP is the point, not the amount: this is
+    /// the purest form of selling to a company you own.
+    SupplierHoldingCustomerEquity,
     /// THE RESELLER CARRYING A LONG-TERM LIABILITY IT HAS PASSED ON. A vendor signs a multi-year
     /// lease, sublicenses the entire obligation to an AI customer, and remains liable if the
     /// sublicensee fails — while the obligation is disclosed as an OFF-BALANCE-SHEET arrangement.
@@ -129,6 +139,7 @@ impl Structure {
             Structure::VendorOrganisedThirdPartyCapital => 42.0,
             Structure::LandlordDebtSecuredByTenantCredit => 35.0,
             Structure::VendorSublicensingItsOwnLeaseLiability => 38.0,
+            Structure::SupplierHoldingCustomerEquity => 28.0,
             Structure::VendorFinancingItsOwnCustomer => 48.0,
             Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
@@ -152,6 +163,9 @@ impl Structure {
             }
             Structure::VendorSublicensingItsOwnLeaseLiability => {
                 "vendor sublicensing a long-term lease while remaining liable for it"
+            }
+            Structure::SupplierHoldingCustomerEquity => {
+                "supplier holding its customer's tradable equity"
             }
             Structure::VendorFinancingItsOwnCustomer => {
                 "vendor investing in, contracting with, and lending to the same counterparty"
@@ -348,6 +362,32 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     commitment includes 'contractual obligations related to the performance of \
                     AWS chips', which makes AWS chip performance a contractual term of revenue it \
                     is simultaneously investing to obtain.",
+    },
+    VerifiedEdge {
+        filer: "NVDA",
+        counterparty: "CoreWeave",
+        structure: Structure::SupplierHoldingCustomerEquity,
+        scale: Scale::Small,
+        citation: "NVIDIA FY2026 Q1 10-Q (filed 2025-05-28), note on marketable securities, \
+                   verbatim: \"(1) The balance as of the first quarter of fiscal year 2026 includes \
+                   an investment in CoreWeave, Inc., or CoreWeave, which was reclassified from \
+                   non-marketable equity securities to marketable securities following public \
+                   market trading.\" The XBRL records it under the axis member \
+                   nvda:CoreWeaveInc.Member within us-gaap:PubliclyHeldEquitySecuritiesMember at \
+                   FairValueInputsLevel1, i.e. marked to a quoted price.",
+        magnitude: "the position is not separately quantified in the excerpt read, and NVIDIA \
+                    states that \"net unrealized gains on investments in publicly-held equity \
+                    securities held at period end were not significant\". The RELATIONSHIP is the \
+                    substance: NVIDIA sells GPUs to CoreWeave while holding CoreWeave's listed \
+                    shares, and CoreWeave is a company whose revenue is 67% Microsoft and which has \
+                    committed $18.4B to OpenAI.",
+        falsifier: "Shown wrong if the holding is immaterial AND passive — a small financial \
+                    investment a supplier happens to hold is not a structure. NVIDIA describes the \
+                    gain as not significant, which is a genuine counterweight and is why this entry \
+                    is scored LOW (28) rather than with the guarantee and supply commitments. It \
+                    would be falsified outright if the position is held in a segregated fund rather \
+                    than on NVIDIA's own balance sheet, or if it is a legacy pre-IPO position being \
+                    wound down rather than a strategic holding.",
     },
     VerifiedEdge {
         filer: "SMCI",
@@ -682,6 +722,7 @@ pub fn rubric_ceiling() -> f64 {
     // how much of the scale the present evidence occupies.
     let max = [
         Structure::SupplyCommitmentScaledToFinancedDemand,
+        Structure::SupplierHoldingCustomerEquity,
         Structure::VendorSublicensingItsOwnLeaseLiability,
         Structure::LandlordDebtSecuredByTenantCredit,
         Structure::VendorOrganisedThirdPartyCapital,
@@ -768,6 +809,33 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn a_small_position_is_recorded_as_a_relationship_not_a_magnitude() {
+        // THE ENTRY SCORES LOW ON PURPOSE. NVIDIA's CoreWeave gain was "not significant", and a
+        // rubric that ranked this alongside a $105B guarantee would be a size contest. What makes
+        // it worth recording is the RELATIONSHIP — selling GPUs to a company you own — and the
+        // entry must say so rather than implying a large exposure.
+        let e = VERIFIED
+            .iter()
+            .find(|e| e.structure == Structure::SupplierHoldingCustomerEquity)
+            .expect("the NVDA/CoreWeave edge must be present");
+        assert!(
+            e.magnitude.contains("not significant") || e.magnitude.contains("RELATIONSHIP"),
+            "the entry must state that the magnitude is small and the relationship is the point"
+        );
+        assert!(
+            e.falsifier.contains("immaterial") || e.falsifier.contains("passive"),
+            "and must name the strongest counter: a small passive holding is not a structure"
+        );
+        // Ranked below the guarantee and the supply commitment, since its disclosed gain was not
+        // material.
+        assert!(
+            Structure::SupplierHoldingCustomerEquity.points()
+                < Structure::SupplierGuaranteeAndInvestment.points(),
+            "a non-material position must rank below a $105B guarantee"
+        );
     }
 
     #[test]
@@ -1000,10 +1068,14 @@ mod tests {
             Scale::Severe.points() < Structure::RelatedPartySupply.points(),
             "scale must stay subordinate to structure, or the rubric becomes a size contest"
         );
-        // And the largest exposure found is marked severe.
+        // And the largest exposure found is marked severe. TARGETED BY STRUCTURE, not by filer:
+        // NVIDIA now has THREE entries, so "the first NVDA edge" silently became the CoreWeave
+        // equity position (correctly Small) and this assertion failed for the wrong reason. Same
+        // bug class as the earlier counter-fact test, which is why the lookup is by structure
+        // wherever the structure is what the test is about.
         let nvda = VERIFIED
             .iter()
-            .find(|e| e.filer == "NVDA")
+            .find(|e| e.filer == "NVDA" && e.structure == Structure::SupplierGuaranteeAndInvestment)
             .expect("the NVDA guarantee must be in the set");
         assert_eq!(
             nvda.scale,

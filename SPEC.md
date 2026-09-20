@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 270 tests green offline; live assertions opt-in.
+- 272 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -534,6 +534,7 @@ disagree with it**. This does the second. Points:
 | supplier guaranteeing AND investing in its customer's infrastructure | 45 |
 | datacentre buildout financed on a speculative-grade tenant's credit | 35 |
 | vendor sublicensing a long-term lease while remaining liable for it | 38 |
+| supplier holding its customer's tradable equity | 28 |
 | vendor investing in, contracting with, and lending to the same counterparty | 48 |
 | equity issued as consideration for the customer's purchases | 40 |
 | a parent absorbing its AI unit's debt | 30 |
@@ -575,7 +576,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Fifteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Sixteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -585,6 +586,10 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **NVDA / CoreWeave** — NVIDIA holds CoreWeave's **listed equity**, reclassified from
+  non-marketable to marketable on listing and marked at FairValueInputsLevel1. Scored LOW (28)
+  because NVIDIA states the gain was "not significant": the relationship, not the amount, is the
+  finding.
 - **SMCI** — a **$600.0M** ten-year obligation for 21 MW, **sublicensed in full to Lambda** while
   SMCI keeps only "a right to seek reimbursement", filed under Item 2.03 as an off-balance-sheet
   arrangement.
