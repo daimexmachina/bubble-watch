@@ -104,20 +104,35 @@ fn offline_mode_scores_only_fixture_backed_indicators() {
     let readings = indicators::evaluate_all(&ctx);
     let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-16T00:00:00Z");
 
-    // COVERAGE IS NOT ZERO, AND THAT IS CORRECT. One indicator (`frontier_premium`)
-    // reads a COMMITTED FIXTURE rather than the network, so it legitimately scores with
-    // every source offline. A committed fixture is source data with a recorded
-    // provenance, not fabricated data — the distinction this test exists to protect is
-    // between REAL data and INVENTED data, not between online and offline.
+    // COVERAGE IS NOT ZERO, AND THAT IS CORRECT. Two indicators (`frontier_premium` and
+    // `circularity`) read COMMITTED data rather than the network, so they legitimately score
+    // with every source offline. Committed data with recorded provenance is source data, not
+    // fabricated data — the distinction this test protects is between REAL data and INVENTED
+    // data, not between online and offline.
     //
-    // The property that actually matters is unchanged and is asserted below: nothing
-    // that depends on a NETWORK source may produce a score offline. So the coverage
-    // must be small (only fixture-backed indicators), and every NETWORK indicator must
-    // be an explicit gap.
+    // THE BOUND IS COMPUTED, NOT HARDCODED. It was a literal 0.10, which went stale the moment
+    // circularity's weight was raised from 6 to 12 — the behaviour was correct and the constant
+    // was not. Deriving it from the fixture-backed weights means the test keeps asserting the
+    // real property ("offline coverage equals exactly the fixture-backed share") instead of
+    // breaking whenever a weight changes for unrelated reasons.
+    let total_weight = c.total_weight();
+    let fixture_weight: f64 = r
+        .indicators
+        .iter()
+        .filter(|i| matches!(i.id.as_str(), "frontier_premium" | "circularity"))
+        .map(|i| i.weight)
+        .sum();
+    let expected_ceiling = fixture_weight / total_weight;
     assert!(
-        r.coverage < 0.10,
-        "offline coverage should come only from fixture-backed indicators, got {:.3}",
-        r.coverage
+        r.coverage <= expected_ceiling + 1e-9,
+        "offline coverage {:.3} exceeded the fixture-backed share {:.3} — something \
+         network-backed scored with the network off",
+        r.coverage,
+        expected_ceiling
+    );
+    assert!(
+        r.coverage > 0.0,
+        "fixture-backed indicators should still score offline"
     );
     for i in &r.indicators {
         // FIXTURE-BACKED indicators legitimately score offline, because their input is

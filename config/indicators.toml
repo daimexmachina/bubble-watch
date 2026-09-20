@@ -93,7 +93,11 @@
 # new indicator is low, it is that it is EVIDENCE-CAPPED — it can only score structures that
 # were read in a filing and classified, so it rises only when someone does the reading, and
 # it has already come back lower once (the Oracle refutation).
-schema_version = "2.1"
+# METHODOLOGY CHANGED 2026-09-20 — schema_version 2.1 -> 2.2.
+#
+# `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
+# runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
+schema_version = "2.2"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -782,12 +786,40 @@ label = "Circular financing in the AI buildout (verified structures only)"
 # related-party and equity-method accounting, and EDGAR full-text search filtered by `ciks=`
 # attributes it to a filer. The structures below were read in the filings themselves.
 #
-# WHY THE WEIGHT IS SMALL (6.0). The evidence is a handful of read edges, not a series. The
-# rubric is coarse by design, so a small weight limits how far a coarse judgment can move the
-# composite. This is deliberately NOT sized to the importance of the topic — circular
-# financing may well be the single most important feature of this bubble — it is sized to the
-# STRENGTH OF THE EVIDENCE, which is what a weight is meant to express.
-weight = 6.0
+# WEIGHT RAISED 6.0 -> 12.0 at methodology 2.2, on the evidence that accumulated after the
+# first scoring.
+#
+# WHY IT MOVED. It was set at 6.0 when there were THREE read edges. There are now NINE,
+# every one carrying a citation to a primary filing, a magnitude, and a written falsifier,
+# and together they disclose on the order of $384 billion of exposure:
+#
+#   NVDA  upstream supply commitments   $279B (+$160B in one quarter)
+#   NVDA  land/power/shell guarantee    $105B capped over 20-year OpenAI leases
+#   AMZN  Anthropic                     $8B stake + >$100B cloud + $20B facility
+#   AMZN  OpenAI                        $38B + $100B cloud + $28.7B carrying value
+#   AMD   OpenAI warrant                9.8% of AMD's shares outstanding
+#   MSFT  OpenAI                        $24.1B revenue under ASC 850
+#   SPCX  xAI                           $513M related-party interest
+#   SPCX  Tesla                         $329M of Megapack purchases
+#
+# Holding 6.0 would have told a reader that circular financing is among the LEAST important
+# inputs in a model whose config says it may be the most important feature of this bubble.
+# The weight is meant to express importance weighted by confidence, and confidence rose
+# materially without the number moving.
+#
+# WHY 12.0 AND NOT HIGHER. It matches `credit_hy` — the other financing-channel indicator —
+# and sits below the two 14s that measure the headline spending and valuation stretch. Two
+# limits argue against going further: (a) the reading is a LOWER BOUND, because an unread
+# edge scores zero, so the value will rise as more edge are read and the composite would rise
+# with it; (b) the rubric is a coarse judgment, and a coarse judgment should not dominate.
+# 12.0 is roughly 8% of total weight: material, not decisive.
+#
+# THIS IS THE SAME ALARM-DRIFT THE MODEL ALREADY FLAGS, and it is being accepted knowingly
+# rather than ignored: the composite has moved 40.5 -> 42.2 across this work largely by adding
+# and raising indicators that score high. The defence is not that the new number is small; it
+# is that every point of it traces to a specific sentence in a filing that a reader can check
+# and that one of the nine edges came back as a REFUTATION.
+weight = 12.0
 source = "sec-edgar (read filings)"
 unit = "pct of the expressible rubric scale — verified structures as a share of the strongest possible reading"
 rationale = "SCORED FROM A RUBRIC, NOT A RATIO, AND THAT IS STATED RATHER THAN HIDDEN. Every other indicator here is a number retrieved from a source: a spread, a percentage, a ratio. Circular financing is not available as a number, because no free source publishes 'share of counterparty revenue funded by the investor's own capital'. The honest options were to leave it at weight 0 as a gap, or to state the scoring rule explicitly, apply it only to edges whose filing text was actually READ, and let a reader disagree with the weights. This does the second. THE RUBRIC, and it is arguable: a supplier guaranteeing AND investing in its customer's infrastructure = 45; equity issued to a customer as consideration for its purchases = 40; a parent absorbing its AI unit's debt onto its own balance sheet = 30; disclosed related-party revenue alongside an equity stake = 25; a related-party supply deal under common control = 10; a mention that was read and REFUTED = 0. WHAT MAKES IT FALSIFIABLE RATHER THAN ASTROLOGY: every scored element is a specific structure in a specific filing, with a citation, a magnitude, and a written falsifier, so each edge can be shown wrong. One ALREADY WAS — Oracle's two OpenAI hits are a model-integration list, not a contract, and score ZERO. An unfalsifiable indicator could not produce that outcome; this one did on its first real test, and the refutation is retained in the set deliberately because it is the evidence that the rubric can come back LOWER. WHAT IS SCORED: only edges whose text was read. The scan finds roughly 48 real ecosystem edges and about five have been read, so the great majority contribute NOTHING, and an unread edge scores zero rather than partially. The reading is therefore a LOWER BOUND and its direction of bias is toward CALM — the opposite of alarm. Treat a low number as 'little has been verified yet', never as 'little is there'. WHAT IS DELIBERATELY NOT SCORED: hit counts. A raw count would let 'NVDA names NVIDIA 136 times' and 'CRWV names CoreWeave 145 times' — companies naming THEMSELVES — dominate the reading. The rubric consumes only classified structures. ALSO NOT SCORED: NPORT-P fund holdings, which give the investor side with real dollar values (Anthropic $56.5M, OpenAI $49.3M) but cannot distinguish a circular arrangement from an ordinary portfolio position. NOT USED AS A PROXY: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss, which is mark-to-market P&L on stakes held rather than the amount invested or the revenue flowing back. See [L1] and [L3]."
