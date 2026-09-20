@@ -446,6 +446,41 @@ pub const VERIFIED: &[VerifiedEdge] = &[
         falsifier: "Shown wrong if the purchases are shown to be at arm's-length market prices \
                     with no element of related-party preference — i.e. a pure supply contract.",
     },
+    // THE ANONYMITY FINDING — not a circularity, and recorded because it is the LIMIT of what
+    // this method can see. Oracle's FY2026 10-K reports RPO of $638 billion (up from $138
+    // billion) and attributes it to "certain significant cloud contracts" WITHOUT NAMING ANY
+    // COUNTERPARTY. The names that do appear — OpenAI, Anthropic, Microsoft, Meta — are in
+    // COMPETITOR lists and model-integration lists, not customer disclosures.
+    //
+    // This is the largest contract in the industry and it is deliberately anonymous. Oracle is
+    // compliant: its 10-K states "No single customer accounted for 10% or more of our total
+    // revenues". But the method cannot see the relationship, and no amount of reading will fix
+    // that, because the identity is not in the filing.
+    VerifiedEdge {
+        filer: "ORCL",
+        counterparty: "(backlog counterparty — not named)",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation:
+            "Oracle FY2026 10-K (filed 2026-06-22): \"Remaining performance obligations were \
+                   $638 billion and $138 billion as of May 31, 2026 and 2025, respectively. The \
+                   increase in remaining performance obligations as of May 31, 2026 in comparison \
+                   to May 31, 2025 was primarily attributable to certain significant cloud \
+                   contracts that were entered into during the period.\" NO COUNTERPARTY IS \
+                   NAMED. Separately: \"No single customer accounted for 10% or more of our total \
+                   revenues in fiscal 2026, 2025 or 2024.\"",
+        magnitude:
+            "$638 BILLION of RPO, up from $138 billion — a 362% increase in one year — with \
+                    no counterparty attributed. This is the largest single financial figure \
+                    encountered anywhere in this research and the model CANNOT attribute it.",
+        falsifier:
+            "Not falsifiable in the usual sense, and that is the point: it is a LIMIT rather \
+                    than a claim. It would be RESOLVED if Oracle named the counterparty in a \
+                    later filing, or if a counterparty disclosed its own side — which is how the \
+                    CoreWeave links were established, from the other end of the relationship. \
+                    Read as: the model is blind here, by the filer's design and with full \
+                    compliance.",
+    },
     // THE REFUTATION. Kept in the set deliberately: it is the evidence that this rubric can
     // come back LOWER, which is what separates it from a one-way alarm.
     VerifiedEdge {
@@ -596,6 +631,31 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn a_blind_spot_lowers_the_reading_rather_than_raising_it() {
+        // The ORCL anonymity finding is the largest number in the research ($638B) and it
+        // contributes NOTHING, because a figure with no counterparty cannot be scored as a
+        // circular structure. It is recorded as a Refuted-class entry so that it DILUTES the
+        // mean. If the largest number in the dataset could raise the score simply by being
+        // large, this would be a size contest rather than a measurement.
+        let blind = VERIFIED
+            .iter()
+            .find(|e| e.counterparty.contains("not named"))
+            .expect("the anonymity finding must be recorded");
+        assert_eq!(blind.structure, Structure::Refuted);
+        assert_eq!(blind.structure.points(), 0.0, "it must contribute nothing");
+        assert!(
+            blind.magnitude.contains("$638 BILLION"),
+            "the size must be stated"
+        );
+        // And it must say the method is blind, not that the arrangement is absent.
+        assert!(
+            blind.falsifier.contains("LIMIT") || blind.falsifier.contains("blind"),
+            "must read as a coverage limit: {}",
+            blind.falsifier
+        );
     }
 
     #[test]
