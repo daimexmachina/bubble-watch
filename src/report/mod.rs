@@ -162,7 +162,7 @@ pub fn build_with_history(
     let drift = if archive.is_empty() {
         None
     } else {
-        Some(crate::drift::attribute(archive))
+        Some(crate::drift::attribute_with_cfg(archive, cfg))
     };
 
     // Data quality: what is missing, and how much weight it carried.

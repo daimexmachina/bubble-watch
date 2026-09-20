@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 257 tests green offline; live assertions opt-in.
+- 277 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -725,7 +725,21 @@ It does **not** freeze the model. Adding indicators is how the tool improves, an
 improve it in order to keep a number stable would be the worse error. The honest answer is not to
 stop changing the model but to be explicit about which part of the movement it caused.
 
-### 16.4 The standing caveat
+### 16.4 The sharper form: the PHASE LABEL itself was crossed by the model
+
+Phase labels are the tool's **headline output** and they are assigned by **absolute** composite
+thresholds (early < 35, mid < 55, late < 75). Since the composite moves with the model, a phase
+crossing can be produced by rewriting an indicator.
+
+**In this archive the ONLY phase change — `early` → `mid` — happened at a methodology boundary**
+(methodology 1.4). The tool reported "EARLY" at composite 30.6 and "MID" at 41.6 **for the same
+market**. A phase label that can be crossed by editing the model is not a statement about the world.
+
+`drift` now counts phase crossings that coincide with model boundaries and states them separately,
+because the phase label is what a reader takes away: "the tool reported a different phase for the
+same market because an indicator was rewritten, not because conditions changed."
+
+### 16.5 The standing caveat
 
 **Any comparison of two composites from different methodology versions is a comparison of two
 different instruments, not one instrument at two times.** That sentence is now printed by

@@ -460,7 +460,7 @@ fn run(cli: &Cli) -> Result<(), String> {
         }
         Cmd::Drift { history_dir } => {
             let (archive, warnings) = bubble_watch::history::load(history_dir);
-            let d = bubble_watch::drift::attribute(&archive);
+            let d = bubble_watch::drift::attribute_with_cfg(&archive, &cfg);
             println!("COMPOSITE HISTORY — MODEL vs MARKET");
             println!("{}", "=".repeat(72));
             println!("{}", d.statement());

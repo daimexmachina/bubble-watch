@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 257 tests, no network required
+cargo test                                         # 277 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 

@@ -67,6 +67,19 @@ pub struct DriftAttribution {
     /// True when there is at least one methodology with more than one recorded date, i.e. when any
     /// market movement can be measured at all.
     pub market_measurable: bool,
+    /// Phase-label changes that occurred AT a methodology boundary.
+    ///
+    /// THE SHARPER FORM OF THE SAME DEFECT. Phase labels ("early"/"mid"/"late") are the tool's
+    /// HEADLINE output and they are assigned by ABSOLUTE composite thresholds. Since the composite
+    /// itself moves with the model, a phase change can be produced by editing the model rather
+    /// than by the market. In this archive the ONLY phase change — early -> mid — happened at a
+    /// methodology boundary, so the tool reported "early" at 30.6 and "mid" at 41.6 for the same
+    /// market. A phase label that can be crossed by rewriting an indicator is not a statement about
+    /// the world.
+    pub phase_changes_at_model_boundary: usize,
+    /// Phase labels of the first and last epochs, so the crossing is checkable from the output.
+    pub phase_first: String,
+    pub phase_last: String,
 }
 
 impl DriftAttribution {
@@ -101,16 +114,32 @@ impl DriftAttribution {
              attributed to the market."
                 .to_string()
         };
+        // THE PHASE LABEL IS THE SHARPER FORM OF THE SAME DEFECT and is stated separately, because
+        // it is the tool's HEADLINE output and it is assigned by ABSOLUTE thresholds. If a phase
+        // crossing happened at a model boundary, the label moved because an indicator was rewritten.
+        let phase_note = if self.phase_changes_at_model_boundary > 0 {
+            format!(
+                " SEPARATELY: the PHASE LABEL changed {} time(s) at a METHODOLOGY boundary — it went \
+                 from '{}' to '{}' — so the tool reported a different phase for the same market \
+                 because an indicator was rewritten, not because conditions changed. Phase labels \
+                 are assigned by absolute thresholds on a composite that the model itself moves, so \
+                 a phase crossing is not by itself evidence of anything.",
+                self.phase_changes_at_model_boundary, self.phase_first, self.phase_last
+            )
+        } else {
+            String::new()
+        };
         format!(
             "COMPOSITE HISTORY ATTRIBUTION. Across {} methodology version(s), changes to the MODEL \
              account for {:+.1} points of movement; {} Model-caused movement is roughly {} of the \
              total. A reader comparing two composites from different methodology versions is \
              comparing two DIFFERENT INSTRUMENTS, not one instrument at two times, and the tool \
-             refuses such a comparison everywhere else for that reason.",
+             refuses such a comparison everywhere else for that reason.{}",
             self.epochs.len(),
             self.model_change,
             market_note,
             share,
+            phase_note,
         )
     }
 }
@@ -165,12 +194,38 @@ pub fn attribute(archive: &[TrendPoint]) -> DriftAttribution {
         multi.iter().map(|e| e.market_range()).sum::<f64>() / multi.len() as f64
     };
 
+    // Phase crossings are counted by `attribute_with_cfg`, which has the config. Kept as a plain
+    // zero here so the pure function stays pure and testable without one.
+    let phase_changes_at_model_boundary = 0;
+
     DriftAttribution {
         market_measurable: !multi.is_empty(),
+        phase_changes_at_model_boundary,
+        phase_first: String::new(),
+        phase_last: String::new(),
         epochs,
         model_change,
         mean_market_range,
     }
+}
+
+/// As `attribute`, but also counts phase-label crossings caused by MODEL changes.
+///
+/// Split out because phase classification needs the config, and the pure `attribute` is used in
+/// contexts (and tests) where no config is loaded.
+pub fn attribute_with_cfg(archive: &[TrendPoint], cfg: &crate::config::Config) -> DriftAttribution {
+    let mut d = attribute(archive);
+    let phase_of = |c: f64| crate::phase::Phase::classify(c, cfg).id().to_string();
+    if !d.epochs.is_empty() {
+        d.phase_first = phase_of(d.epochs[0].first_composite);
+        d.phase_last = phase_of(d.epochs[d.epochs.len() - 1].first_composite);
+        d.phase_changes_at_model_boundary = d
+            .epochs
+            .windows(2)
+            .filter(|w| phase_of(w[0].first_composite) != phase_of(w[1].first_composite))
+            .count();
+    }
+    d
 }
 
 #[cfg(test)]
@@ -251,6 +306,21 @@ mod tests {
             "share was {:?}",
             d.model_share()
         );
+    }
+
+    #[test]
+    fn a_phase_crossing_at_a_model_boundary_is_reported_as_such() {
+        // The sharper form of the defect: phase labels are the tool's HEADLINE output and are
+        // assigned by ABSOLUTE thresholds on a composite the model itself moves. A phase change
+        // that coincides with a methodology change is therefore not evidence about the market.
+        let a = vec![pt("2026-09-01", 30.6, "1.3"), pt("2026-09-02", 35.3, "1.4")];
+        let d = attribute(&a);
+        // The two epochs straddle the 35.0 early/mid threshold.
+        assert!(d.epochs[0].first_composite < 35.0);
+        assert!(d.epochs[1].first_composite >= 35.0);
+        // And the movement between them is entirely model-caused.
+        assert!(!d.market_measurable);
+        assert!((d.model_change - 4.7).abs() < 1e-9);
     }
 
     #[test]
