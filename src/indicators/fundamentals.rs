@@ -1500,13 +1500,33 @@ impl Indicator for FrontierPremium {
                 }
             }
         };
-        let Some(series) = crate::frontier::load() else {
+        // FILTER TO THE COMPARABLE SUBSET. Early LMArena snapshots ranked a single
+        // proprietary model against up to 30 open ones, so their gaps measure leaderboard
+        // composition rather than capability — and they bias the series toward alarm.
+        // See `frontier::MIN_PROPRIETARY_MODELS`. `load()` still returns the full history
+        // so the artifact stays inspectable; the guard is applied here, at interpretation.
+        let Some(raw) = crate::frontier::load() else {
             return Reading::Unavailable {
                 reason: "the LMArena frontier-gap fixture is absent, so the open-versus-closed \
                          capability premium cannot be measured"
                     .into(),
             };
         };
+        let series = crate::frontier::comparable(&raw);
+        let excluded = raw.len() - series.len();
+        if series.is_empty() {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the LMArena frontier-gap fixture holds {} snapshots but NONE with at least \
+                     {} ranked proprietary models, so no snapshot is a usable closed-versus-open \
+                     comparison. Reported as a gap rather than scored: a difference computed \
+                     against a leaderboard that ranked almost no closed models measures the \
+                     leaderboard, not the models.",
+                    raw.len(),
+                    crate::frontier::MIN_PROPRIETARY_MODELS
+                ),
+            };
+        }
         let (Some(last), Some(pk)) = (series.last(), crate::frontier::peak(&series)) else {
             return Reading::Unavailable {
                 reason: "the frontier-gap series is empty".into(),
@@ -1541,6 +1561,19 @@ impl Indicator for FrontierPremium {
         }
 
         let compression = crate::frontier::compression_from_peak_pct(&series).unwrap_or(0.0);
+
+        // Describe the one genuinely measured negative episode with ITS OWN field sizes.
+        // Taken from the series rather than hardcoded, and deliberately NOT the latest
+        // snapshot's counts: an earlier version of this text cited the current field size
+        // (180 closed / 222 open) while describing the 2025 episode, which actually ran on
+        // 45-55 closed against 114 open. A number that is true of the wrong period is the
+        // same defect as a number that is simply wrong.
+        let negs: Vec<&crate::frontier::GapPoint> = series.iter().filter(|p| p.gap < 0.0).collect();
+        let neg_floor = negs.iter().map(|p| p.gap).fold(0.0_f64, f64::min);
+        let neg_prop_min = negs.iter().map(|p| p.n_proprietary).min().unwrap_or(0);
+        let neg_prop_max = negs.iter().map(|p| p.n_proprietary).max().unwrap_or(0);
+        let neg_open_min = negs.iter().map(|p| p.n_open).min().unwrap_or(0);
+        let neg_open_max = negs.iter().map(|p| p.n_open).max().unwrap_or(0);
         // INVERTED: a narrow gap scores as high stress. Anchors are on the gap in Elo.
         let stress = crate::score::interpolate(last.gap, &ic.anchors);
 
@@ -1559,16 +1592,32 @@ impl Indicator for FrontierPremium {
                  ratings measure human PREFERENCE on voted prompts, not the enterprise workloads \
                  that generate the revenue; a 'Proprietary' licence is not literally 'weights \
                  unreleased'; and the gap is between the single best model on each side, so one \
-                 release moves it sharply. The series also went briefly NEGATIVE in early 2025, \
-                 when the best open model outranked the best closed one outright. READ FROM A \
-                 COMMITTED FIXTURE ({} vintage), so it does not update itself: the staleness \
-                 guard converts it to a reported gap past {} days.",
+                 release moves it sharply. The series also went NEGATIVE for five weeks in early \
+                 2025 (2025-01-24 to 2025-02-27, floor {:.1}), when deepseek-r1 genuinely \
+                 outranked o1 and gemini-2.0-flash against a field of {} to {} closed and {} to \
+                 {} open models — that episode is a real measurement, unlike the deeper negative \
+                 stretch at the start of the record, which is excluded. EXCLUDED: {} \
+                 of {} snapshots are dropped because the leaderboard ranked fewer than {} \
+                 proprietary models, so their difference measures leaderboard composition \
+                 rather than capability (in 2023-05 to 2023-11 exactly ONE closed model was \
+                 ranked against up to 30 open ones, which is why the raw series appears to \
+                 reach -102 there; it is not a capability reading). READ FROM A COMMITTED \
+                 FIXTURE ({} vintage), so it does not update itself: the staleness guard \
+                 converts it to a reported gap past {} days.",
                 last.best_proprietary_model,
                 last.best_open_model,
                 last.gap,
                 pk.gap,
                 pk.date,
                 compression,
+                neg_floor,
+                neg_prop_min,
+                neg_prop_max,
+                neg_open_min,
+                neg_open_max,
+                excluded,
+                raw.len(),
+                crate::frontier::MIN_PROPRIETARY_MODELS,
                 last.date,
                 MAX_AGE_DAYS
             ),

@@ -51,12 +51,49 @@ pub struct GapPoint {
     pub best_proprietary: f64,
     pub best_open: f64,
     pub gap: f64,
+    /// How many proprietary (closed) models the leaderboard ranked on this date. The
+    /// comparison is only meaningful above `MIN_PROPRIETARY_MODELS`.
+    pub n_proprietary: usize,
+    /// How many open-weight models were ranked, recorded for the same reason.
+    pub n_open: usize,
     pub best_proprietary_model: String,
     pub best_open_model: String,
 }
 
+/// Minimum number of ranked proprietary models for a snapshot to be a usable comparison.
+///
+/// WHY THIS EXISTS. The series is the best closed model against the best open one, so it is
+/// only a capability comparison when BOTH sides are properly represented. In LMArena's early
+/// snapshots they were not: from 2023-05 to 2023-11 the leaderboard ranked exactly ONE
+/// proprietary model (`palm-2`) against up to 30 open-weight entries. The resulting gap fell
+/// to −102.0, which reads as "open models led by a mile" but actually measures leaderboard
+/// composition — closed labs had barely entered the arena yet.
+///
+/// The tell is that the gap jumps −102.0 → +65.0 between 2023-11-16 and 2023-12-06, precisely
+/// as proprietary entries appear (1 → 4 → 9). No capability discontinuity can do that.
+///
+/// Admitting those snapshots would bias the headline in the ALARMING direction, which is the
+/// direction this project is most careful about. The threshold is applied to the SERIES, not
+/// only to the prose, so the guarded reading cannot drift back in through a later change.
+pub const MIN_PROPRIETARY_MODELS: usize = 5;
+
+/// The comparable subset: snapshots where the closed side is represented well enough for the
+/// difference to mean something. See `MIN_PROPRIETARY_MODELS` for why this is not cosmetic.
+pub fn comparable(points: &[GapPoint]) -> Vec<GapPoint> {
+    points
+        .iter()
+        .filter(|p| p.n_proprietary >= MIN_PROPRIETARY_MODELS)
+        .cloned()
+        .collect()
+}
+
 /// Load the committed gap series. Returns None when the fixture is absent, so the
 /// indicator reports an honest gap rather than a fabricated number.
+///
+/// The returned series is the FULL recorded history; callers that are computing a
+/// capability comparison must pass it through `comparable` first. `load` stays complete so
+/// the artifact remains inspectable rather than hidden — the guard belongs at the point of
+/// interpretation, where its reasoning is visible.
 pub fn load() -> Option<Vec<GapPoint>> {
     let path = std::path::Path::new("tests/fixtures/arena_frontier_gap.json");
     let text = std::fs::read_to_string(path).ok()?;
@@ -68,6 +105,10 @@ pub fn load() -> Option<Vec<GapPoint>> {
             best_proprietary: s.get("best_proprietary")?.as_f64()?,
             best_open: s.get("best_open")?.as_f64()?,
             gap: s.get("gap")?.as_f64()?,
+            // Counts default to 0 when absent, which EXCLUDES the snapshot rather than
+            // admitting an unverifiable comparison.
+            n_proprietary: s.get("n_proprietary").and_then(|x| x.as_u64()).unwrap_or(0) as usize,
+            n_open: s.get("n_open").and_then(|x| x.as_u64()).unwrap_or(0) as usize,
             best_proprietary_model: s
                 .get("best_proprietary_model")
                 .and_then(|x| x.as_str())
@@ -200,6 +241,8 @@ mod tests {
             best_proprietary: 1507.6,
             best_open: 1475.1,
             gap: 32.5,
+            n_proprietary: 180,
+            n_open: 180,
             best_proprietary_model: "a".into(),
             best_open_model: "b".into(),
         }];
@@ -216,11 +259,87 @@ mod tests {
             best_proprietary: 1507.6,
             best_open: 1475.1,
             gap: 32.5,
+            n_proprietary: 180,
+            n_open: 180,
             best_proprietary_model: "a".into(),
             best_open_model: "b".into(),
         }];
         let pts = as_points(&g);
         assert_eq!(pts.len(), 1);
         assert!((pts[0].value - 32.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn thin_snapshots_are_excluded_from_the_comparison() {
+        // The guard that keeps a leaderboard artifact out of a capability reading. In
+        // 2023-05..2023-11 LMArena ranked ONE proprietary model against up to 30 open ones,
+        // and the resulting -102 gap would read as "open models led by a mile" when it
+        // actually measures that closed labs had barely entered the arena.
+        let mk = |date: &str, gap: f64, np: usize| GapPoint {
+            date: date.into(),
+            best_proprietary: 1000.0,
+            best_open: 1000.0 + gap,
+            gap,
+            n_proprietary: np,
+            n_open: 30,
+            best_proprietary_model: "p".into(),
+            best_open_model: "o".into(),
+        };
+        let raw = vec![
+            mk("2023-05-22", -16.0, 1),
+            mk("2023-11-16", -102.0, 1),
+            mk("2023-12-15", 75.3, 5),
+            mk("2026-09-13", 32.5, 180),
+        ];
+        let c = comparable(&raw);
+        assert_eq!(c.len(), 2, "only well-populated snapshots survive");
+        assert!(
+            c.iter().all(|p| p.n_proprietary >= MIN_PROPRIETARY_MODELS),
+            "every survivor must clear the threshold"
+        );
+        // The artifact's -102 must NOT be reachable through the comparable view, because a
+        // headline built on it would be biased toward alarm.
+        assert!(
+            !c.iter().any(|p| p.gap < -90.0),
+            "the -102 leaderboard artifact must not survive the filter"
+        );
+    }
+
+    #[test]
+    fn the_real_fixture_keeps_its_measured_negative_episode() {
+        // THE COMPLEMENT, and the reason the threshold is 5 rather than something higher:
+        // filtering must remove the artifact WITHOUT erasing the one genuinely measured
+        // negative episode. In 2025-01-24..2025-02-27 deepseek-r1 really did outrank o1 and
+        // gemini-2.0-flash, against 45-55 closed and 114 open models. A guard that also
+        // deleted that would hide a real fact of the same shape as the artifact.
+        let Some(raw) = load() else {
+            eprintln!("SKIP: fixture absent");
+            return;
+        };
+        let c = comparable(&raw);
+        let neg: Vec<_> = c.iter().filter(|p| p.gap < 0.0).collect();
+        assert!(
+            !neg.is_empty(),
+            "the measured 2025 negative episode must survive the filter"
+        );
+        assert!(
+            neg.iter().all(|p| p.date.starts_with("2025-")),
+            "and it must be the 2025 episode, not the early artifact: {:?}",
+            neg.iter().map(|p| &p.date).collect::<Vec<_>>()
+        );
+        assert!(
+            c.iter().all(|p| p.n_proprietary >= MIN_PROPRIETARY_MODELS),
+            "and the comparable view must be internally consistent"
+        );
+        // The excluded ones are exactly the thin early snapshots.
+        let excluded: Vec<_> = raw
+            .iter()
+            .filter(|p| p.n_proprietary < MIN_PROPRIETARY_MODELS)
+            .collect();
+        assert!(
+            excluded.iter().all(|p| p.date.as_str() < "2024-01-01"),
+            "only early thin snapshots should be excluded: {:?}",
+            excluded.iter().map(|p| &p.date).collect::<Vec<_>>()
+        );
     }
 }

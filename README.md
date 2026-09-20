@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 198 tests, no network required
+cargo test                                         # 234 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -177,11 +177,78 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `foreign_interest` | 5 | Rest-of-world US equity holdings, percentile of own history | Fed Z.1 |
 | `narrative_saturation` | 5 | 10-K filings mentioning AI, annualised YoY | EDGAR full-text |
 | `depreciation_subsidy` | 6 | Depreciation-rate extension while the asset base grows | SEC EDGAR |
+| `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
 | `circularity` | 0 | **declared gap** — see below | — |
 
-Weight totals 140 across the 18 scored indicators. `circularity` is carried at weight 0 as an
+Weight totals 146 across the 19 scored indicators. `circularity` is carried at weight 0 as an
 explicitly acknowledged blind spot: no free source relates an equity investment to the revenue it
 generates, so it is declared rather than silently dropped.
+
+### `frontier_premium` — the one structural feature no prior bubble had
+
+In every earlier mania the financed asset could not be reproduced by anyone else: railways
+needed land, telecom needed spectrum, the dot-com buildout needed proprietary code. Here the
+core asset is contested by an open ecosystem that publishes its weights, and the gap is small
+and measurable.
+
+From 243 LMArena leaderboard snapshots (2023-05 → 2026-09):
+
+| date | best closed minus best open |
+|---|---|
+| 2024-02 | **+135.0** (peak) |
+| 2024-09 | +89.2 |
+| 2025-02 | **−9.1** (floor of the *credible* era) |
+| 2025-06 | +54.0 |
+| 2026-09 | **+32.5** |
+
+#### Two negative episodes, and only one of them is a measurement
+
+The raw series also contains a deeper negative stretch, **−16 to −102 across 2023-05 → 2023-11**.
+That one is an **artifact and is excluded from the interpretation**, for a reason the fixture
+records and the guard below enforces: in those snapshots LMArena ranked **one** proprietary model
+(`palm-2`) against up to 30 open-weight ones. The "best closed model" was therefore a single early
+entry, and the number measures leaderboard composition, not relative capability. The tell is that
+the gap jumps −102.0 → +65.0 between 2023-11-16 and 2023-12-06, which is exactly when proprietary
+entries start appearing (1 → 4 → 9), with no plausible capability discontinuity in between.
+
+**The real negative episode is 2025-01-24 → 2025-02-27** (−3.7 to −9.1). Here the comparison is
+sound: **45–55 proprietary models against 114 open-weight ones**, with `o1` / `gemini-2.0-flash`
+scored against **`deepseek-r1`**, which genuinely outranked them for five weeks. This is the one
+openly-led period that is a measured fact rather than a coverage effect, and it is a stronger
+statement than the raw minimum suggests.
+
+Restricting to snapshots with **≥5 ranked proprietary models** (234 of 243): range **−9.1 to
++135.0**, negative in 11 snapshots (4.7%), all of them in that 2025 episode.
+
+The premium has compressed ~76% from its peak. A frontier model costs roughly **6× the
+open-weight median input price** and leads by ~32 Elo on a ~1,500-point scale — about 2%.
+
+**Direction is deliberately inverted**: a *narrow* gap scores as *high* stress, because the
+capital spending assumes a wide moat. This is the only indicator in the config where the usual
+convention is reversed, and the anchors say so.
+
+**Genuinely two-sided.** A closing gap is bad for the incumbents financing the buildout and
+good for AI adoption generally. The output does not pretend the number has one meaning.
+
+**Read from a committed fixture, not the network.** LMArena publishes parquet (56 MB), and the
+crate deliberately has no parquet reader, so the extraction result is committed as a 57 KB JSON
+fixture with its `scripts/refresh-frontier-gap.py` method versioned alongside it. Because a
+committed fixture cannot update itself, the indicator carries a **120-day staleness guard** that
+converts it into a reported gap rather than reporting a frozen value with a fresh timestamp —
+and an integration test fails if the shipped fixture has gone stale, so it cannot silently
+vanish from the composite.
+
+### Declared judgment, rather than smuggled judgment
+
+The model's anchors encode human judgment about what counts as "stressed". That judgment was
+always there; it is now **declared explicitly** in its own panel, separate from the composite.
+
+Each entry carries a claim, its evidence, a direction (`supports` / `against`), a confidence,
+and — critically — a **falsifier**: the observation that would show it wrong. Entries are
+**never summed into the composite**, and the panel reports how many run *against* the thesis,
+so it cannot become a one-sided alarm list. The capability-versus-spending entry is explicitly
+marked as the weakest, because half its comparison is unmeasured — which is stated rather than
+hidden.
 
 ### Why NVIDIA is not in the cohort
 
@@ -264,6 +331,22 @@ All of the following was established by probing the live endpoints from this hos
 | EDGAR full-text search | works | A **census** of filings, not a sample, which is why it is usable for hype when news/search measures are not. Needs a descriptive UA. |
 
 The tool is designed to run end-to-end on **Yahoo + EDGAR alone**; FRED only ever adds coverage.
+
+### LMArena (capability) — committed fixture, no runtime fetch
+
+LMArena's leaderboard dataset is published as parquet. Fetching it at run time would mean a
+56 MB download and a parquet reader as a crate dependency, so the series is extracted once and
+committed as `tests/fixtures/arena_frontier_gap.json`. Regenerate with:
+
+```bash
+python3 -m venv /tmp/arena-venv && /tmp/arena-venv/bin/pip install pyarrow
+/tmp/arena-venv/bin/python scripts/refresh-frontier-gap.py
+```
+
+Then commit the updated fixture. **This is the one source that requires manual refresh** — the
+indicator's 120-day staleness guard turns it into a reported gap rather than silently reporting
+an outdated number, and `a_fixture_backed_indicator_refuses_to_report_a_stale_value` fails with
+the exact age and command if you forget.
 
 ### FRED key — how to get one
 
