@@ -165,6 +165,12 @@ pub fn build_with_history(
         Some(crate::drift::attribute_with_cfg(archive, cfg))
     };
 
+    // How close the label is to flipping. Uses the model drift just computed as the reference, so
+    // the margin is judged against this project's own measured behaviour rather than a guess.
+    let band_margin = drift
+        .as_ref()
+        .and_then(|d| crate::phase::band_margin(composite, d.model_change.abs(), cfg));
+
     // Data quality: what is missing, and how much weight it carried.
     let total_weight = cfg.total_weight();
     let available_weight: f64 = readings
@@ -377,6 +383,7 @@ pub fn build_with_history(
         analog,
         trend,
         drift,
+        band_margin,
         exposure,
         falsifiers,
         judgments,

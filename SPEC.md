@@ -739,7 +739,33 @@ market**. A phase label that can be crossed by editing the model is not a statem
 because the phase label is what a reader takes away: "the tool reported a different phase for the
 same market because an indicator was rewritten, not because conditions changed."
 
-### 16.5 The standing caveat
+### 16.5 The band margin — how stable is the label right now?
+
+Refusing to retune the bands left a gap: a reader could not tell whether TODAY'S label was at risk
+from the same model movement that crossed it before. `phase::band_margin` closes that by reporting
+the distance to the nearest boundary against the model drift actually measured.
+
+**On the 2026-09-20 reading:**
+
+| | |
+|---|---|
+| composite | 41.6, phase `mid` |
+| margin to nearest boundary | **6.6 points** (early/mid at 35.0) |
+| demonstrated model drift | **10.1 points** |
+| **fragile?** | **YES** |
+
+The label is **currently fragile**: the composite sits only 6.6 points above the boundary that would
+revert it to `early`, and the model has already been shown to move it by 10.1. So the phase label
+could flip from a model edit alone, with **no market movement at all** — which is exactly what
+happened at methodology 1.4, in the other direction.
+
+The statement deliberately does **not** claim the band is well calibrated. It reports fragility and
+calls the label "a location on a scale, not a stable classification". Retuning remains refused: there
+is no better evidence for new thresholds than for the original n=2 fit, and moving a band to hide a
+model-caused crossing is moving a goalpost. Reporting the MARGIN lets a reader judge stability
+without anyone pretending the band is better than it is.
+
+### 16.6 The standing caveat
 
 **Any comparison of two composites from different methodology versions is a comparison of two
 different instruments, not one instrument at two times.** That sentence is now printed by

@@ -9,6 +9,7 @@
 
 use crate::config::Config;
 use crate::model::AnalogWindow;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase {
@@ -72,6 +73,80 @@ impl Phase {
             Phase::Critical
         }
     }
+}
+
+/// How far the composite sits from its nearest phase boundary, and whether that margin is larger
+/// than the model movement already demonstrated in this project's own history.
+///
+/// WHY THIS EXISTS INSTEAD OF RETUNED BANDS. Phase bands are ABSOLUTE thresholds on a composite the
+/// model itself moves. Measured on this archive, methodology changes have shifted the composite by
+/// **+10.1 points** while within-methodology market movement averaged **0.06**. So a label is only
+/// trustworthy if the reading sits further from a boundary than the model has been shown to move —
+/// otherwise the label could flip from an edit alone, with no market change at all.
+///
+/// The alternative fix would be to move the thresholds, and that is refused deliberately: retuning a
+/// band to hide a model-caused crossing is moving a goalpost, and there is no better evidence for
+/// new thresholds than there was for the original n=2 fit. Reporting the MARGIN lets a reader judge
+/// the label's fragility for themselves without anyone pretending the band is better calibrated
+/// than it is.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BandMargin {
+    /// Distance to the nearest band boundary, in composite points.
+    pub margin: f64,
+    /// Which boundary, e.g. "mid (55.0)".
+    pub boundary: String,
+    /// Model-caused movement previously demonstrated, used as the reference for fragility.
+    pub model_drift: f64,
+    /// True when the margin is smaller than the demonstrated model drift, i.e. the label could
+    /// change from a model edit alone.
+    pub fragile: bool,
+}
+
+impl BandMargin {
+    /// A statement for the report. Says the margin plainly; does NOT claim the band is correct.
+    pub fn statement(&self) -> String {
+        if self.fragile {
+            format!(
+                "BAND MARGIN: this reading sits {:.1} points from the {} boundary, and changes to the \
+                 MODEL have previously moved this composite by {:.1} points. The phase label above \
+                 is therefore FRAGILE — it could change from a model edit alone, with no movement in \
+                 the market. Treat the label as a location on a scale, not as a stable classification.",
+                self.margin, self.boundary, self.model_drift
+            )
+        } else {
+            format!(
+                "BAND MARGIN: this reading sits {:.1} points from the {} boundary, against {:.1} \
+                 points of previously demonstrated model drift. The label is not presently at risk \
+                 from a model edit, though the drift figure is a lower bound on what a future change \
+                 could do.",
+                self.margin, self.boundary, self.model_drift
+            )
+        }
+    }
+}
+
+/// Compute the margin to the nearest band boundary, or None when the phase config has no usable
+/// boundaries (a composite can always sit somewhere, but with no bands there is nothing to measure).
+pub fn band_margin(composite: f64, model_drift: f64, cfg: &Config) -> Option<BandMargin> {
+    let p = &cfg.phase;
+    let candidates = [
+        (p.early_max, "early/mid"),
+        (p.mid_max, "mid/late"),
+        (p.late_max, "late/critical"),
+    ];
+    let (b, name) = candidates.iter().min_by(|a, c| {
+        (composite - a.0)
+            .abs()
+            .partial_cmp(&(composite - c.0).abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    })?;
+    let margin = (composite - b).abs();
+    Some(BandMargin {
+        margin,
+        boundary: format!("{} ({:.1})", name, b),
+        model_drift,
+        fragile: margin < model_drift,
+    })
 }
 
 /// The minimum coverage at which the timing overlay is shown at all.

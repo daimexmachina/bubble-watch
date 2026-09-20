@@ -462,6 +462,7 @@ mod tests {
             // exactly the case the drift module reports as "no attribution is possible" rather
             // than as a zero.
             drift: None,
+            band_margin: None,
             exposure: Vec::new(),
             falsifiers: Vec::new(),
             judgments: Vec::new(),

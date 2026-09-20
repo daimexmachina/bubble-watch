@@ -616,6 +616,11 @@ pub struct Report {
     /// nothing saying most of the climb is methodology, which is a misreading waiting to happen.
     #[serde(default)]
     pub drift: Option<crate::drift::DriftAttribution>,
+    /// How far the composite sits from its nearest phase boundary, against demonstrated model
+    /// drift. CONTEXT ONLY. Present because phase bands are absolute thresholds on a composite the
+    /// model moves, so a label is only stable if the margin exceeds that movement.
+    #[serde(default)]
+    pub band_margin: Option<crate::phase::BandMargin>,
     /// Per-company exposure ranking. CONTEXT ONLY — company-level analysis never
     /// enters a market-level composite.
     #[serde(default)]

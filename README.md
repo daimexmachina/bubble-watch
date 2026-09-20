@@ -283,6 +283,24 @@ been misled by it.
 
 Both are stated in the report, beneath the history table, where the numbers appear.
 
+#### Is the label stable *right now*? The band margin
+
+Refusing to retune the bands left a gap — a reader could not tell whether **today's** label was at
+risk. `band_margin` reports the distance to the nearest boundary against the model drift actually
+measured:
+
+| | |
+|---|---|
+| composite | 41.6, phase `mid` |
+| margin to nearest boundary | **6.6 points** (early/mid at 35.0) |
+| demonstrated model drift | **10.1 points** |
+| **fragile?** | **YES** |
+
+**The label is currently fragile.** It sits only 6.6 points above the boundary that would revert it
+to `early`, and the model has been shown to move it by 10.1 — so it could flip from a model edit
+alone, with no market movement. The report says so in those words, and calls the label "a location on
+a scale, not a stable classification".
+
 **The bands are deliberately NOT re-tuned.** Moving a threshold to hide a model-caused crossing
 would be the same class of error as moving a goalpost. Saying that the crossing happened, and what
 it did, is the honest fix.

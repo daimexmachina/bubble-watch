@@ -892,6 +892,16 @@ fn trend_card(r: &Report) -> String {
             } else {
                 String::new()
             };
+            // THE BAND MARGIN goes in the same block. It answers "is the label stable?" directly,
+            // against this project's OWN measured drift rather than a guess, which is the honest
+            // alternative to retuning thresholds.
+            let margin_block = match &r.band_margin {
+                Some(m) => format!(
+                    "<br><span style='color:#666'>{}</span>",
+                    esc(&m.statement())
+                ),
+                None => String::new(),
+            };
             format!(
                 "<div style='margin-top:14px;padding:10px 12px;border-left:3px solid #b8860b;\
                  background:#fffbf0;font-size:12.5px;line-height:1.5'>\
@@ -901,13 +911,16 @@ fn trend_card(r: &Report) -> String {
                  <span style='color:#666'>A composite from one methodology version and a composite \
                  from another are two DIFFERENT INSTRUMENTS, not one instrument at two times. The \
                  tool refuses that comparison everywhere else; this table is the one place it was \
-                 still implied.</span>{}</div>",
+                 still implied.</span>{}{}</div>",
                 d.epochs.len(),
                 d.model_change,
                 market,
                 share,
-                phase_block
+                phase_block,
+                margin_block
             )
+            // (band margin is rendered below, outside this match, because it also applies when the
+            //  attribution is unavailable — a margin can be measured from the live composite alone)
         }
         _ => String::new(),
     };
