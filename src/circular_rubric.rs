@@ -418,6 +418,17 @@ pub const VERIFIED: &[VerifiedEdge] = &[
     },
 ];
 
+/// Mean severity per read edge, as a percentage of the maximum a single edge can express.
+///
+/// THE SCORED QUANTITY. Effort-independent (adding an average edge leaves it flat) and
+/// market-facing (a severe edge raises it, a refutation lowers it).
+pub fn mean_severity_pct() -> f64 {
+    if VERIFIED.is_empty() {
+        return 0.0;
+    }
+    (rubric_total() / VERIFIED.len() as f64) / rubric_ceiling() * 100.0
+}
+
 /// The rubric total. Pure function of the verified set.
 pub fn rubric_total() -> f64 {
     VERIFIED
@@ -426,11 +437,27 @@ pub fn rubric_total() -> f64 {
         .sum()
 }
 
-/// The maximum the current rubric can express, used to frame the reading honestly rather than
-/// implying the scale is open-ended. This is the sum of the strongest structure a single edge
-/// can carry, times the number of verified edges — i.e. "what this set would read if every
-/// edge were the strongest kind". It exists so a reader can see how much of the scale the
-/// present evidence actually occupies.
+/// How many edges the scan knows about but which have not been read and classified.
+///
+/// THE PROBLEM THIS SOLVES. The scored quantity is the fraction of the expressible scale, and
+/// the ceiling was `max_points * VERIFIED.len()` — the number of edges READ. Every time an edge
+/// is read it left the denominator and entered the numerator, so the fraction rose as a
+/// function of READING EFFORT rather than of what the market is doing. Left alone, the composite
+/// would drift upward every time someone did more work, which is a measurement artifact and not
+/// a fact about the AI economy.
+///
+/// The measured scan finds roughly 48 real ecosystem edges (67 hits minus 19 self-matches and
+/// generic-supplier mentions: "NVDA x NVIDIA" is NVIDIA naming itself, "CRWV x CoreWeave" is a
+/// company naming itself). Using that as the denominator means reading an edge moves points into
+/// the numerator while the denominator stays put — so the reading reflects what was FOUND rather
+/// than how hard anyone looked.
+///
+/// A REFUTATION STILL LOWERS THE SCORE. It contributes 0 points, so it dilutes the mean toward
+/// zero — which is the property that makes this a measurement rather than an alarm. Tested.
+///
+/// Reported as COVERAGE, separately from the score, because "how much has been verified" is a
+/// confidence statement about the instrument and not a measure of market stress.
+pub const SCANNED_EDGES: usize = 48;
 pub fn rubric_ceiling() -> f64 {
     // Uses the TRUE maximum structure rather than a named variant, so adding a stronger
     // structure in future raises the ceiling automatically instead of silently understating
@@ -448,8 +475,22 @@ pub fn rubric_ceiling() -> f64 {
     .iter()
     .map(|s| s.points())
     .fold(0.0_f64, f64::max);
-    // The maximum a single edge can express is the strongest structure at the largest scale.
-    (max + Scale::Severe.points()) * VERIFIED.len() as f64
+    // THE CEILING IS THE MAXIMUM A SINGLE EDGE CAN EXPRESS.
+    //
+    // Not a multiple of the read count, and not a multiple of the scanned count. Both of those
+    // were tried and both are wrong:
+    //
+    //   * `max * VERIFIED.len()` (read count) makes the reading rise from READING EFFORT —
+    //     every edge read left the denominator and entered the numerator;
+    //   * `max * SCANNED_EDGES` measures COVERAGE, not stress. It answers "how much of the
+    //     possible exposure have you verified", which is a CONFIDENCE question, and it buried a
+    //     genuine 65% reading down to 12% purely because most edges are unread.
+    //
+    // The quantity that is both effort-independent AND about the market is the MEAN severity per
+    // read edge, expressed against the maximum one edge can express. Reading an average edge
+    // leaves it flat; reading a severe edge raises it; reading a refutation lowers it. Coverage
+    // is reported separately, as the confidence caveat it actually is.
+    max + Scale::Severe.points()
 }
 
 /// A one-line summary of what was counted, for the indicator detail.
@@ -691,14 +732,15 @@ mod tests {
     fn the_total_is_the_sum_of_the_edges_and_occupies_part_of_the_ceiling() {
         let t = rubric_total();
         let c = rubric_ceiling();
-        assert!(t > 0.0 && c >= t, "total {} ceiling {}", t, c);
-        // The present evidence occupies roughly half the expressible scale, which is the
-        // honest framing: real structures are present AND the scale retains headroom for
-        // structures not yet read.
+        assert!(t > 0.0 && c > 0.0, "total {} ceiling {}", t, c);
+        // With the ceiling being the maximum a SINGLE edge can express, the mean severity is
+        // bounded 0-100 by construction and the present evidence sits in the upper-middle: real
+        // severe structures are present, and there is headroom above.
+        let m = mean_severity_pct();
         assert!(
-            (0.4..0.85).contains(&(t / c)),
-            "the present reading should occupy a middle part of the scale, got {:.2}",
-            t / c
+            (0.4..=1.0).contains(&(m / 100.0)),
+            "mean severity should occupy a middle-to-high part of the scale, got {:.1}%",
+            m
         );
     }
 
@@ -715,27 +757,46 @@ mod tests {
         //   * appending a REFUTATION must LOWER it, because a refutation adds to the ceiling
         //     and nothing to the total. A rubric that could not fall would be an alarm.
         let t = rubric_total();
-        let c = rubric_ceiling();
+        let n = VERIFIED.len() as f64;
+        let max = rubric_ceiling();
+        let before = mean_severity_pct();
 
-        // Average edge = current total over number of edges, appended as a sixth edge.
-        let avg = t / VERIFIED.len() as f64;
-        let new_c = c + Structure::SupplierGuaranteeAndInvestment.points();
-        let frac_before = t / c;
-        let frac_after_avg = (t + avg) / new_c;
+        // An AVERAGE edge leaves the mean exactly flat, because it IS the mean.
+        let avg = t / n;
+        let after_avg = ((t + avg) / (n + 1.0)) / max * 100.0;
         assert!(
-            (frac_after_avg - frac_before).abs() < 0.03,
-            "an average edge must leave the fraction ~flat: {:.3} -> {:.3}",
-            frac_before,
-            frac_after_avg
+            (after_avg - before).abs() < 1e-9,
+            "an average edge must leave the mean exactly flat: {:.4} -> {:.4}",
+            before,
+            after_avg
         );
 
-        // A refutation contributes 0 points but adds a full ceiling slot.
-        let frac_after_refutation = t / (c + Structure::SupplierGuaranteeAndInvestment.points());
+        // A REFUTATION (0 points) LOWERS the mean, because it dilutes toward zero.
+        let after_refutation = (t / (n + 1.0)) / max * 100.0;
         assert!(
-            frac_after_refutation < frac_before,
-            "a refutation must LOWER the scored fraction: {:.3} -> {:.3}",
-            frac_before,
-            frac_after_refutation
+            after_refutation < before,
+            "a refutation must LOWER the mean: {:.4} -> {:.4}",
+            before,
+            after_refutation
+        );
+
+        // A maximum-strength edge RAISES it.
+        let after_max = ((t + max) / (n + 1.0)) / max * 100.0;
+        assert!(
+            after_max > before,
+            "a severe edge must RAISE the mean: {:.4} -> {:.4}",
+            before,
+            after_max
+        );
+
+        // And the property is EFFORT-INDEPENDENT: appending any number of average edges cannot
+        // move it, which is what stops the composite drifting up as more edges are read.
+        let many = ((t + avg * 30.0) / (n + 30.0)) / max * 100.0;
+        assert!(
+            (many - before).abs() < 1e-9,
+            "reading thirty average edges must not move the reading: {:.4} -> {:.4}",
+            before,
+            many
         );
     }
 

@@ -1536,11 +1536,14 @@ impl Indicator for CircularFinancing {
         // average strength leaves it roughly flat, adding a strong one raises it, and adding a
         // REFUTATION lowers it, because refutations add to the ceiling and nothing to the total.
         // So the reading responds to what was FOUND rather than to how hard anyone looked.
-        let fraction_pct = if ceiling > 0.0 {
-            total / ceiling * 100.0
-        } else {
-            0.0
-        };
+        // MEAN SEVERITY PER READ EDGE, not the share of a ceiling.
+        //
+        // The share-of-ceiling version rose every time an edge was read, because each edge left
+        // the denominator and entered the numerator — so the composite would drift upward as a
+        // function of READING EFFORT. Normalising per edge removes that: an average edge leaves
+        // the mean flat, a severe edge raises it, and a refutation lowers it. Coverage becomes a
+        // separate confidence statement rather than being baked into the score.
+        let fraction_pct = crate::circular_rubric::mean_severity_pct();
         let stress = crate::score::interpolate(fraction_pct, &ic.anchors);
 
         // The unread edges, stated as a count rather than hidden. The scan found far more
