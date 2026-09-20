@@ -245,7 +245,7 @@ fn judgments_card(r: &Report) -> String {
          falsified would make any outcome confirm it, which is the reasoning this report exists \
          to refuse.</p>\
          <table class='jtab'><tbody>{rows}</tbody></table>\
-         <p style='margin:12px 0 0;font-size:12px;color:#6b6b6b'>This section is <b>not</b> part of \
+         <p class='mut' style='margin:12px 0 0;font-size:12px'>This section is <b>not</b> part of \
          the score. Judgment is declared here rather than hidden inside the indicator anchors, \
          where it would be indistinguishable from arithmetic.</p></div>",
         n = r.judgments.len(),
@@ -291,7 +291,7 @@ fn falsifiers_card(r: &Report) -> String {
          falsification tests currently read as <b>counter-evidence</b> to the bubble thesis. These are \
          measurements chosen to DISPROVE it, and the answers are reported whichever way they fall.</p>\
          <table class='ftab'><tbody>{rows}</tbody></table>\
-         <p style='margin:12px 0 0;font-size:12px;color:#6b6b6b'>These are <b>not</b> part of the score. \
+         <p class='mut' style='margin:12px 0 0;font-size:12px'>These are <b>not</b> part of the score. \
          Averaging evidence for and against into one number would merge opposite meanings, so they are \
          reported beside it. &ldquo;n/a&rdquo; means the data cannot support a direction &mdash; stated rather than forced.</p></div>",
         against = against,
@@ -317,8 +317,8 @@ fn explosiveness_card(r: &Report) -> String {
         "<div class='card expl'><h3 style='margin-top:0;font-size:15px'>Explosiveness test (GSADF)</h3>\
          <div class='expl-stat' style='color:{col}'>{stat:.2}</div>\
          <div style='font-size:13.5px;margin-bottom:6px'><b>{sig}</b> &mdash; simulated 5% critical value {p95:.2}</div>\
-         <div style='font-size:12.5px;color:#555'>Window tested: <b>{ws}</b> to <b>{we}</b> over {n} monthly observations.</div>\
-         <p style='margin:12px 0 0;font-size:12.5px;color:#6b6b6b'>A formal hypothesis test on the price \
+         <div class='mut2' style='font-size:12.5px'>Window tested: <b>{ws}</b> to <b>{we}</b> over {n} monthly observations.</div>\
+         <p class='mut' style='margin:12px 0 0;font-size:12.5px'>A formal hypothesis test on the price \
          series &mdash; a different KIND of evidence from every indicator in the score above, which is a \
          hand-anchored judgement. <b>It is deliberately not part of the composite.</b> If it disagrees with \
          the score, that disagreement is the point: the two measure different things and neither is a \
@@ -387,7 +387,7 @@ fn exposure_card(r: &Report) -> String {
          bubble-like the configuration is &mdash; so it is <b>never folded into the composite</b>.</p>\
          <table><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th><th>due&nbsp;&lt;1y/CFO</th>\
          <th>leases/CFO</th><th>commitments/CFO</th><th>RPO/revenue</th></tr></thead><tbody>{rows}</tbody></table>\
-         <p style='margin:12px 0 0;font-size:12px;color:#6b6b6b'>A missing figure is <b>named</b>, never shown as \
+         <p class='mut' style='margin:12px 0 0;font-size:12px'>A missing figure is <b>named</b>, never shown as \
          0.00: an absent disclosure is not a small number. Near-term debt is the &ldquo;who is tested first&rdquo; \
          column, and for this cohort it is small for every company, so a maturity wall is not the \
          mechanism in this cycle &mdash; the unconditional commitments are.</p></div>",
@@ -689,7 +689,7 @@ table.ftab {{ margin:0; }}
 table.ftab td {{ border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }}
 td.f-mark {{ font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }}
 tr.f-counter td.f-mark {{ color:#2e7d32; }}
-tr.f-forb td.f-mark {{ color:#ef6c00; }}
+tr.f-forb td.f-mark {{ color:#a84800; }}
 tr.f-uninf td.f-mark {{ color:#888888; }}
 tr.f-counter {{ background:rgba(46,125,50,.05); }}
 .f-q {{ font-weight:600; font-size:13px; }}
@@ -801,7 +801,7 @@ pub fn render_index() -> String {
      <h1>AI Bubble Watch</h1>\
      <ul><li><a href='dashboard.html'>History and trends</a> — the score over time, one row per day</li>\
      <li><a href='latest.html'>Latest full report</a> — the complete current reading with provenance</li></ul>\
-     <p style='color:#6b6b6b;font-size:12.5px'>A state descriptor, not a forecast and not investment advice.</p>\
+     <p class='mut' style='font-size:12.5px'>A state descriptor, not a forecast and not investment advice.</p>\
      </body></html>"
         .to_string()
 }
@@ -943,7 +943,7 @@ fn trend_card(r: &Report) -> String {
             // window. Saying only "the composite is model-driven" understates what that did.
             let phase_block = if d.phase_changes_at_model_boundary > 0 {
                 format!(
-                    "<br><b style='color:#8a5a00'>The PHASE LABEL and the TIMING OVERLAY moved with \
+                    "<br><b class='warnnote'>The PHASE LABEL and the TIMING OVERLAY moved with \
                      it.</b> The phase crossed {} time(s) at a methodology boundary ('{}' to '{}'), \
                      so the same market was reported as '{}' with one time range and '{}' with \
                      another — 'early' quotes 30-72 months, 'mid' quotes 15-42. <b>The window \
@@ -961,19 +961,15 @@ fn trend_card(r: &Report) -> String {
             // against this project's OWN measured drift rather than a guess, which is the honest
             // alternative to retuning thresholds.
             let margin_block = match &r.band_margin {
-                Some(m) => format!(
-                    "<br><span style='color:#555'>{}</span>",
-                    esc(&m.statement())
-                ),
+                Some(m) => format!("<br><span class='mut2'>{}</span>", esc(&m.statement())),
                 None => String::new(),
             };
             format!(
-                "<div style='margin-top:14px;padding:10px 12px;border-left:3px solid #b8860b;\
-                 background:#fffbf0;font-size:12.5px;line-height:1.5'>\
+                "<div class='driftnote'>\
                  <b>Most of this history is the MODEL changing, not the market.</b><br>\
                  Across {} methodology version(s), model changes account for <b>{:+.1}</b> points \
                  of movement. {} Model-caused movement is roughly <b>{}</b> of the total.<br>\
-                 <span style='color:#555'>A composite from one methodology version and a composite \
+                 <span class='mut2'>A composite from one methodology version and a composite \
                  from another are two DIFFERENT INSTRUMENTS, not one instrument at two times. The \
                  tool refuses that comparison everywhere else; this table is the one place it was \
                  still implied.</span>{}{}</div>",
@@ -993,7 +989,7 @@ fn trend_card(r: &Report) -> String {
     format!(
         "<div class='card'><h3 style='margin-top:0;font-size:15px'>Direction of travel</h3>\
          <p class='lm-b' style='margin:0 0 10px'>{plain}</p>{body}<div style='margin-top:14px'>{spark}</div>{table}{attr}{warn}\
-         <p style='margin:10px 0 0;font-size:12px;color:#6b6b6b'>The trend is context only. It never enters the score \
+         <p class='mut' style='margin:10px 0 0;font-size:12px'>The trend is context only. It never enters the score \
          above, because the score is what the trend is measured from.</p></div>",
         plain = esc(&r.layman.direction_of_travel),
         body = body,
@@ -1079,7 +1075,7 @@ table.ftab {{ margin:0; }}
 table.ftab td {{ border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }}
 td.f-mark {{ font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }}
 tr.f-counter td.f-mark {{ color:#2e7d32; }}
-tr.f-forb td.f-mark {{ color:#ef6c00; }}
+tr.f-forb td.f-mark {{ color:#a84800; }}
 tr.f-uninf td.f-mark {{ color:#888888; }}
 tr.f-counter {{ background:rgba(46,125,50,.05); }}
 .f-q {{ font-weight:600; font-size:13px; }}
@@ -1117,7 +1113,81 @@ tr.exp-nr {{ background:rgba(179,38,30,.03); }}
   tr.f-counter {{ background:rgba(46,125,50,.12); }}
 }}
 .spark-empty {{ font-size:12.5px; color:#6b6b6b; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
-@media (prefers-color-scheme: dark) {{ .spark-empty {{ background:#1e1e1e; color:#aaa; }} }}
+/* INLINE `style='color:…'` CANNOT BE OVERRIDDEN BY A MEDIA QUERY, so these were
+   moved out of the markup into classes. An inline declaration wins on specificity,
+   which meant the dark-mode block could not reach them at all. */
+.mut {{ color:#6b6b6b; }}
+.mut2 {{ color:#555; }}
+.warnnote {{ color:#8a5a00; }}
+/* The drift-attribution callout. Its colours were INLINE, which a media query
+   cannot override — that is why its dark-mode text sat at 1.18:1 on a light box. */
+.driftnote {{ margin-top:14px; padding:10px 12px; border-left:3px solid #b8860b;
+  background:#fffbf0; font-size:12.5px; line-height:1.5; }}
+
+/* ===========================================================================
+   DARK MODE — CONSOLIDATED AND MEASURED.
+
+   The report sets `color-scheme: light dark`, so with a dark OS preference the
+   page background went dark while most components kept their light-mode values.
+   MEASURED on the live DOM with a dark preference: 23 elements below the 4.5:1
+   floor, including two at ~1.15:1 (light text on a cream box) and one at 1.38:1
+   (dark text on a dark card) — effectively unreadable.
+
+   The previous overrides were scattered per-component and covered only four of
+   the affected rules. These are consolidated into one block, and every value
+   below was contrast-checked against the darkest background it can land on.
+   =========================================================================== */
+@media (prefers-color-scheme: dark) {{
+  /* Muted greys. In light mode #6b6b6b/#5f5f5f sit on white; on #121212 or the
+     #1a1a1a card they are near-invisible, which was most of the 23 failures. */
+  .sub, .disc, .f-d, .exp-note, td.dt, td.rd, .prov, .dt,
+  .lbl, td .lbl, .j-meta, .j-fal, .exp-nh, .spark-empty, .chart-empty,
+  details.tech summary, .exp-nr td, .nd, li {{
+    color:#b0b0b0;
+  }}
+  .prov {{ color:#a8a8a8; }}
+  .f-d {{ color:#b8b8b8; }}
+
+  /* Table headers and the header strip. */
+  th {{ background:#1e1e1e; color:#d0d0d0; border-color:#333; }}
+  td {{ border-color:#2a2a2a; }}
+
+  /* The cream "note" box (phase detail). Its BACKGROUND is light in light mode,
+     so with dark text inherited it rendered light-on-light at 1.15:1. */
+  .note {{ background:#2a2418; border-left-color:#8a6d1f; color:#f0e6d2; }}
+
+  /* Plain-English blocks: heading blue #1557b0 on #1e2733 was 2.17:1
+     (I darkened it for light mode and never re-checked it for dark). */
+  .lm-h {{ color:#8ab4f8; }}
+  .lm-block, .lm-bottom {{ background:#1e2733; }}
+  .lm-intro, .lm-b {{ color:#e8e8e8; }}
+
+  /* Verdict / status colours: the light-mode green, orange and red are too dark
+     against a dark background. */
+  tr.f-counter td.f-mark, tr.ok td:nth-child(2) {{ color:#81c784; }}
+  tr.f-forb td.f-mark, tr.warn td:nth-child(2) {{ color:#ffb74d; }}
+  tr.f-uninf td.f-mark {{ color:#b0b0b0; }}
+  tr.gap td.stress, .nd {{ color:#ef9a9a; }}
+  a {{ color:#8ab4f8; }}
+
+  /* Tints keep a hint of hue but darker, so the f-mark colours above land on a
+     background they were measured against. */
+  tr.j-sup {{ background:rgba(239,108,0,.10); }}
+  tr.j-aga {{ background:rgba(46,125,50,.12); }}
+  tr.gap {{ background:rgba(198,40,40,.14); }}
+  tr.exp-nr {{ background:rgba(179,38,30,.14); }}
+
+  /* Inline greys written into the markup rather than the class rules. */
+  h3, h1, h2 {{ color:#e8e8e8; }}
+  .mut, .mut2 {{ color:#b0b0b0; }}
+  .warnnote {{ color:#ffb74d; }}
+  /* Measured leftovers on the dark cards: the score's "/100 stress" suffix and
+     the value column's unit text kept their light-mode grey (3.27:1). */
+  .score small {{ color:#b0b0b0; }}
+  td.val .unit {{ color:#b0b0b0; }}
+  /* The drift callout, now class-based so it can be reached. */
+  .driftnote {{ background:#2a2418; border-left-color:#8a6d1f; color:#f0e6d2; }}
+}}
 "#;
 
 /// The stylesheet as rendered (format escapes resolved), for tests to assert against.
@@ -1229,7 +1299,7 @@ pub fn render(r: &Report) -> String {
   <div class="note">{pdetail}</div>
   <div style="margin-top:16px">{gauge}</div>
   <div style="margin-top:6px;font-size:13px">{analog}</div>
-  <div style="margin-top:10px;font-size:12px;color:#6b6b6b">{analogcaveat}</div>
+  <div class="mut" style="margin-top:10px;font-size:12px">{analogcaveat}</div>
 </div>
 
 {judgcard}

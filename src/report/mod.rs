@@ -657,4 +657,82 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn no_visible_colour_is_hardcoded_inline_where_a_media_query_cannot_reach_it() {
+        // THE ROOT CAUSE OF THE DARK-MODE FAILURES, made mechanical.
+        //
+        // The report declares `color-scheme: light dark`, so with a dark OS preference the page
+        // background goes dark. An INLINE `style="color:#6b6b6b"` beats any class rule, so a
+        // `@media (prefers-color-scheme: dark)` block cannot override it — the text stayed
+        // light-mode grey on a dark card. MEASURED on the live DOM with dark mode applied: 23
+        // elements below the 4.5:1 floor, two of them at ~1.18:1 (light text on a light callout
+        // box) which is simply unreadable.
+        //
+        // Colours therefore live in the stylesheet as classes (.mut, .mut2, .warnnote, .driftnote)
+        // where the dark block can reach them. This asserts that invariant, because the failure is
+        // invisible in light mode — which is how it shipped twice.
+        let c = cfg();
+        let obs = Observations::default();
+        let r = build(
+            vec![scored("valuation_stretch", 14.0, 42.0)],
+            &obs,
+            &c,
+            "2026-09-16T00:00:00Z",
+        );
+        let h = crate::report::html::render(&r);
+
+        for (needle, what) in [
+            ("color:#", "a text colour"),
+            ("background:#", "a background colour"),
+            ("color: #", "a text colour"),
+            ("background: #", "a background colour"),
+        ] {
+            for (i, _) in h.match_indices(needle) {
+                // Only inline declarations matter: inside a style="..." attribute.
+                let before = &h[..i];
+                let in_attr = before.rfind("style=\"").map(|a| {
+                    // no closing quote between the attribute start and here
+                    !before[a + 7..].contains('"')
+                });
+                let in_attr_s = before
+                    .rfind("style='")
+                    .map(|a| !before[a + 7..].contains('\''));
+                if in_attr != Some(true) && in_attr_s != Some(true) {
+                    continue;
+                }
+                // EXEMPT: a rule that sets BOTH its own text colour and its own background is
+                // SELF-CONTAINED, so neither colour is inherited from the scheme and dark mode
+                // cannot break it. The phase pill is exactly this case (e.g. #3a2100 on #f9a825 =
+                // 7.6:1), and its pair is already asserted by
+                // `every_phase_pill_meets_the_contrast_threshold`. Only an inline colour that
+                // relies on the ambient background is a defect.
+                let attr_end = h[i..]
+                    .find('"')
+                    .or_else(|| h[i..].find('\''))
+                    .map(|e| i + e)
+                    .unwrap_or(h.len());
+                let attr_start = before
+                    .rfind("style=\"")
+                    .or_else(|| before.rfind("style='"))
+                    .map(|a| a + 7)
+                    .unwrap_or(i);
+                let attr = &h[attr_start..attr_end];
+                let sets_own_bg = attr.contains("background:#") || attr.contains("background: #");
+                let sets_own_color = attr.contains("color:#") || attr.contains("color: #");
+                if sets_own_bg && sets_own_color {
+                    continue;
+                }
+                assert!(
+                    false,
+                    "the report hardcodes {} inline ({} ...). An inline style wins over a class \
+                     rule, so the dark-mode media query CANNOT override it and the result is \
+                     unreadable text in one of the two colour schemes. Put it in the stylesheet \
+                     as a class instead (see .mut / .mut2 / .warnnote / .driftnote).",
+                    what,
+                    &h[i.saturating_sub(40)..(i + 30).min(h.len())]
+                );
+            }
+        }
+    }
 }
