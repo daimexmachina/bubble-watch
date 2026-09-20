@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 234 tests, no network required
+cargo test                                         # 263 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -178,11 +178,51 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `narrative_saturation` | 5 | 10-K filings mentioning AI, annualised YoY | EDGAR full-text |
 | `depreciation_subsidy` | 6 | Depreciation-rate extension while the asset base grows | SEC EDGAR |
 | `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
-| `circularity` | 0 | **declared gap** — see below | — |
+| `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
 
-Weight totals 146 across the 19 scored indicators. `circularity` is carried at weight 0 as an
-explicitly acknowledged blind spot: no free source relates an equity investment to the revenue it
-generates, so it is declared rather than silently dropped.
+Weight totals 158 across the 20 scored indicators, and **there are no declared gaps left**.
+
+### `circularity` — a former blind spot, now scored
+
+This was carried at weight 0 for most of the project's life, on the reasoning that no free source
+relates an equity investment to the revenue it generates. **That reasoning was wrong**: a
+relationship is a PAIR, and the pair is disclosed under related-party and equity-method
+accounting. EDGAR full-text search filtered by `ciks=` attributes a hit to a *filer*, which turns
+a keyword count into a directed edge.
+
+It is scored from a **rubric**, not a ratio — the rubric and its point values are printed in the
+report so a reader can disagree with them. Every scored entry carries a citation to a filing that
+was read, a magnitude, and a **written falsifier**:
+
+| Edge | Points | What was read |
+|---|---|---|
+| NVDA upstream supply commitments | 50+8 | **$279B** (+$160B in one quarter) |
+| AMZN → Anthropic | 48+8 | $8B stake + **>$100B** cloud + **$20B** facility |
+| AMZN → OpenAI | 48+8 | $38B + **$100B** cloud + $28.7B carrying value |
+| NVDA lease guarantee | 45+8 | **$105B** capped over 20-year OpenAI leases |
+| AMD → OpenAI | 40+5 | warrant for 160M shares at $0.01 = **9.8% of AMD** |
+| SPCX → xAI | 30+5 | xAI merged in; **$513M** related-party interest |
+| MSFT → OpenAI | 25+2 | **$24.1B** revenue under ASC 850 |
+| SPCX → Tesla | 10+2 | $329M of Megapack purchases |
+| CRWV → OpenAI | 48+8 | **$18.4B** of commitments |
+| CRWV → MSFT | 48+8 | **67% of CoreWeave's revenue is Microsoft** |
+| ORCL → OpenAI | **0** | read and **REFUTED** — model-integration list |
+| ORCL backlog counterparty | **0** | **$638B** of RPO, no counterparty named |
+
+**Microsoft → OpenAI → CoreWeave → Microsoft is a closed loop**, with every leg in a filing.
+
+**Two refutations are kept deliberately**, because they prove the reading can fall. Oracle's $638B
+— the largest figure in the research — contributes **nothing**, because a number with no named
+counterparty cannot be scored as a structure. Adding it *lowered* the score.
+
+**The reading is a LOWER BOUND.** Unread edges score zero, so it understates and biases toward
+calm. A low number means "little has been verified", never "little is there". Hit counts are
+deliberately *not* scored: `NVDA × NVIDIA` is 136 mentions and `CRWV × CoreWeave` is 145 — companies
+naming themselves.
+
+**Known limit:** the method cannot see a relationship a filer declines to name. Oracle discloses
+$638B of RPO anonymously and compliantly; no further reading fixes that, because the identity is
+not in the filing.
 
 ### `frontier_premium` — the one structural feature no prior bubble had
 
@@ -265,7 +305,7 @@ to be on the wrong side of the trade: it is **fabless**.
 Adding it would drag both ratios down ~18% and turn them into a measure of the supplier
 rather than the spender. Its chips are fabricated by others, so the buildout it drives
 shows up in its suppliers' and customers' accounts, not its own. This is a decision with
-its evidence recorded, not an oversight — see the `circularity` entry in the config.
+its evidence recorded, not an oversight. (`circularity` was such a gap until 2026-09-20; it is now scored — see above.)
 
 ### Two indicators are deliberately NOT in the composite
 

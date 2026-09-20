@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 198 tests green offline; live assertions opt-in.
+- 263 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -430,7 +430,7 @@ Methodology 2.0 adds one indicator and, more importantly, fixes three places whe
 described its own data incorrectly. The defects are recorded here because two of them were
 live in shipped output.
 
-### 14.1 `frontier_premium` (weight 6, weight total 140 -> 146)
+### 14.1 `frontier_premium` (weight 6; weight total 140 -> 146 at the time)
 
 The one structural feature no prior bubble had: the financed asset is reproducible by anyone.
 Measured as the best closed model's arena rating minus the best open one's, over 243 LMArena
@@ -504,3 +504,102 @@ weak real effect: conditional on a 12-month return above 25%, months land within
 peak 36.9% of the time versus 17.4% unconditionally. That is a conditional *rate*, not a
 predictor, and adversarial tests assert momentum must not beat chance. This is why the tool is a
 state descriptor and says so in every report.
+
+## 15. v2.1–v2.2 — circularity: closing the last declared gap
+
+The model shipped with one declared gap (`circularity`, weight 0) and no others. It now has none.
+
+### 15.1 Why the declared gap was wrong to declare
+
+The weight-0 entry argued the topic was unmeasurable because "the measure required is a
+RELATIONSHIP between companies while every indicator here is a price or a single-company
+aggregate". That reasoning assumed the only possible measure was a numeric ratio.
+
+**A relation is a PAIR, and the pair is disclosed.** Companies report related-party transactions
+under ASC 850 and equity-method investments under their own notes. EDGAR full-text search accepts
+a `ciks=` parameter, which attributes each hit to the FILER — turning a keyword count into a
+DIRECTED EDGE (who discloses a relationship with whom) rather than a bag of mentions. The
+mechanism is in `sources/circularity`.
+
+### 15.2 A rubric, not a ratio — and the rubric is printed
+
+No free source publishes "share of counterparty revenue funded by the investor's own capital", so
+the honest options were to keep the gap or to **state the scoring rule explicitly and let a reader
+disagree with it**. This does the second. Points:
+
+| structure | pts |
+|---|---|
+| supplier guaranteeing AND investing in its customer's infrastructure | 45 |
+| vendor investing in, contracting with, and lending to the same counterparty | 48 |
+| equity issued as consideration for the customer's purchases | 40 |
+| a parent absorbing its AI unit's debt | 30 |
+| disclosed related-party revenue with an equity stake | 25 |
+| related-party supply under common control | 10 |
+| upstream supply commitments scaled to demand the vendor finances | 50 |
+| read and REFUTED | 0 |
+
+Plus a **bounded scale term** (0/2/5/8 points) by disclosed exposure against the filer's market
+cap, **capped below the weakest structure** so the rubric cannot become a size contest. A test
+asserts that cap.
+
+### 15.3 Four measurement defects found in this module, all by testing properties
+
+Every one of these was caught by asserting a PROPERTY, never by asserting an expected number:
+
+1. **A value and its unit described different quantities.** `value = 230` with `unit = "pct of the
+   expressible rubric scale"` — a point total labelled as a percentage. Both fields are free-form,
+   so nothing failed; the report simply stated two things that cannot both be true.
+2. **A scale term out-ranked a structure class** (15 vs 10), which would have made the rubric a
+   size contest. The bound test failed on the first attempt and the fix was to lower the scale, not
+   to weaken the assertion.
+3. **Coverage rose with reading effort.** The scored fraction had the read count in its
+   denominator, so every edge read moved points from denominator to numerator. Two wrong fixes were
+   tried first: the read count (effort-dependent) and the scanned count (which measures COVERAGE,
+   not stress, and buried a 65% reading down to 12%).
+4. **A stale coverage literal.** `coverage < 0.10` broke when a weight changed. The bound is now
+   derived from the fixture-backed weights.
+
+The correct normalisation — the mean severity per read edge — is **effort-independent**: reading an
+average edge leaves it flat (tested to 1e-9, and for thirty average edges at once), a severe edge
+raises it, and a refutation lowers it.
+
+### 15.4 What the filings actually disclosed
+
+Twelve verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Roughly $384B+ of disclosed exposure, including:
+
+- **NVDA** — $279B of upstream supply commitments (up $160B in one quarter) and a **$105B**
+  guarantee over 20-year OpenAI leases, which NVIDIA classifies as a credit derivative.
+- **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
+  drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
+- **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **CRWV** — $18.4B of OpenAI commitments against revenue that is **67% Microsoft**, which closes
+  the loop MSFT → OpenAI → CoreWeave → MSFT.
+
+### 15.5 Two refutations, retained on purpose
+
+A rubric that could only rise would be an alarm. Two entries score **zero** and are kept so the
+instrument's ability to come back LOWER is visible:
+
+- Oracle names OpenAI only in a **model-integration list**, not as a contract counterparty.
+- Oracle's **$638B** of RPO (up from $138B) is attributed to "certain significant cloud contracts"
+  with **no counterparty named**. This is the largest figure in the research and it contributes
+  nothing. Adding it *lowered* the score, which is the opposite of how a mention count behaves.
+
+### 15.6 Weight history and the bias it accepts
+
+Weight moved **0 → 6.0** (methodology 2.1, when three edges had been read) **→ 12.0** (methodology
+2.2, with twelve). 12.0 matches `credit_hy`, the other financing-channel indicator, and sits below
+the two 14s measuring headline spending and valuation.
+
+**This is the alarm-drift the model already flags, accepted knowingly.** The composite moved
+40.5 → 43.0 across this work largely by adding and raising indicators that score high. The defence
+is not that the number is small; it is that every point traces to a specific sentence in a filing
+that a reader can check, and that the instrument has twice demonstrated it can move the other way.
+
+### 15.7 The limit that cannot be fixed by reading
+
+The method cannot see a relationship a filer declines to name. Oracle discloses $638B anonymously
+and compliantly. No amount of further reading resolves it, because the identity is not in the
+filing. Anonymity on one side can sometimes be read from the counterparty's — that is how the
+CoreWeave links were established, from the other end of the relationship.
