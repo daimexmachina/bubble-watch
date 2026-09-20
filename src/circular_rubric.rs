@@ -40,9 +40,19 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
-    /// Equity handed to a customer, vesting against its PURCHASES. The strongest form:
-    /// the consideration for the revenue is the vendor's own stock, so the revenue and the
-    /// equity are the same transaction seen twice. AMD -> OpenAI.
+    /// THREE THINGS AT ONCE, which is why it ranks highest: the vendor takes an equity stake
+    /// in the developer, extends CONTINGENT CREDIT SUPPORT (a guarantee) over the
+    /// infrastructure the customer will occupy, and thereby finances the demand for its own
+    /// product. NVIDIA -> SB Energy/OpenAI at PORTS-Pike.
+    ///
+    /// Ranked above `EquityForPurchases` because it puts the vendor's balance sheet at
+    /// contingent risk ON TOP of the equity outlay, and because the guaranteed asset exists
+    /// only to consume the vendor's output. A dilution is bounded by the share count; a
+    /// guarantee is bounded by whatever the buildout costs.
+    SupplierGuaranteeAndInvestment,
+    /// Equity handed to a customer, vesting against its PURCHASES. The consideration for the
+    /// revenue is the vendor's own stock, so the revenue and the equity are the same
+    /// transaction seen twice. AMD -> OpenAI.
     EquityForPurchases,
     /// A parent absorbing a loss-making AI unit's debt onto its own balance sheet, with
     /// related-party interest. The buildout cost and the lab's losses become one credit.
@@ -65,6 +75,7 @@ impl Structure {
     /// and a finer scale would imply a precision this evidence cannot support.
     pub fn points(self) -> f64 {
         match self {
+            Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
             Structure::AbsorbedUnitDebt => 30.0,
             Structure::RelatedPartyRevenueWithStake => 25.0,
@@ -75,6 +86,9 @@ impl Structure {
 
     pub fn label(self) -> &'static str {
         match self {
+            Structure::SupplierGuaranteeAndInvestment => {
+                "supplier guaranteeing and investing in its customer's infrastructure"
+            }
             Structure::EquityForPurchases => "equity issued as consideration for purchases",
             Structure::AbsorbedUnitDebt => "parent absorbing its AI unit's debt",
             Structure::RelatedPartyRevenueWithStake => "related-party revenue with an equity stake",
@@ -105,6 +119,28 @@ pub struct VerifiedEdge {
 /// THE VERIFIED SET. Adding an entry is a deliberate act: it requires having READ a filing,
 /// extracted a magnitude, and written what would falsify it.
 pub const VERIFIED: &[VerifiedEdge] = &[
+    VerifiedEdge {
+        filer: "NVDA",
+        counterparty: "OpenAI",
+        structure: Structure::SupplierGuaranteeAndInvestment,
+        citation: "NVIDIA Form 8-K filed 2026-08-17, Exhibit 99.1, verbatim: \"NVIDIA to provide \
+                   credit support on land, power, and shell buildout to secure initial 4.25 \
+                   IT-GW, with an option to take the remaining 3.75 IT-GW\" ... \"OpenAI will be \
+                   the customer for 8-IT GW\" ... \"SB Energy will build, own and operate the \
+                   data center under a 20-year lease to OpenAI\" ... \"NVIDIA will invest $1.5 \
+                   billion in SB Energy, joining existing investors SoftBank Group and \
+                   OpenAI.\" NVIDIA is also \"the exclusive AI compute infrastructure provider \
+                   at PORTS-Pike\", and the site will run \"NVIDIA's full-stack DSX AI factory \
+                   platform, including GPUs, CPUs and networking.\"",
+        magnitude: "$1.5B equity investment in SB Energy, PLUS contingent credit support over the \
+                    land, power and shell buildout for an initial 4.25 IT-GW (with an option on a \
+                    further 3.75 IT-GW, 8 IT-GW total), under a 20-year OpenAI lease. The equity \
+                    outlay is disclosed; the size of the GUARANTEE is not.",
+        falsifier:
+            "Shown wrong if the credit support is limited to a non-binding letter of intent \
+                    rather than an enforceable guarantee, or if SB Energy secures the land, power \
+                    and shell independently so NVIDIA's balance sheet is never at risk.",
+    },
     VerifiedEdge {
         filer: "AMD",
         counterparty: "OpenAI",
@@ -204,7 +240,21 @@ pub fn rubric_total() -> f64 {
 /// edge were the strongest kind". It exists so a reader can see how much of the scale the
 /// present evidence actually occupies.
 pub fn rubric_ceiling() -> f64 {
-    Structure::EquityForPurchases.points() * VERIFIED.len() as f64
+    // Uses the TRUE maximum structure rather than a named variant, so adding a stronger
+    // structure in future raises the ceiling automatically instead of silently understating
+    // how much of the scale the present evidence occupies.
+    let max = [
+        Structure::SupplierGuaranteeAndInvestment,
+        Structure::EquityForPurchases,
+        Structure::AbsorbedUnitDebt,
+        Structure::RelatedPartyRevenueWithStake,
+        Structure::RelatedPartySupply,
+        Structure::Refuted,
+    ]
+    .iter()
+    .map(|s| s.points())
+    .fold(0.0_f64, f64::max);
+    max * VERIFIED.len() as f64
 }
 
 /// A one-line summary of what was counted, for the indicator detail.
@@ -314,11 +364,49 @@ mod tests {
         let c = rubric_ceiling();
         assert!(t > 0.0 && c >= t, "total {} ceiling {}", t, c);
         // The present evidence occupies roughly half the expressible scale, which is the
-        // honest framing: real structures are present AND the scale has headroom.
+        // honest framing: real structures are present AND the scale retains headroom for
+        // structures not yet read.
         assert!(
             (0.4..0.85).contains(&(t / c)),
             "the present reading should occupy a middle part of the scale, got {:.2}",
             t / c
+        );
+    }
+
+    #[test]
+    fn reading_more_edges_does_not_by_itself_raise_the_scored_fraction() {
+        // THE PROPERTY THAT KEEPS THIS A MEASUREMENT RATHER THAN AN EFFORT GAUGE.
+        //
+        // The stress score interpolates on the FRACTION of the expressible scale, not the
+        // absolute total, precisely so that discovering more edges does not mechanically
+        // raise the reading. This simulates the two cases that matter:
+        //
+        //   * appending an AVERAGE edge (points equal to the current average) must leave the
+        //     fraction essentially unchanged — finding more of the same tells you nothing new;
+        //   * appending a REFUTATION must LOWER it, because a refutation adds to the ceiling
+        //     and nothing to the total. A rubric that could not fall would be an alarm.
+        let t = rubric_total();
+        let c = rubric_ceiling();
+
+        // Average edge = current total over number of edges, appended as a sixth edge.
+        let avg = t / VERIFIED.len() as f64;
+        let new_c = c + Structure::SupplierGuaranteeAndInvestment.points();
+        let frac_before = t / c;
+        let frac_after_avg = (t + avg) / new_c;
+        assert!(
+            (frac_after_avg - frac_before).abs() < 0.03,
+            "an average edge must leave the fraction ~flat: {:.3} -> {:.3}",
+            frac_before,
+            frac_after_avg
+        );
+
+        // A refutation contributes 0 points but adds a full ceiling slot.
+        let frac_after_refutation = t / (c + Structure::SupplierGuaranteeAndInvestment.points());
+        assert!(
+            frac_after_refutation < frac_before,
+            "a refutation must LOWER the scored fraction: {:.3} -> {:.3}",
+            frac_before,
+            frac_after_refutation
         );
     }
 

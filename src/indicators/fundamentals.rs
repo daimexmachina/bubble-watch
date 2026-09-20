@@ -1525,7 +1525,23 @@ impl Indicator for CircularFinancing {
             .filter(|e| e.structure != crate::circular_rubric::Structure::Refuted)
             .count();
         let refuted = n - read;
-        let stress = crate::score::interpolate(total, &ic.anchors);
+        // SCORED ON THE FRACTION, NOT THE ABSOLUTE TOTAL, and the reason matters.
+        //
+        // The rubric total grows every time an edge is read, so a fixed absolute scale would
+        // make the reading rise from READING EFFORT rather than from the market — it would
+        // conflate "more has been verified" with "things are worse". That is the same
+        // measurement-versus-effort confusion this project refuses elsewhere.
+        //
+        // The fraction of the expressible scale does not have that defect: adding an edge of
+        // average strength leaves it roughly flat, adding a strong one raises it, and adding a
+        // REFUTATION lowers it, because refutations add to the ceiling and nothing to the total.
+        // So the reading responds to what was FOUND rather than to how hard anyone looked.
+        let fraction_pct = if ceiling > 0.0 {
+            total / ceiling * 100.0
+        } else {
+            0.0
+        };
+        let stress = crate::score::interpolate(fraction_pct, &ic.anchors);
 
         // The unread edges, stated as a count rather than hidden. The scan found far more
         // edges than have been read; every unread one contributes NOTHING, so this indicator
@@ -1544,8 +1560,9 @@ impl Indicator for CircularFinancing {
             value: total,
             unit: ic.unit.clone(),
             detail: format!(
-                "Rubric total {:.0} of a present ceiling of {:.0} ({:.0}% of the expressible \
-                 scale). Structures verified by reading primary filings: {}. Of {} edges, {} are \
+                "Rubric total {:.0} of a present ceiling of {:.0} — {:.0}% of the expressible \
+                 scale, which is the SCORED quantity (see below). Structures verified by reading \
+                 primary filings: {}. Of {} edges, {} are \
                  real structures and {} was READ AND REFUTED — Oracle names OpenAI only as a \
                  model-provider list, so its RPO growth of 359% to $455B is not attributable to \
                  a named counterparty. That refutation is retained deliberately: it is the \
@@ -1553,7 +1570,11 @@ impl Indicator for CircularFinancing {
                  a tally of mentions. THE RUBRIC IS THE JUDGMENT AND IT IS ARGUABLE: an equity \
                  warrant issued as consideration for purchases scores {}; a parent absorbing an \
                  AI unit's debt scores {}; disclosed related-party revenue with an equity stake \
-                 scores {}; a related-party supply deal scores {}; a refutation scores {}.",
+                 scores {}; a related-party supply deal scores {}; a refutation scores {}. WHY \
+                 THE FRACTION AND NOT THE TOTAL IS SCORED: the rubric total rises every time an \
+                 edge is read, so scoring it directly would let READING EFFORT raise the reading \
+                 and conflate 'more verified' with 'worse'. The fraction is stable — a refutation \
+                 adds to the ceiling and nothing to the total, so it LOWERS the score.",
                 total,
                 ceiling,
                 total / ceiling * 100.0,
