@@ -7,6 +7,7 @@
 pub mod backtest;
 pub mod circular_rubric;
 pub mod config;
+pub mod drift;
 pub mod exposure;
 pub mod falsifiers;
 pub mod frontier;

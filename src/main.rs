@@ -104,6 +104,15 @@ enum Cmd {
     },
     /// Probe each source and print its health.
     Sources,
+    /// Attribute the composite's recorded history to MODEL changes versus MARKET movement.
+    ///
+    /// Exists because a composite that can be raised by editing the model, and that reports no
+    /// distinction between that and a genuine market move, will be misread by default.
+    Drift {
+        /// Directory holding the run archive.
+        #[arg(long, default_value = "data/history")]
+        history_dir: PathBuf,
+    },
     /// Show direction of travel: the recorded run history and the delta against
     /// the most recent comparable baseline.
     Trend {
@@ -447,6 +456,37 @@ fn run(cli: &Cli) -> Result<(), String> {
             let (r, obs) = bubble_watch::pipeline(&cfg, cli.offline, cache.clone());
             explain(&r, &obs);
             finish_code(&r);
+            Ok(())
+        }
+        Cmd::Drift { history_dir } => {
+            let (archive, warnings) = bubble_watch::history::load(history_dir);
+            let d = bubble_watch::drift::attribute(&archive);
+            println!("COMPOSITE HISTORY — MODEL vs MARKET");
+            println!("{}", "=".repeat(72));
+            println!("{}", d.statement());
+            println!();
+            println!(
+                "{:<8} {:>6} {:>8} {:>8} {:>8}",
+                "METHOD", "RUNS", "FIRST", "LAST", "RANGE"
+            );
+            for e in &d.epochs {
+                println!(
+                    "{:<8} {:>6} {:>8.1} {:>8.1} {:>8.2}",
+                    e.methodology,
+                    e.runs,
+                    e.first_composite,
+                    e.last_composite,
+                    e.market_range()
+                );
+            }
+            println!();
+            println!(
+                "Within-methodology range is the ONLY part attributable to the market. Every other \
+                 movement in this table is the instrument changing."
+            );
+            for w in &warnings {
+                println!("  ! {}", w);
+            }
             Ok(())
         }
         Cmd::Trend { history_dir } => {

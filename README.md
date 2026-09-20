@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 272 tests, no network required
+cargo test                                         # 257 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -241,6 +241,25 @@ naming themselves.
 **Known limit:** the method cannot see a relationship a filer declines to name. Oracle discloses
 $638B of RPO anonymously and compliantly; no further reading fixes that, because the identity is
 not in the filing.
+
+### `drift` — the composite's own history, attributed
+
+```bash
+bubble-watch drift    # splits recorded composite change into MODEL change and MARKET movement
+```
+
+The archive shows the composite rising **30.6 → 43.0** in one session. **Model-caused movement is
+roughly 99% of that.** The tool now states this itself rather than leaving a reader to read an
+instrument change as a market signal.
+
+| driver | magnitude |
+|---|---|
+| methodology changes (MODEL) | **+10.1 points** |
+| within-methodology movement (MARKET) | **0.06 points** mean |
+
+**Any comparison of two composites from different methodology versions compares two different
+instruments, not one instrument at two times.** Every other part of this tool refuses that
+comparison; the composite's own history was the one place that did not.
 
 ### `frontier_premium` — the one structural feature no prior bubble had
 

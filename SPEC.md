@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 272 tests green offline; live assertions opt-in.
+- 257 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -686,3 +686,47 @@ aggregate across units, across contingent and committed items, or across scored 
 entries. A combined total would be exactly the kind of confident, unauditable number this project
 exists to refuse — and it was produced here by the maintainer, in the documentation, which is why
 the rule is written down rather than assumed.
+
+## 16. Model drift versus market movement — the composite's own history
+
+### 16.1 The finding that prompted this section
+
+The archive shows the composite rising from **30.6 to 43.0** in one session. Read plainly, that looks
+like deteriorating conditions. **It is almost entirely the model being edited.**
+
+Measured across the archive with `bubble-watch drift`:
+
+| driver | magnitude |
+|---|---|
+| methodology changes (MODEL) | **+10.1 points** |
+| within-methodology movement (MARKET) | **0.06 points** mean |
+
+**Model-caused movement is roughly 99% of the total.** Nothing in the tool said so until this section.
+
+### 16.2 Why this is a defect rather than a quirk
+
+A composite that can be raised by editing the model, and that reports no distinction between that
+and a real market move, **will be misread by default** — and the reader would be reasonable to
+misread it, because the output gave them nothing else. Every other part of this tool refuses to
+compare across a methodology change; the composite's own history was the one place that did not.
+
+### 16.3 The fix, and what it deliberately does not do
+
+`src/drift.rs` splits archived change into two attributable parts and reports them **always
+together**, so neither can be read alone:
+
+- **MODEL change** — the first composite of one methodology against the first of the next. Nothing
+  can be concluded about the market from it.
+- **MARKET movement** — the composite's range across dates **within a single methodology**. This is
+  the only part that says anything about the world, and until a methodology spans two dates it is
+  **not measurable at all** — which the statement says outright rather than reporting a zero.
+
+It does **not** freeze the model. Adding indicators is how the tool improves, and refusing to
+improve it in order to keep a number stable would be the worse error. The honest answer is not to
+stop changing the model but to be explicit about which part of the movement it caused.
+
+### 16.4 The standing caveat
+
+**Any comparison of two composites from different methodology versions is a comparison of two
+different instruments, not one instrument at two times.** That sentence is now printed by
+`drift`, and it applies to the 30.6 → 43.0 progression in every earlier section of this document.
