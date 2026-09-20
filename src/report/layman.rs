@@ -458,6 +458,10 @@ mod tests {
                 band_note: None,
             },
             trend: Trend::empty("no history in this test"),
+            // None in this fixture: with no archive there is no attribution to make, which is
+            // exactly the case the drift module reports as "no attribution is possible" rather
+            // than as a zero.
+            drift: None,
             exposure: Vec::new(),
             falsifiers: Vec::new(),
             judgments: Vec::new(),

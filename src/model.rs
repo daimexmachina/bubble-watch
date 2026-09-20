@@ -611,6 +611,11 @@ pub struct Report {
     /// Direction of travel since an eligible baseline. CONTEXT ONLY — it never
     /// enters the composite.
     pub trend: Trend,
+    /// How much of the composite's recorded HISTORY is the model changing rather than the
+    /// market. CONTEXT ONLY. Present because the trend table alone shows a climbing score with
+    /// nothing saying most of the climb is methodology, which is a misreading waiting to happen.
+    #[serde(default)]
+    pub drift: Option<crate::drift::DriftAttribution>,
     /// Per-company exposure ranking. CONTEXT ONLY — company-level analysis never
     /// enters a market-level composite.
     #[serde(default)]

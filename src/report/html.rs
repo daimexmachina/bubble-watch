@@ -851,15 +851,55 @@ fn trend_card(r: &Report) -> String {
         format!("<ul style='margin-top:10px'>{}</ul>", items)
     };
 
+    // THE ATTRIBUTION GOES IMMEDIATELY BELOW THE HISTORY TABLE, because that table is the thing
+    // a reader will misread. A climbing composite with nothing beside it reads as deteriorating
+    // conditions; measured, roughly 99% of that climb in this archive is the MODEL being edited.
+    // Placing the caveat anywhere else would let the table be read alone.
+    let attribution = match &r.drift {
+        Some(d) if !d.epochs.is_empty() => {
+            let share = match d.model_share() {
+                Some(s) => format!("{:.0}%", s * 100.0),
+                None => "n/a".into(),
+            };
+            let market = if d.market_measurable {
+                format!(
+                    "Market movement within a single methodology averages <b>{:.2}</b> points.",
+                    d.mean_market_range
+                )
+            } else {
+                "No market movement is measurable yet — every methodology so far spans only one \
+                 date, so ALL recorded change is model change."
+                    .to_string()
+            };
+            format!(
+                "<div style='margin-top:14px;padding:10px 12px;border-left:3px solid #b8860b;\
+                 background:#fffbf0;font-size:12.5px;line-height:1.5'>\
+                 <b>Most of this history is the MODEL changing, not the market.</b><br>\
+                 Across {} methodology version(s), model changes account for <b>{:+.1}</b> points \
+                 of movement. {} Model-caused movement is roughly <b>{}</b> of the total.<br>\
+                 <span style='color:#666'>A composite from one methodology version and a composite \
+                 from another are two DIFFERENT INSTRUMENTS, not one instrument at two times. The \
+                 tool refuses that comparison everywhere else; this table is the one place it was \
+                 still implied.</span></div>",
+                d.epochs.len(),
+                d.model_change,
+                market,
+                share
+            )
+        }
+        _ => String::new(),
+    };
+
     format!(
         "<div class='card'><h3 style='margin-top:0;font-size:15px'>Direction of travel</h3>\
-         <p class='lm-b' style='margin:0 0 10px'>{plain}</p>{body}<div style='margin-top:14px'>{spark}</div>{table}{warn}\
+         <p class='lm-b' style='margin:0 0 10px'>{plain}</p>{body}<div style='margin-top:14px'>{spark}</div>{table}{attr}{warn}\
          <p style='margin:10px 0 0;font-size:12px;color:#777'>The trend is context only. It never enters the score \
          above, because the score is what the trend is measured from.</p></div>",
         plain = esc(&r.layman.direction_of_travel),
         body = body,
         spark = series,
         table = table,
+        attr = attribution,
         warn = warn
     )
 }

@@ -29,7 +29,7 @@ use crate::model::TrendPoint;
 use serde::{Deserialize, Serialize};
 
 /// One methodology's contribution to the composite's history.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MethodEpoch {
     pub methodology: String,
     /// First composite recorded under this methodology.
@@ -56,7 +56,7 @@ impl MethodEpoch {
 }
 
 /// The full attribution, separating model change from market movement.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DriftAttribution {
     /// Per-methodology epochs, ordered by the sequence they first appear.
     pub epochs: Vec<MethodEpoch>,

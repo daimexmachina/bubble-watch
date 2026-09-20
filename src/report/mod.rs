@@ -156,6 +156,15 @@ pub fn build_with_history(
         )
     };
 
+    // Model-versus-market attribution over the archive. Cheap, pure, and reported beside the
+    // trend so a reader cannot see the history table without also seeing that most of its
+    // movement is the instrument.
+    let drift = if archive.is_empty() {
+        None
+    } else {
+        Some(crate::drift::attribute(archive))
+    };
+
     // Data quality: what is missing, and how much weight it carried.
     let total_weight = cfg.total_weight();
     let available_weight: f64 = readings
@@ -367,6 +376,7 @@ pub fn build_with_history(
         },
         analog,
         trend,
+        drift,
         exposure,
         falsifiers,
         judgments,
