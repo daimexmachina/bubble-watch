@@ -109,9 +109,15 @@ impl DriftAttribution {
                 self.mean_market_range
             )
         } else {
-            "NO market movement is measurable yet: every methodology so far has been recorded on \
-             only one date, so any change observed has been a MODEL change and none of it can be \
-             attributed to the market."
+            "No market movement is measurable AT THE EPOCH LEVEL: every methodology so far spans a \
+             single date, so no epoch contains two observations to difference. NOTE this is a \
+             narrower statement than it looks — direction of travel IS still computable for some \
+             CONSECUTIVE DATE PAIRS, where one methodology appears on both dates. Measured on this \
+             archive, 2 of 3 consecutive date pairs produced a comparison while only 2 of 13 EPOCHS \
+             span two dates. The two counts answer different questions: the epoch level asks whether \
+             any single version has been observed twice, the pair level asks whether a reader can \
+             get a direction of travel today. Do not read this line as 'the market has never been \
+             measurable'."
                 .to_string()
         };
         // THE PHASE LABEL IS THE SHARPER FORM OF THE SAME DEFECT and is stated separately, because
@@ -261,7 +267,12 @@ mod tests {
         );
         assert!(!d.market_measurable, "no methodology spans two dates");
         assert_eq!(d.mean_market_range, 0.0);
-        assert!(d.statement().contains("NO market movement is measurable"));
+        assert!(
+            d.statement()
+                .contains("No market movement is measurable AT THE EPOCH LEVEL"),
+            "must scope the claim to the epoch level rather than overstating it: {}",
+            d.statement()
+        );
         // And the model share is 100%, because there is no market component at all.
         assert!((d.model_share().unwrap() - 1.0).abs() < 1e-9);
     }
@@ -324,6 +335,31 @@ mod tests {
         // And the movement between them is entirely model-caused.
         assert!(!d.market_measurable);
         assert!((d.model_change - 4.7).abs() < 1e-9);
+    }
+
+    #[test]
+    fn the_measurability_claim_is_scoped_to_the_epoch_level() {
+        // A CORRECTION TO MY OWN OVERSTATEMENT. I described this archive as one where "the market
+        // has almost never been measurable". True at the EPOCH level (2 of 13 epochs span two
+        // dates); an overstatement at the DATE-PAIR level, where 2 of 3 pairs DID produce a
+        // direction of travel. The two answer different questions and the module must not
+        // conflate them, because the stronger claim sounds more damning and is less accurate.
+        let a = vec![pt("2026-09-01", 30.0, "1.0")];
+        let d = attribute(&a);
+        let s = d.statement();
+        assert!(
+            s.contains("AT THE EPOCH LEVEL"),
+            "the claim must be scoped, not absolute: {}",
+            s
+        );
+        assert!(
+            s.contains("CONSECUTIVE DATE PAIRS"),
+            "and must name the level at which movement IS measurable"
+        );
+        assert!(
+            s.contains("Do not read this line as"),
+            "and must warn against the overstatement explicitly"
+        );
     }
 
     #[test]
