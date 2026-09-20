@@ -202,6 +202,15 @@ fn parse_date(s: &str) -> Option<chrono::NaiveDate> {
 ///   * weighted coverage must be within `coverage_tolerance_pp` of the current
 ///     run, or the difference partly reflects which sources answered rather than
 ///     a change in the market.
+///
+/// Each rejection carries its OWN rationale. It used to be that the report appended one
+/// fixed explanation ("a change computed across runs of unequal coverage would mix a real
+/// market move with the effect of which sources happened to answer") to every refusal
+/// regardless of cause. That sentence is only true for the coverage case. Real archives
+/// contained runs rejected purely for a methodology change at identical coverage, so the
+/// report was explaining a cause that had not occurred — the same class of error as
+/// inventing the number. State the reason and its rationale together, locally, so they
+/// cannot drift apart.
 pub fn is_eligible(
     candidate: &TrendPoint,
     current_coverage: f64,
@@ -214,7 +223,9 @@ pub fn is_eligible(
     // 0.0 as if it were a measurement of market change.
     if candidate.date == today {
         return Err(format!(
-            "the most recent archive entry is from today, below the {} day minimum gap",
+            "the most recent archive entry is from today, below the {} day minimum gap — a \
+             comparison against today would report 0.0 as though it measured market change, \
+             and the archive permits only one point per date",
             fmt_days(t.min_gap_days)
         ));
     }
@@ -222,7 +233,9 @@ pub fn is_eligible(
         .ok_or_else(|| format!("baseline date '{}' is unparseable", candidate.date))?;
     if gap < t.min_gap_days {
         return Err(format!(
-            "most recent baseline is {} day(s) old, below the {} day minimum",
+            "most recent baseline is {} day(s) old, below the {} day minimum — the configured \
+             minimum exists so that a re-run minutes or hours later cannot be presented as a \
+             trend, because the elapsed period is what makes a change interpretable",
             fmt_days(gap),
             fmt_days(t.min_gap_days)
         ));
@@ -236,7 +249,8 @@ pub fn is_eligible(
     if cm != current_methodology {
         return Err(format!(
             "baseline was computed under methodology {} and this run under {} — the composite \
-             means something different across that change, so the two are not comparable",
+             means something different across that change, so the two are not comparable; the \
+             difference would be partly a MODEL change rather than a market move",
             cm, current_methodology
         ));
     }
@@ -245,7 +259,8 @@ pub fn is_eligible(
     if diff_pp > t.coverage_tolerance_pp {
         return Err(format!(
             "coverage differs by {:.1}pp (baseline {:.0}% vs current {:.0}%), above the {:.1}pp \
-             tolerance — the two runs are not on the same scale",
+             tolerance — the difference would partly reflect WHICH SOURCES answered rather than \
+             a change in the market, so the two runs are not on the same scale",
             diff_pp,
             candidate.coverage * 100.0,
             current_coverage * 100.0,
@@ -619,6 +634,73 @@ mod tests {
             r
         );
         assert!(r.contains("from today"), "must say why: {}", r);
+    }
+
+    #[test]
+    fn a_refusal_never_borrows_a_cause_that_did_not_occur() {
+        // The report used to append one fixed rationale about unequal COVERAGE to every
+        // refusal. Real archives contained runs rejected purely for a METHODOLOGY change
+        // at coverage 1.0 on both sides, so the explanation named a cause that had not
+        // happened. Each rejection now carries its own rationale, and this asserts the
+        // coverage rationale appears ONLY when coverage is actually the problem.
+        let t = TrendCfg {
+            min_gap_days: 1.0,
+            coverage_tolerance_pp: 2.0,
+            ..t()
+        };
+        let today = "2026-09-19";
+
+        // Identical coverage, different methodology -> must NOT mention coverage.
+        let mut c = point("2026-09-01", 30.0, 1.0, "early");
+        c.methodology_version = "1.9".into();
+        let why = is_eligible(&c, 1.0, "2.0", today, &t).unwrap_err();
+        assert!(
+            !why.to_lowercase().contains("coverage"),
+            "a methodology refusal must not blame coverage: {}",
+            why
+        );
+        assert!(
+            why.contains("methodology"),
+            "and it must name the real cause: {}",
+            why
+        );
+
+        // Same-day -> must say today, not coverage.
+        let same = point(today, 30.0, 1.0, "early");
+        let why = is_eligible(&same, 1.0, "2.0", today, &t).unwrap_err();
+        assert!(
+            !why.to_lowercase().contains("coverage"),
+            "a same-day refusal must not blame coverage: {}",
+            why
+        );
+        assert!(why.contains("today"), "must say why: {}", why);
+
+        // Insufficient elapsed gap -> must not blame coverage.
+        let near = point("2026-09-19", 30.0, 1.0, "early");
+        let why = is_eligible(&near, 1.0, "2.0", today, &t).unwrap_err();
+        assert!(
+            !why.to_lowercase().contains("coverage"),
+            "a gap refusal must not blame coverage: {}",
+            why
+        );
+
+        // Genuine coverage mismatch -> NOW the coverage rationale is correct and required.
+        // Methodology must MATCH here, or the rejection is correctly about methodology
+        // first and the coverage branch is never reached (which is what an earlier
+        // version of this test tripped over).
+        let mut c2 = point("2026-09-01", 30.0, 0.55, "early");
+        c2.methodology_version = "2.0".into();
+        let why = is_eligible(&c2, 1.0, "2.0", today, &t).unwrap_err();
+        assert!(
+            why.to_lowercase().contains("coverage"),
+            "a coverage refusal must name coverage: {}",
+            why
+        );
+        assert!(
+            why.contains("SOURCES"),
+            "and must explain that it is about which sources answered: {}",
+            why
+        );
     }
 
     #[test]

@@ -284,31 +284,25 @@ pub fn build_with_history(
             .into(),
     );
 
-    // Direction of travel: state the comparability rule when no delta could be
-    // produced, and state it as a REFUSAL rather than as missing data.
+    // Direction of travel: when no delta could be produced, state the refusal and WHY it
+    // was a refusal rather than missing data.
     //
-    // The trailing rationale is attached ONLY when the refusal is actually about
-    // comparability. It used to be unconditional, which made it wrong in two cases:
-    // (a) the command never opened the archive, where nothing about coverage is
-    // relevant, and (b) a genuinely first-ever run, where there is simply nothing to
-    // compare against. Appending a fixed explanation of a cause that did not occur is
-    // the same class of error as inventing the number itself.
+    // NO RATIONALE IS APPENDED HERE. Each rejection in `history::is_eligible` now carries
+    // its own explanation, because the causes are genuinely different: a same-day run, an
+    // insufficient elapsed gap, a methodology change, and a coverage mismatch are four
+    // distinct reasons and only one of them is about coverage. This site previously bolted
+    // one fixed coverage rationale onto every refusal, which meant an archive rejected
+    // purely for a methodology change at identical coverage was explained with a cause
+    // that had not occurred. Explaining the wrong cause is the same class of error as
+    // inventing the number.
     if trend.delta.is_none() {
         if let Some(reason) = &trend.reason {
             // `trim_end_matches('.')`: reasons may end in a full stop, and
             // "{}. ..." would otherwise emit a doubled stop.
-            let body = reason.trim_end_matches('.');
-            let caveat = if reason.starts_with("No eligible baseline") {
-                format!(
-                    "DIRECTION OF TRAVEL NOT REPORTED: {}. This is deliberate — a change computed \
-                     across runs of unequal coverage would mix a real market move with the effect \
-                     of which sources happened to answer.",
-                    body
-                )
-            } else {
-                format!("DIRECTION OF TRAVEL NOT REPORTED: {}.", body)
-            };
-            caveats.push(caveat);
+            caveats.push(format!(
+                "DIRECTION OF TRAVEL NOT REPORTED: {}.",
+                reason.trim_end_matches('.')
+            ));
         }
     }
 
