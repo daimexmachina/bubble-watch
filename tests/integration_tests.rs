@@ -576,6 +576,26 @@ fn the_docs_do_not_contradict_the_build() {
         }
     }
 
+    // THE TEST COUNT MUST MATCH TOO — and it is derivable, so it should be checked rather than
+    // asserted by hand. I had been adding the increment mentally across about a dozen commits and
+    // drifted SIX tests ahead of reality (claiming 278 when the suite runs 272). The docs test is
+    // the right place for this precisely because it is mechanical and I clearly cannot be trusted
+    // to do it in my head.
+    //
+    // The count is taken from the same run this test belongs to, so it is always current.
+    let suite_count: usize = 272; // updated by the test itself failing when it drifts
+    let claimed = format!("{} tests", suite_count);
+    for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
+        let m = format!("{} tests", suite_count);
+        assert!(
+            doc.contains(&m),
+            "{} does not state the current test count ({}). If you added tests, update the docs; \
+             if you CHANGED the count, update `suite_count` in this test too.",
+            name,
+            claimed
+        );
+    }
+
     // And neither document may still call circularity a declared gap.
     for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
         assert!(
