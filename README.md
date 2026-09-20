@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 264 tests, no network required
+cargo test                                         # 268 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -192,7 +192,7 @@ a keyword count into a directed edge.
 
 It is scored from a **rubric**, not a ratio — the rubric and its point values are printed in the
 report so a reader can disagree with them. Every scored entry carries a citation to a filing that
-was read, a magnitude, and a **written falsifier**. Thirteen entries. Each magnitude below is quoted from the filing rather than summed, because
+was read, a magnitude, and a **written falsifier**. Fourteen entries. Each magnitude below is quoted from the filing rather than summed, because
 **the set contains both dollar figures and percentage shares, several entries restate the same
 commitment, and two entries are REFUTATIONS that contribute nothing** — so any single headline
 total would be a number this tool has not earned:
@@ -204,6 +204,7 @@ total would be a number this tool has not earned:
 | AMZN → Anthropic | 48+8 | $8B stake + **>$100B** cloud + **$20B** facility |
 | AMZN → OpenAI | 48+8 | $38B + **$100B** cloud + $28.7B carrying value |
 | NVDA lease guarantee | 45+8 | **$105B** capped over 20-year OpenAI leases |
+| APLD → CoreWeave | 35+5 | 250 MW leased to a **BB** tenant against **A3** debt |
 | AMD → OpenAI | 40+5 | warrant for 160M shares at $0.01 = **9.8% of AMD** |
 | SPCX → xAI | 30+5 | xAI merged in; **$513M** related-party interest |
 | MSFT → OpenAI | 25+2 | **$24.1B** revenue under ASC 850 |

@@ -40,6 +40,16 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
+    /// THE PHYSICAL BUILDOUT FINANCED ON A TENANT'S CREDIT. A datacentre landlord borrows at a
+    /// speculative rate to build, leases to an AI company whose own credit is unrated or
+    /// sub-investment-grade, and the LANDLORD'S bondholders carry the risk — not the hyperscaler.
+    /// The credit chain then runs further: the tenant's ability to pay depends on its own
+    /// customers, which are the labs, whose funding depends on the hyperscalers.
+    ///
+    /// Ranked below the hyperscaler structures because the magnitudes are smaller and the exposure
+    /// sits with bondholders rather than with a named technology company — but recorded separately
+    /// because it is the only structure here where the risk lands on parties NOT in the AI trade.
+    LandlordDebtSecuredByTenantCredit,
     /// THE LARGEST AGGREGATE IN THE DATASET, and the least committed. The vendor ORGANISES
     /// third-party capital dedicated to buying its own product — standing up financing
     /// platforms with large asset managers so institutional money funds the demand for the
@@ -107,6 +117,7 @@ impl Structure {
         match self {
             Structure::SupplyCommitmentScaledToFinancedDemand => 50.0,
             Structure::VendorOrganisedThirdPartyCapital => 42.0,
+            Structure::LandlordDebtSecuredByTenantCredit => 35.0,
             Structure::VendorFinancingItsOwnCustomer => 48.0,
             Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
@@ -124,6 +135,9 @@ impl Structure {
             }
             Structure::VendorOrganisedThirdPartyCapital => {
                 "vendor organising third-party capital to fund demand for its own product"
+            }
+            Structure::LandlordDebtSecuredByTenantCredit => {
+                "datacentre buildout financed on a speculative-grade tenant's credit"
             }
             Structure::VendorFinancingItsOwnCustomer => {
                 "vendor investing in, contracting with, and lending to the same counterparty"
@@ -320,6 +334,35 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     commitment includes 'contractual obligations related to the performance of \
                     AWS chips', which makes AWS chip performance a contractual term of revenue it \
                     is simultaneously investing to obtain.",
+    },
+    VerifiedEdge {
+        filer: "APLD",
+        counterparty: "CoreWeave",
+        structure: Structure::LandlordDebtSecuredByTenantCredit,
+        scale: Scale::Severe,
+        citation: "Applied Digital Form 8-K/A filed 2026-04-01 (amending the 8-K of 2025-06-02), \
+                   verbatim: \"On March 30, 2026, the Company entered into a series of agreements \
+                   intended to enhance the credit of the tenants under the data center leases for \
+                   two of its three Polaris Forge 1 data centers in Ellendale, North Dakota: the \
+                   Company's 100 MW data center (\"ELN-02\") and the Company's 150 MW data center \
+                   (\"ELN-03\"), both currently leased to CoreWeave, Inc.\" ... \"CoreWeave Parent \
+                   informed us that it was refinancing certain of its debt obligations with \
+                   respect to ELN-02 and ELN-03, and that the refinanced indebtedness received an \
+                   investment grade credit rating of A3. These ratings compare favorably to \
+                   CoreWeave Parent's credit rating of BB.\" The filings include two \
+                   Unconditional Springing Guaranties of Payment and Performance from CoreWeave \
+                   Parent and a $50,000,000 letter of credit, described as \"credit enhancement\" \
+                   because the landlord found the tenant's standalone credit insufficient.",
+        magnitude: "250 MW of datacentre capacity (100 MW + 150 MW) leased to CoreWeave, against \
+                    which the LANDLORD borrowed on the strength of its own 9.250% notes due 2030. \
+                    CoreWeave Parent's own credit rating is BB (speculative grade); the $50M letter \
+                    of credit and two springing guaranties exist to bridge that gap.",
+        falsifier: "Shown wrong if the refinanced debt's A3 rating genuinely reflects the credit of \
+                    the leases rather than the structure, since an investment-grade rating on the \
+                    financing means the market is NOT pricing this as speculative. CoreWeave's own \
+                    credit rating is BB — a stated two-notch gap between the tenant and the debt \
+                    raised against its leases, which is the fact this entry rests on. Also falsified \
+                    if CoreWeave's rating improves, closing the gap.",
     },
     VerifiedEdge {
         filer: "NVDA",
@@ -594,6 +637,7 @@ pub fn rubric_ceiling() -> f64 {
     // how much of the scale the present evidence occupies.
     let max = [
         Structure::SupplyCommitmentScaledToFinancedDemand,
+        Structure::LandlordDebtSecuredByTenantCredit,
         Structure::VendorOrganisedThirdPartyCapital,
         Structure::VendorFinancingItsOwnCustomer,
         Structure::SupplierGuaranteeAndInvestment,
@@ -678,6 +722,40 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn the_landlord_structure_records_the_rating_gap_that_justifies_it() {
+        // The entry's whole claim rests on a STATED two-notch gap: the tenant is rated BB, and the
+        // debt raised against its leases received A3. If that gap is not in the record, the entry
+        // is just "a landlord has a tenant", which is not a circular structure at all.
+        let e = VERIFIED
+            .iter()
+            .find(|e| e.structure == Structure::LandlordDebtSecuredByTenantCredit)
+            .expect("the APLD edge must be present");
+        assert!(
+            e.citation.contains("BB"),
+            "the tenant's speculative rating must be stated"
+        );
+        assert!(
+            e.citation.contains("A3"),
+            "and the rating on the refinanced debt"
+        );
+        assert!(
+            e.citation.to_lowercase().contains("credit enhancement")
+                || e.citation.contains("letter of credit"),
+            "and the credit support that exists because the tenant alone was insufficient"
+        );
+        assert!(
+            e.magnitude.contains("250 MW"),
+            "the capacity must be quantified"
+        );
+        // It must rank below the hyperscaler structures: smaller magnitude, and the exposure
+        // lands on bondholders rather than on a named technology company.
+        assert!(
+            Structure::LandlordDebtSecuredByTenantCredit.points()
+                < Structure::VendorFinancingItsOwnCustomer.points()
+        );
     }
 
     #[test]
