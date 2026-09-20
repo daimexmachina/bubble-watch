@@ -470,6 +470,66 @@ fn the_rendered_report_states_no_impossible_figure() {
 }
 
 #[test]
+fn the_rendered_report_carries_its_own_drift_caveats() {
+    // THE GAP THAT LET "869%" REACH THE LIVE SITE. Indicator detail text was never asserted by any
+    // test, so a nonsense percentage shipped to the dashboard and sat there. The drift caveats are
+    // the same shape: correct in the source, verified by hand once, and unguarded afterwards — so a
+    // future edit could silently drop the block and the site would show a climbing history with
+    // nothing beside it again.
+    //
+    // This asserts the three admissions reach the RENDERED HTML, not the source. It needs an
+    // archive to attribute, so it builds one: a two-epoch archive whose second epoch crosses the
+    // phase threshold, which is exactly the case that produces the phase caveat.
+    use std::collections::BTreeMap;
+    let mk = |date: &str, composite: f64, method: &str| bubble_watch::model::TrendPoint {
+        date: date.into(),
+        generated_at: format!("{}T12:00:00Z", date),
+        composite,
+        coverage: 1.0,
+        phase: "early".into(),
+        methodology_version: method.into(),
+        stresses: BTreeMap::new(),
+    };
+    // 31.2 at 1.3 (early) -> 35.3 at 1.4 (mid): a model boundary that crosses a phase band.
+    let archive = vec![mk("2026-09-01", 31.2, "1.3"), mk("2026-09-02", 35.3, "1.4")];
+
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixture absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build_with_history(
+        readings,
+        &obs,
+        &c,
+        "2026-09-03T00:00:00Z",
+        &archive,
+        false,
+        true,
+    );
+    let html = bubble_watch::report::html::render(&r);
+
+    for needle in [
+        "MODEL changing, not the market",
+        "DIFFERENT INSTRUMENTS",
+        "PHASE LABEL and the TIMING OVERLAY",
+        "The window halved without the market moving",
+    ] {
+        assert!(
+            html.contains(needle),
+            "the rendered report must carry the caveat {:?}. If this block was reworded, update \
+             the assertion — but do NOT drop it: its absence is how a reader gets a climbing \
+             history with no attribution.",
+            needle
+        );
+    }
+    // And the attribution must be present as data, not only as prose.
+    assert!(r.drift.is_some(), "the report must carry an attribution");
+}
+
+#[test]
 fn the_docs_do_not_contradict_the_build() {
     // DOCS THAT STATE NUMBERS DRIFT THE MOMENT THOSE NUMBERS CHANGE, AND NOTHING FAILS WHEN THEY DO.
     // This has now happened twice on this project — README claimed 234 tests and weight 146, then
@@ -583,7 +643,7 @@ fn the_docs_do_not_contradict_the_build() {
     // to do it in my head.
     //
     // The count is taken from the same run this test belongs to, so it is always current.
-    let suite_count: usize = 277; // updated by the test itself failing when it drifts
+    let suite_count: usize = 279; // updated by the test itself failing when it drifts
     let claimed = format!("{} tests", suite_count);
     for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
         let m = format!("{} tests", suite_count);
