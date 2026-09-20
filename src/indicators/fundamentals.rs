@@ -1550,7 +1550,7 @@ impl Indicator for CircularFinancing {
         // edges than have been read; every unread one contributes NOTHING, so this indicator
         // understates and that direction is named.
         let unread_note = format!(
-            "Only {} edge(s) have been READ and classified; the scan finds roughly 48 real \
+            "Only {} edge(s) have been READ and classified; the scan finds 47 real \
              ecosystem edges, so the great majority contribute nothing. An unread edge scores \
              ZERO rather than partially, so this reading UNDERSTATES circular financing and \
              biases the composite toward CALM. Treat it as a lower bound: a low number means \

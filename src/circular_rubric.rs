@@ -40,6 +40,16 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
+    /// THE LARGEST AGGREGATE IN THE DATASET, and the least committed. The vendor ORGANISES
+    /// third-party capital dedicated to buying its own product — standing up financing
+    /// platforms with large asset managers so institutional money funds the demand for the
+    /// vendor's output. The vendor's own balance sheet is not directly at risk; what is at
+    /// risk is that the demand it is forecasting exists only because it arranged the capital.
+    ///
+    /// Ranked BELOW the supply amplifier despite being larger, because it is an ANNOUNCEMENT:
+    /// NVIDIA states it is "subject to definitive agreements". A number with that qualifier
+    /// should not outrank a signed commitment. The qualifier is in the falsifier, not buried.
+    VendorOrganisedThirdPartyCapital,
     /// THE COMPLETE LOOP: the vendor invests in the counterparty, signs a multi-year contract
     /// to sell it compute, AND extends it a credit facility — with the facility gated on its
     /// OWN delivery of that compute. All three flows run between the same two parties, so the
@@ -96,6 +106,7 @@ impl Structure {
     pub fn points(self) -> f64 {
         match self {
             Structure::SupplyCommitmentScaledToFinancedDemand => 50.0,
+            Structure::VendorOrganisedThirdPartyCapital => 42.0,
             Structure::VendorFinancingItsOwnCustomer => 48.0,
             Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
@@ -110,6 +121,9 @@ impl Structure {
         match self {
             Structure::SupplyCommitmentScaledToFinancedDemand => {
                 "upstream supply commitments scaled to demand the vendor itself finances"
+            }
+            Structure::VendorOrganisedThirdPartyCapital => {
+                "vendor organising third-party capital to fund demand for its own product"
             }
             Structure::VendorFinancingItsOwnCustomer => {
                 "vendor investing in, contracting with, and lending to the same counterparty"
@@ -306,6 +320,33 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     commitment includes 'contractual obligations related to the performance of \
                     AWS chips', which makes AWS chip performance a contractual term of revenue it \
                     is simultaneously investing to obtain.",
+    },
+    VerifiedEdge {
+        filer: "NVDA",
+        counterparty: "(capital providers)",
+        structure: Structure::VendorOrganisedThirdPartyCapital,
+        scale: Scale::Severe,
+        citation: "NVIDIA Q2 FY2027 earnings release, Form 8-K Exhibit 99.1 filed 2026-08-26, \
+                   verbatim: \"Announced strategic partnerships to establish independent compute \
+                   financing platforms with Apollo, BlackRock, Blackstone, Brookfield, Goldman \
+                   Sachs and KKR to mobilize over $500 billion of third-party capital for the \
+                   buildout of AI infrastructure over time, subject to definitive agreements.\" \
+                   The same release records the demand this capital would serve: \"the NVIDIA Vera \
+                   Rubin platform is ramping into full production with racks running at partners \
+                   including CoreWeave, Google Cloud, Microsoft Azure, Oracle Cloud Infrastructure \
+                   and Nebius.\"",
+        magnitude: "OVER $500 BILLION of third-party capital, from SIX NAMED institutions \
+                    (Apollo, BlackRock, Blackstone, Brookfield, Goldman Sachs, KKR). This is the \
+                    largest single figure anywhere in this research — larger than NVIDIA's own \
+                    $279B supply commitments and its $105B guarantee combined.",
+        falsifier: "THE WEAKEST COMMITMENT IN THE SET, and it is marked as such: NVIDIA states it \
+                    is \"subject to definitive agreements\", so this is an ANNOUNCEMENT, not a \
+                    signed obligation, and it may not close. Shown wrong if the platforms are \
+                    never established, if the capital is raised but deployed to non-NVIDIA \
+                    infrastructure, or if the $500B is a cumulative multi-year aspiration rather \
+                    than committed capacity. It is also NOT NVIDIA's own money: the balance-sheet \
+                    risk sits with the institutions, which is precisely why it is ranked below a \
+                    signed supply commitment despite being larger.",
     },
     VerifiedEdge {
         filer: "NVDA",
@@ -530,9 +571,14 @@ pub fn rubric_total() -> f64 {
 /// would drift upward every time someone did more work, which is a measurement artifact and not
 /// a fact about the AI economy.
 ///
-/// The measured scan finds roughly 48 real ecosystem edges (67 hits minus 19 self-matches and
-/// generic-supplier mentions: "NVDA x NVIDIA" is NVIDIA naming itself, "CRWV x CoreWeave" is a
-/// company naming itself). Using that as the denominator means reading an edge moves points into
+/// The measured scan finds 47 real ecosystem edges: 67 hits, minus 2 SELF-MATCHES ("NVDA x
+/// NVIDIA" and "CRWV x CoreWeave" are companies naming THEMSELVES) and 18 generic-supplier
+/// mentions where the name is a product or component reference rather than a counterparty.
+///
+/// This was 48 in an earlier draft, from a filter that caught only the NVIDIA self-match and
+/// missed CoreWeave's. The error was found by re-deriving the count with a ticker-to-name map
+/// instead of an ad-hoc exclusion list. Recorded because the comment IS the audit trail for a
+/// stated number, and a wrong audit trail is worse than no number. Using that as the denominator means reading an edge moves points into
 /// the numerator while the denominator stays put — so the reading reflects what was FOUND rather
 /// than how hard anyone looked.
 ///
@@ -541,13 +587,14 @@ pub fn rubric_total() -> f64 {
 ///
 /// Reported as COVERAGE, separately from the score, because "how much has been verified" is a
 /// confidence statement about the instrument and not a measure of market stress.
-pub const SCANNED_EDGES: usize = 48;
+pub const SCANNED_EDGES: usize = 47;
 pub fn rubric_ceiling() -> f64 {
     // Uses the TRUE maximum structure rather than a named variant, so adding a stronger
     // structure in future raises the ceiling automatically instead of silently understating
     // how much of the scale the present evidence occupies.
     let max = [
         Structure::SupplyCommitmentScaledToFinancedDemand,
+        Structure::VendorOrganisedThirdPartyCapital,
         Structure::VendorFinancingItsOwnCustomer,
         Structure::SupplierGuaranteeAndInvestment,
         Structure::EquityForPurchases,
@@ -631,6 +678,36 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn the_largest_figure_does_not_outrank_a_signed_commitment() {
+        // $500B of third-party capital is the biggest number in the research, and it is ranked
+        // BELOW NVIDIA's $279B supply commitment — because it is an ANNOUNCEMENT ("subject to
+        // definitive agreements") rather than a signed obligation, and because the balance-sheet
+        // risk sits with the institutions rather than with NVIDIA. Size must not decide rank.
+        assert!(
+            Structure::VendorOrganisedThirdPartyCapital.points()
+                < Structure::SupplyCommitmentScaledToFinancedDemand.points(),
+            "the announced $500B must rank below a signed $279B commitment"
+        );
+        let e = VERIFIED
+            .iter()
+            .find(|e| e.structure == Structure::VendorOrganisedThirdPartyCapital)
+            .expect("the capital-provider edge must be present");
+        assert!(
+            e.magnitude.contains("$500 BILLION"),
+            "the size must be stated"
+        );
+        assert!(
+            e.falsifier.contains("subject to definitive agreements"),
+            "the qualifier MUST be recorded, or the largest number would read as committed: {}",
+            e.falsifier
+        );
+        assert!(
+            e.falsifier.contains("ANNOUNCEMENT"),
+            "and it must be labelled an announcement"
+        );
     }
 
     #[test]
