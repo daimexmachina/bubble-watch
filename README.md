@@ -261,6 +261,32 @@ instrument change as a market signal.
 instruments, not one instrument at two times.** Every other part of this tool refuses that
 comparison; the composite's own history was the one place that did not.
 
+#### And it moved the headline: the phase label and the timing range
+
+The phase label and the timing overlay are assigned by **absolute** composite thresholds
+(`early < 35`, `mid < 55`, `late < 75`). Since the composite moves with the model, **a model edit
+can move both.** Measured across the archive:
+
+| | composite | phase | quoted window |
+|---|---|---|---|
+| methodology 1.3 | 31.2 | `early` | **30–72 months** |
+| methodology 1.4 | 35.3 | `mid` | **15–42 months** |
+
+**The window halved without the market moving.** That was the archive's only phase crossing, and it
+happened at a methodology boundary.
+
+This is a **different caveat** from the ones already printed about the overlay. Those say the timing
+output is not a probability, that it is fitted on **n=2** episodes, and that it is withheld on thin
+coverage — all statements about the overlay's *own* weakness. This is the instrument moving
+underneath a sound overlay, and a reader who had absorbed every existing caveat would still have
+been misled by it.
+
+Both are stated in the report, beneath the history table, where the numbers appear.
+
+**The bands are deliberately NOT re-tuned.** Moving a threshold to hide a model-caused crossing
+would be the same class of error as moving a goalpost. Saying that the crossing happened, and what
+it did, is the honest fix.
+
 ### `frontier_premium` — the one structural feature no prior bubble had
 
 In every earlier mania the financed asset could not be reproduced by anyone else: railways
