@@ -687,6 +687,35 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     in a commercial context rather than in the risk factors. At present the mention \
                     carries no commercial content at all.",
     },
+    // SIXTH REFUTATION, AND A THIRD KIND OF FALSE POSITIVE: a LITIGATION CAPTION.
+    //
+    // Meta's FY2025 10-K names Anthropic — but as a CO-DEFENDANT in someone else's suit:
+    //
+    //   "additional cases with similar claims were filed against us ... (Entrepreneur Media v. Meta
+    //    Platforms, Inc., Carreyrou et al. v. Anthropic PBC, et al. and TED Entertainment, Inc. v.
+    //    Meta Platforms, Inc.)"
+    //
+    // Meta and Anthropic are both defendants in related copyright litigation. There is no commercial
+    // relationship here at all — the two names appear in the same sentence because they share a
+    // docket category, not a contract.
+    //
+    // This is the failure mode a name-matching detector is MOST likely to hit and LEAST likely to
+    // catch by inspection: a litigation caption reads like a corporate pairing to anyone skimming.
+    VerifiedEdge {
+        filer: "META",
+        counterparty: "Anthropic",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation: "Meta FY2025 10-K, legal proceedings note, verbatim: \"additional cases with \
+                   similar claims were filed against us in the U.S. District Court for the Northern \
+                   District of California (Entrepreneur Media v. Meta Platforms, Inc., Carreyrou et \
+                   al. v. Anthropic PBC, et al. and TED Entertainment, Inc. v. Meta Platforms, \
+                   Inc.).\" Meta and Anthropic are CO-DEFENDANTS in related copyright suits; the \
+                   names co-occur because they share a docket category, not a contract.",
+        magnitude: "none attributable to a circular structure — this is a litigation caption.",
+        falsifier: "Shown wrong if a Meta filing names Anthropic in a commercial, investment or \
+                    related-party context. At present the only mentions are litigation captions.",
+    },
     // A REAL RELATIONSHIP THAT IS NOT A CIRCULARITY — and the distinction matters.
     //
     // NVIDIA Q3 FY2026 earnings release (Form 8-K Exhibit 99.1, filed 2025-11-19), verbatim:

@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 276 tests green offline; live assertions opt-in.
+- 277 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -577,7 +577,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Twenty-one verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Twenty-two verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -587,6 +587,11 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **META / Anthropic — REFUTED, a LITIGATION CAPTION.** Meta's FY2025 10-K names Anthropic as a
+  CO-DEFENDANT: "Carreyrou et al. v. Anthropic PBC, et al." The names co-occur because they share a
+  docket category, not a contract. This is the failure mode a name-matching detector is MOST likely
+  to hit and LEAST likely to catch by inspection — a caption reads like a corporate pairing to anyone
+  skimming.
 - **NVDA / Anthropic — REAL BUT NOT A CIRCULARITY, and a distinct category.** NVIDIA's Q3 FY2026
   release: "for the first time, Anthropic will run and scale on NVIDIA infrastructure, initially
   adopting 1 gigawatt of compute capacity". A material, named commitment — with **no stake, facility
