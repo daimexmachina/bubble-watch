@@ -385,8 +385,9 @@ fn exposure_card(r: &Report) -> String {
          <p style='margin:0 0 10px;font-size:13px'>Ratios to operating cash flow, most exposed first. \
          This answers a different question from the score above &mdash; who carries the risk, rather than how \
          bubble-like the configuration is &mdash; so it is <b>never folded into the composite</b>.</p>\
-         <table><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th><th>due&nbsp;&lt;1y/CFO</th>\
-         <th>leases/CFO</th><th>commitments/CFO</th><th>RPO/revenue</th></tr></thead><tbody>{rows}</tbody></table>\
+         <div class='scrollx'><table class='exp'><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th>\
+         <th>due&nbsp;&lt;1y/CFO</th><th>leases/CFO</th><th>commitments/CFO</th>\
+         <th>RPO/revenue</th></tr></thead><tbody>{rows}</tbody></table></div>\
          <p class='mut' style='margin:12px 0 0;font-size:12px'>A missing figure is <b>named</b>, never shown as \
          0.00: an absent disclosure is not a small number. Near-term debt is the &ldquo;who is tested first&rdquo; \
          column, and for this cohort it is small for every company, so a maturity wall is not the \
@@ -720,12 +721,6 @@ tr.j-aga {{ background:rgba(46,125,50,.06); }}
   .j-ev {{ color:#ccc; }} .j-fal {{ color:#e0a878; }}
 }}
 .nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
-.exp-note {{ font-size:11.5px; color:#777; }}
-.exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
-.exp-nh {{ font-weight:600; }}
-tr.exp-nr {{ background:rgba(179,38,30,.03); }}
-.exp-note ul {{ margin:2px 0 8px; padding-left:18px; }}
-.exp-note li {{ margin-bottom:2px; }}
 @media (prefers-color-scheme: dark) {{
   table.ftab td {{ border-color:#2a2a2a; }}
   .f-r {{ color:#ddd; }}
@@ -1125,12 +1120,42 @@ tr.j-aga {{ background:rgba(46,125,50,.06); }}
   .j-ev {{ color:#ccc; }} .j-fal {{ color:#e0a878; }}
 }}
 .nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
-.exp-note {{ font-size:11.5px; color:#6b6b6b; }}
+/* FONT-SCALE INVERSION, MEASURED. The caveat container was 11.5px (inheriting the
+   report's smallest muted size) while its own <li> bullets inherited 13px from the
+   global `li` rule — so a sub-heading rendered SMALLER than the list it headed, and
+   the label read as the least important text in the block. Both are 12.5px now;
+   hierarchy comes from weight and colour, not from an inverted size. */
+.exp-note {{ font-size:12.5px; color:#555; }}
 .exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
-.exp-nh {{ font-weight:600; }}
+.exp-nh {{ font-weight:600; font-size:12.5px; color:#333; }}
 tr.exp-nr {{ background:rgba(179,38,30,.03); }}
-.exp-note ul {{ margin:2px 0 8px; padding-left:18px; }}
-.exp-note li {{ margin-bottom:2px; }}
+.exp-note ul {{ margin:3px 0 8px; padding-left:18px; }}
+.exp-note li {{ margin-bottom:3px; line-height:1.45; }}
+
+/* THE EXPOSURE TABLE OVERFLOWED EVERY NARROW VIEWPORT. It has seven columns and no
+   constraint, so below a 600px viewport it stopped shrinking at 588px and ran past
+   its card, giving the whole page a horizontal scrollbar (measured: doc scrollWidth
+   638 inside a 485px client width). It gets the same treatment as the indicator
+   table — explicit column widths — and a scroll container so that a genuinely
+   un-shrinkable row scrolls INSIDE the card instead of moving the page. */
+.scrollx {{ overflow-x:auto; -webkit-overflow-scrolling:touch; }}
+/* NO min-width. A floor here looked correct at full width but at a 429px card it forced the
+   table to 520px, and because the caveat rows span the table they were clipped by the
+   scroll container -- the notes became the one part you had to scroll sideways to read,
+   which is backwards. Letting the columns shrink and the values wrap keeps the caveats
+   fully readable; table-layout:fixed stops a long value from re-widening the sheet. */
+table.exp {{ table-layout:fixed; }}
+table.exp th:nth-child(1) {{ width:6%; }}
+table.exp th:nth-child(2) {{ width:13%; }}
+table.exp th:nth-child(3) {{ width:13%; }}
+table.exp th:nth-child(4) {{ width:15%; }}
+table.exp th:nth-child(5) {{ width:13%; }}
+table.exp th:nth-child(6) {{ width:22%; }}
+table.exp th:nth-child(7) {{ width:18%; }}
+/* Header labels were wrapping to TWO lines each at 11px, which is what made the header
+   block look oddly sized. One line each, with letter-spacing trimmed a little at narrow
+   widths so adjacent labels do not run together (measured: "DEBT/CFODUE <1Y/CFO"). */
+table.exp th {{ white-space:nowrap; letter-spacing:.3px; padding-left:6px; padding-right:6px; }}
 @media (prefers-color-scheme: dark) {{
   table.ftab td {{ border-color:#2a2a2a; }}
   .f-r {{ color:#ddd; }}
@@ -1693,6 +1718,74 @@ mod tests {
         assert!(
             !visible.contains("no doubt at all."),
             "the tail of the detail must NOT be visible before the reader expands it"
+        );
+    }
+
+    #[test]
+    fn every_wide_table_has_a_declared_column_layout() {
+        // A TABLE WITH MANY COLUMNS AND NO WIDTH CONSTRAINT OVERFLOWS EVERY NARROW VIEWPORT.
+        // Measured on the shipped report at a 560px viewport: the exposure table has SEVEN
+        // columns, stopped shrinking at 588px, ran past its card, and gave the whole page a
+        // horizontal scrollbar (doc scrollWidth 638 inside a 485px client width). The
+        // indicator table had already been fixed; the exposure table had not, because the
+        // first fix was scoped to one table rather than to the class of problem.
+        //
+        // This asserts the RULE, not one table: any table the report renders with more than
+        // four columns must carry a class whose layout is declared.
+        let style = style_block();
+        for t in ["table.ind", "table.exp"] {
+            assert!(
+                style.contains(&format!("{} {{ table-layout:fixed;", t)),
+                "{} must declare a fixed layout, or a long value widens the page",
+                t
+            );
+        }
+        // Every column of the exposure table must have a declared width, so the seven
+        // columns share the space instead of demanding a minimum.
+        for col in 1..=7 {
+            assert!(
+                style.contains(&format!("table.exp th:nth-child({}) {{", col)),
+                "exposure column {} needs a declared width, or the table demands more room \
+                 than a narrow card has",
+                col
+            );
+        }
+    }
+
+    #[test]
+    fn a_caveat_is_never_smaller_than_the_list_it_heads() {
+        // FONT-SCALE INVERSION. `.exp-note` was 11.5px while its own `<li>` bullets
+        // inherited 13px from the global `li` rule, so a sub-heading rendered SMALLER than
+        // the items under it and read as the least important text in the block. Hierarchy
+        // must come from weight and colour, not from an inverted size.
+        let style = style_block();
+        let size_of = |sel: &str| -> f64 {
+            let at = style
+                .find(&format!("{} {{", sel))
+                .unwrap_or_else(|| panic!("{} must be declared", sel));
+            let rule = &style[at..style[at..].find('}').map(|e| at + e).unwrap_or(style.len())];
+            let i = rule
+                .find("font-size:")
+                .unwrap_or_else(|| panic!("{} needs a font-size", sel));
+            let tail = &rule[i + "font-size:".len()..];
+            tail.chars()
+                .take_while(|c| c.is_ascii_digit() || *c == '.')
+                .collect::<String>()
+                .parse()
+                .unwrap()
+        };
+        let container = size_of(".exp-note");
+        let label = size_of(".exp-nh");
+        assert!(
+            label >= container,
+            "the caveat label ({:.1}px) must not be smaller than its container ({:.1}px)",
+            label,
+            container
+        );
+        assert!(
+            container >= 12.0,
+            "the caveat text ({:.1}px) is below the 12px floor this report uses for body text",
+            container
         );
     }
 
