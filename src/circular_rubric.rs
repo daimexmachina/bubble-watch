@@ -98,6 +98,55 @@ impl Structure {
     }
 }
 
+/// How large the disclosed exposure is relative to the filer, where a magnitude was
+/// disclosed. BOUNDED and COARSE on purpose: it can add at most 15 points, so a huge
+/// guarantee can make an edge read stronger without being able to dominate the rubric.
+///
+/// WHY THIS EXISTS. A flat per-structure score treats a $105B guarantee and an unquantified
+/// one as equally severe, which is a real weakness in a rubric that otherwise insists on
+/// magnitudes. The ratio used is the disclosed exposure over the filer's market
+/// capitalisation, because that is what makes an exposure dangerous rather than merely large.
+///
+/// THE CEILING IS DELIBERATELY LOW. Only some edges disclose a magnitude at all, so a large
+/// severity range would make the reading depend on which filings happened to quantify the
+/// number rather than on what is actually happening. 15 points is enough to differentiate and
+/// not enough to swamp the structure classification.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Scale {
+    /// No magnitude disclosed, so nothing can be added. Not zero-severity — UNKNOWN.
+    Undisclosed,
+    /// Under 5% of the filer's market cap.
+    Small,
+    /// 5% to 20%.
+    Moderate,
+    /// Over 20% of the filer's market cap: an exposure that could plausibly impair the filer.
+    Severe,
+}
+
+impl Scale {
+    pub fn points(self) -> f64 {
+        match self {
+            Scale::Undisclosed => 0.0,
+            // BOUNDED BELOW THE WEAKEST STRUCTURE (RelatedPartySupply = 10), deliberately.
+            // A size term that could outrank a structure class would turn the rubric into a
+            // size contest, where the largest guarantee always dominates regardless of what
+            // kind of arrangement it is.
+            Scale::Small => 2.0,
+            Scale::Moderate => 5.0,
+            Scale::Severe => 8.0,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Scale::Undisclosed => "exposure not quantified in the filing",
+            Scale::Small => "under 5% of the filer's market cap",
+            Scale::Moderate => "5-20% of the filer's market cap",
+            Scale::Severe => "over 20% of the filer's market cap",
+        }
+    }
+}
+
 /// One verified edge: a structure that was read in a filing and classified.
 ///
 /// Every field here was read from a primary source. Nothing is inferred, and an edge without
@@ -107,6 +156,8 @@ pub struct VerifiedEdge {
     pub filer: &'static str,
     pub counterparty: &'static str,
     pub structure: Structure,
+    /// How large the disclosed exposure is relative to the filer. Bounded; see `Scale`.
+    pub scale: Scale,
     /// The specific filing and what it says, in the tool's own words but grounded in quotes.
     pub citation: &'static str,
     /// The disclosed magnitude, or a statement that none was disclosed.
@@ -123,28 +174,48 @@ pub const VERIFIED: &[VerifiedEdge] = &[
         filer: "NVDA",
         counterparty: "OpenAI",
         structure: Structure::SupplierGuaranteeAndInvestment,
-        citation: "NVIDIA Form 8-K filed 2026-08-17, Exhibit 99.1, verbatim: \"NVIDIA to provide \
-                   credit support on land, power, and shell buildout to secure initial 4.25 \
-                   IT-GW, with an option to take the remaining 3.75 IT-GW\" ... \"OpenAI will be \
-                   the customer for 8-IT GW\" ... \"SB Energy will build, own and operate the \
-                   data center under a 20-year lease to OpenAI\" ... \"NVIDIA will invest $1.5 \
-                   billion in SB Energy, joining existing investors SoftBank Group and \
-                   OpenAI.\" NVIDIA is also \"the exclusive AI compute infrastructure provider \
-                   at PORTS-Pike\", and the site will run \"NVIDIA's full-stack DSX AI factory \
-                   platform, including GPUs, CPUs and networking.\"",
-        magnitude: "$1.5B equity investment in SB Energy, PLUS contingent credit support over the \
-                    land, power and shell buildout for an initial 4.25 IT-GW (with an option on a \
-                    further 3.75 IT-GW, 8 IT-GW total), under a 20-year OpenAI lease. The equity \
-                    outlay is disclosed; the size of the GUARANTEE is not.",
-        falsifier:
-            "Shown wrong if the credit support is limited to a non-binding letter of intent \
-                    rather than an enforceable guarantee, or if SB Energy secures the land, power \
-                    and shell independently so NVIDIA's balance sheet is never at risk.",
+        scale: Scale::Severe,
+        citation: "NVIDIA FY2027 Q2 10-Q (filed 2026-08-26), Note 8 and the derivatives note, \
+                   verbatim: \"In August 2026, we entered into guarantees with SB Energy Corp. to \
+                   provide credit support on the land, power, and shell buildout at SB Energy's \
+                   PORTS Technology Campus in Pike County, Ohio, covering leases for \
+                   approximately 4.25 gigawatts of IT load. The campus will exclusively host our \
+                   compute under 20-year leases to OpenAI, subject to limited exceptions, with \
+                   our obligation capped at $105 billion in the aggregate\" ... \"Each guarantee \
+                   generally becomes effective upon commencement of the applicable lease, with \
+                   corresponding guarantee amounts increasing as each of nine data centers is \
+                   placed in service, which is expected to begin in fiscal year 2029.\" NVIDIA \
+                   classifies them as CREDIT DERIVATIVES. The 8-K of 2026-08-17 adds a $1.5B \
+                   equity investment in SB Energy, joining SoftBank and OpenAI as investors; the \
+                   commitments table shows land/power/shell guarantees at a $3,529M notional \
+                   alongside $4,800M of public company warrants and a $1,000M equity forward.",
+        magnitude: "$105 BILLION maximum aggregate guarantee over 20-year OpenAI leases at \
+                    PORTS-Pike (4.25 IT-GW of ~8 IT-GW), on top of a $1.5B equity investment in \
+                    SB Energy. Present notional booked: $3,529M of land/power/shell guarantees, \
+                    $4,800M warrants, $1,000M equity forward. $712M sits in escrow to mitigate \
+                    exposure. THIS IS THE LARGEST SINGLE CIRCULAR EXPOSURE FOUND IN THE MODEL \
+                    and, because the guarantees only become effective when leases commence from \
+                    FY2029, almost none of it is on the balance sheet today.",
+        falsifier: "Shown wrong if the guarantees are never called because OpenAI's leases are \
+                    assigned to a better-rated tenant, if the obligation is novated to the \
+                    capital providers NVIDIA is negotiating independent financing platforms with, \
+                    or if OpenAI achieves an investment-grade rating (NVIDIA states the \
+                    guarantees TERMINATE on that event) — any of which would remove the exposure. \
+                    COUNTER-FACTS NVIDIA DISCLOSES AND A ONE-SIDED READING WOULD OMIT: the \
+                    guarantees are limited to defined portions of lease and power payments, NOT \
+                    the full cost of the site or all tenant obligations; exposure declines as \
+                    OpenAI pays and falls to zero over each 20-year term; OpenAI has agreed to \
+                    reimburse and indemnify, though NVIDIA warns it 'may not recover amounts \
+                    promptly or in full'; the fair value recognised was NOT significant; and \
+                    NVIDIA expects its large cloud customers to continue securing land, power and \
+                    shell INDEPENDENTLY, i.e. this structure is disclosed as the exception rather \
+                    than the norm.",
     },
     VerifiedEdge {
         filer: "AMD",
         counterparty: "OpenAI",
         structure: Structure::EquityForPurchases,
+        scale: Scale::Moderate,
         citation: "AMD Form 8-K, 2025-10-06, Item 1.01 Material Definitive Agreement: AMD issued \
                    OpenAI OpCo, LLC a warrant for up to 160,000,000 shares at a $0.01 exercise \
                    price, vesting in tranches tied to purchases of AMD Instinct GPUs — first \
@@ -162,6 +233,7 @@ pub const VERIFIED: &[VerifiedEdge] = &[
         filer: "SPCX",
         counterparty: "xAI",
         structure: Structure::AbsorbedUnitDebt,
+        scale: Scale::Moderate,
         citation: "SpaceX (SPCX) FY2026 10-Q. xAI merged into SpaceX on 2026-02-02 (agreement \
                    filed as S-1 Exhibit 2.1); the merger appears in equity as 'Conversion of \
                    redeemable convertible preferred stock pursuant to xAI Merger'. xAI's debt \
@@ -178,6 +250,7 @@ pub const VERIFIED: &[VerifiedEdge] = &[
         filer: "MSFT",
         counterparty: "OpenAI",
         structure: Structure::RelatedPartyRevenueWithStake,
+        scale: Scale::Small,
         citation:
             "MSFT FY2026 10-K: 'Microsoft is a major investor in OpenAI and will continue to \
                    receive revenue-sharing payments.' Under ASC 850 Related Party Disclosures: \
@@ -198,6 +271,7 @@ pub const VERIFIED: &[VerifiedEdge] = &[
         filer: "SPCX",
         counterparty: "Tesla",
         structure: Structure::RelatedPartySupply,
+        scale: Scale::Small,
         citation:
             "SPCX FY2026 10-Q, Note 17 Related Party Transactions: 'During the three and six \
                    months ended June 30, 2026, the Company purchased $295 million and $329 \
@@ -215,6 +289,7 @@ pub const VERIFIED: &[VerifiedEdge] = &[
         filer: "ORCL",
         counterparty: "OpenAI",
         structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
         citation: "Oracle's two OpenAI hits are 8-K earnings releases, not its 10-K or 10-Qs, and \
                    in both the name appears only as a MODEL PROVIDER: \"...including Google's \
                    Gemini, OpenAI's ChatGPT, xAI's Grok, etc.—directly on top of the Oracle \
@@ -231,7 +306,10 @@ pub const VERIFIED: &[VerifiedEdge] = &[
 
 /// The rubric total. Pure function of the verified set.
 pub fn rubric_total() -> f64 {
-    VERIFIED.iter().map(|e| e.structure.points()).sum()
+    VERIFIED
+        .iter()
+        .map(|e| e.structure.points() + e.scale.points())
+        .sum()
 }
 
 /// The maximum the current rubric can express, used to frame the reading honestly rather than
@@ -254,7 +332,8 @@ pub fn rubric_ceiling() -> f64 {
     .iter()
     .map(|s| s.points())
     .fold(0.0_f64, f64::max);
-    max * VERIFIED.len() as f64
+    // The maximum a single edge can express is the strongest structure at the largest scale.
+    (max + Scale::Severe.points()) * VERIFIED.len() as f64
 }
 
 /// A one-line summary of what was counted, for the indicator detail.
@@ -311,6 +390,62 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn a_quantified_exposure_outweighs_an_unquantified_one_of_the_same_shape() {
+        // A flat per-structure score would treat a $105B guarantee and an unquantified one as
+        // equally severe. The scale term differentiates them, and it is BOUNDED so that a
+        // single large number cannot swamp the structure classification.
+        assert!(Scale::Severe.points() > Scale::Moderate.points());
+        assert!(Scale::Moderate.points() > Scale::Small.points());
+        assert!(Scale::Small.points() > Scale::Undisclosed.points());
+        assert_eq!(Scale::Undisclosed.points(), 0.0);
+        // The bound: a scale term can never be worth as much as the weakest structure.
+        assert!(
+            Scale::Severe.points() < Structure::RelatedPartySupply.points(),
+            "scale must stay subordinate to structure, or the rubric becomes a size contest"
+        );
+        // And the largest exposure found is marked severe.
+        let nvda = VERIFIED
+            .iter()
+            .find(|e| e.filer == "NVDA")
+            .expect("the NVDA guarantee must be in the set");
+        assert_eq!(
+            nvda.scale,
+            Scale::Severe,
+            "a $105B guarantee over OpenAI leases is severe by the stated ratio"
+        );
+    }
+
+    #[test]
+    fn the_nvda_guarantee_carries_its_counter_facts_not_only_its_size() {
+        // A one-sided entry would report the largest number in the model and omit the six
+        // limits NVIDIA states in the same note. The falsifier field is where those live, and
+        // this asserts they are actually there.
+        let n = VERIFIED.iter().find(|e| e.filer == "NVDA").unwrap();
+        assert!(
+            n.magnitude.contains("$105 BILLION"),
+            "the size must be stated"
+        );
+        let lower = n.falsifier.to_lowercase();
+        for cf in [
+            "not the full cost",
+            "reimburse and indemnify",
+            "not significant",
+            "independently",
+        ] {
+            assert!(
+                lower.contains(cf),
+                "the NVDA entry must carry the counter-fact {:?}: {}",
+                cf,
+                n.falsifier
+            );
+        }
+        assert!(
+            n.citation.contains("credit derivatives") || n.citation.contains("CREDIT DERIVATIVES"),
+            "NVIDIA's own classification of the guarantee must be recorded"
+        );
     }
 
     #[test]

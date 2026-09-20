@@ -1562,7 +1562,8 @@ impl Indicator for CircularFinancing {
             detail: format!(
                 "Rubric total {:.0} of a present ceiling of {:.0} — {:.0}% of the expressible \
                  scale, which is the SCORED quantity (see below). Structures verified by reading \
-                 primary filings: {}. Of {} edges, {} are \
+                 primary filings: {}. {} of {} edges disclose a magnitude that can be scaled; the \
+                 rest are marked UNQUANTIFIED rather than assumed mild. Of {} edges, {} are \
                  real structures and {} was READ AND REFUTED — Oracle names OpenAI only as a \
                  model-provider list, so its RPO growth of 359% to $455B is not attributable to \
                  a named counterparty. That refutation is retained deliberately: it is the \
@@ -1570,7 +1571,10 @@ impl Indicator for CircularFinancing {
                  a tally of mentions. THE RUBRIC IS THE JUDGMENT AND IT IS ARGUABLE: an equity \
                  warrant issued as consideration for purchases scores {}; a parent absorbing an \
                  AI unit's debt scores {}; disclosed related-party revenue with an equity stake \
-                 scores {}; a related-party supply deal scores {}; a refutation scores {}. WHY \
+                 scores {}; a related-party supply deal scores {}; a refutation scores {}. Each \
+                 edge also carries a BOUNDED scale term (0/2/5/8 points, by the disclosed exposure \
+                 against the filer's market cap), capped BELOW the weakest structure so the rubric \
+                 cannot become a size contest. WHY \
                  THE FRACTION AND NOT THE TOTAL IS SCORED: the rubric total rises every time an \
                  edge is read, so scoring it directly would let READING EFFORT raise the reading \
                  and conflate 'more verified' with 'worse'. The fraction is stable — a refutation \
@@ -1579,6 +1583,11 @@ impl Indicator for CircularFinancing {
                 ceiling,
                 total / ceiling * 100.0,
                 crate::circular_rubric::summary(),
+                crate::circular_rubric::VERIFIED
+                    .iter()
+                    .filter(|e| e.scale != crate::circular_rubric::Scale::Undisclosed)
+                    .count(),
+                n,
                 n,
                 read,
                 refuted,
