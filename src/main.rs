@@ -83,6 +83,25 @@ enum Cmd {
         #[arg(long, default_value_t = 200)]
         pause_ms: u64,
     },
+    /// Survey FUND holdings of private AI companies from NPORT-P filings. Networked.
+    ///
+    /// This is the investor side of the circular loop with dollar values attached. It is a
+    /// LOWER BOUND on institutional exposure: only US-registered funds file N-PORT, so
+    /// sovereign funds, family offices and the strategic corporate investors are absent.
+    Holdings {
+        /// Search window start (YYYY-MM-DD).
+        #[arg(long, default_value = "2025-01-01")]
+        start: String,
+        /// Search window end (YYYY-MM-DD).
+        #[arg(long, default_value = "2026-09-20")]
+        end: String,
+        /// How many filings per name to fetch and parse.
+        #[arg(long, default_value_t = 3)]
+        per_name: usize,
+        /// Pause between requests, in milliseconds.
+        #[arg(long, default_value_t = 250)]
+        pause_ms: u64,
+    },
     /// Probe each source and print its health.
     Sources,
     /// Show direction of travel: the recorded run history and the delta against
@@ -126,6 +145,135 @@ fn run(cli: &Cli) -> Result<(), String> {
     };
 
     match &cli.cmd {
+        Cmd::Holdings {
+            start,
+            end,
+            per_name,
+            pause_ms,
+        } => {
+            let fetcher = bubble_watch::http::Fetcher::new(cli.offline, cache.clone());
+            let mut all: Vec<bubble_watch::sources::nport::FundHolding> = Vec::new();
+            let mut errors: Vec<String> = Vec::new();
+            let mut unfound: Vec<String> = Vec::new();
+            let mut unparsed: Vec<String> = Vec::new();
+
+            for name in bubble_watch::sources::nport::PRIVATE_AI_NAMES {
+                match bubble_watch::sources::nport::find_filings(
+                    &fetcher, name, start, end, *per_name,
+                ) {
+                    Ok(filings) if filings.is_empty() => unfound.push(name.to_string()),
+                    Ok(filings) => {
+                        for (filer_cik, date, id) in filings {
+                            let (filer, cik) = filer_cik
+                                .split_once('|')
+                                .unwrap_or((filer_cik.as_str(), ""));
+                            let Some(url) = bubble_watch::sources::nport::document_url(cik, &id)
+                            else {
+                                unparsed.push(format!("{}: unparseable id {}", name, id));
+                                continue;
+                            };
+                            match fetcher.get(
+                                &url,
+                                "bubble-watch/0.1 (research; contact: research@example.invalid)",
+                            ) {
+                                Ok(xml) => {
+                                    let (mut hs, dropped) =
+                                        bubble_watch::sources::nport::parse_holdings(
+                                            &xml,
+                                            filer,
+                                            cik,
+                                            &date,
+                                            &[*name],
+                                        );
+                                    if dropped > 0 {
+                                        unparsed.push(format!(
+                                            "{}: {} holding(s) in {} dropped for a missing valUSD",
+                                            name, dropped, filer
+                                        ));
+                                    }
+                                    all.append(&mut hs);
+                                }
+                                Err(e) => errors.push(format!("{} {}: {}", name, url, e)),
+                            }
+                            std::thread::sleep(std::time::Duration::from_millis(*pause_ms));
+                        }
+                    }
+                    Err(e) => errors.push(format!("{}: {}", name, e)),
+                }
+            }
+
+            println!("PRIVATE-AI HOLDINGS IN US-REGISTERED FUNDS (from NPORT-P)");
+            println!("{}", "=".repeat(72));
+            all.sort_by(|a, b| {
+                b.val_usd
+                    .partial_cmp(&a.val_usd)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            println!(
+                "Holdings parsed: {}. Query errors: {}.",
+                all.len(),
+                errors.len()
+            );
+            println!();
+            if !all.is_empty() {
+                println!(
+                    "{:>16}  {:<11} {:<34} {}",
+                    "VALUE (USD)", "HOLDING", "FILED NAME", "L3?"
+                );
+                for h in &all {
+                    println!(
+                        "{:>16.0}  {:<11} {:<34} {}",
+                        h.val_usd,
+                        h.holding,
+                        h.filed_name.chars().take(34).collect::<String>(),
+                        if h.fair_value_level == Some(3) {
+                            "LEVEL 3"
+                        } else {
+                            ""
+                        }
+                    );
+                }
+                let l3 = all.iter().filter(|h| h.fair_value_level == Some(3)).count();
+                println!();
+                println!(
+                    "{} of {} holdings are FAIR-VALUE LEVEL 3 — valued from UNOBSERVABLE inputs,",
+                    l3,
+                    all.len()
+                );
+                println!(
+                    "so the dollar figures are the filer's own estimate, not a transaction price."
+                );
+            }
+            if !unfound.is_empty() {
+                println!();
+                println!("NAMES WITH NO HOLDING FOUND (a coverage limit, not a clean result):");
+                for n in &unfound {
+                    println!(
+                        "  ! {} — only US-registered funds file N-PORT. Sovereign funds,",
+                        n
+                    );
+                    println!(
+                        "    family offices and the STRATEGIC corporate investors whose stakes"
+                    );
+                    println!("    are the actual circularity are NOT covered by this source.");
+                }
+            }
+            if !unparsed.is_empty() {
+                println!();
+                println!("DROPPED / UNPARSABLE (reported, never zeroed):");
+                for u in &unparsed {
+                    println!("  ! {}", u);
+                }
+            }
+            if !errors.is_empty() {
+                println!();
+                println!("QUERY ERRORS:");
+                for e in &errors {
+                    println!("  ! {}", e);
+                }
+            }
+            Ok(())
+        }
         Cmd::Circular {
             start,
             end,
