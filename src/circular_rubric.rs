@@ -650,6 +650,29 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     Read as: the model is blind here, by the filer's design and with full \
                     compliance.",
     },
+    // SECOND REFUTATION, and a DIFFERENT KIND from the first. Oracle's was a model-integration
+    // list; this is a COMPETITOR list. Both produce a hit and neither is a relationship, which is
+    // the whole reason the rubric requires a human to read and classify rather than scoring counts.
+    //
+    // The pattern is worth recording because it will recur: in a market where everyone builds AI,
+    // every issuer names its rivals in the risk factors. A detector that scored mentions would
+    // score competitors as counterparties.
+    VerifiedEdge {
+        filer: "NVDA",
+        counterparty: "Tesla",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation: "NVIDIA FY2026 10-K: Tesla appears ONLY in the competition risk factor, listed \
+                   among \"companies with internal teams designing SoC products for their own \
+                   products and services, such as Tesla, Inc.\" alongside AMD, Broadcom, Intel, \
+                   Qualcomm, Renesas and Samsung. That is a list of RIVALS, not counterparties. \
+                   Tesla is named three times across NVIDIA's 10-Ks and never in a commercial, \
+                   investment or related-party context.",
+        magnitude: "none attributable to a circular structure — the mentions are a competitor list.",
+        falsifier: "Shown wrong if a future filing names Tesla as a customer, supplier or investee \
+                    in a commercial context rather than in the risk factors. At present the mention \
+                    carries no commercial content at all.",
+    },
     // THE REFUTATION. Kept in the set deliberately: it is the evidence that this rubric can
     // come back LOWER, which is what separates it from a one-way alarm.
     VerifiedEdge {
@@ -939,6 +962,45 @@ mod tests {
             e.falsifier.contains("ANNOUNCEMENT"),
             "and it must be labelled an announcement"
         );
+    }
+
+    #[test]
+    fn refutations_cover_more_than_one_kind_of_false_positive() {
+        // A detector's failure modes are not all the same, and a refutation set that only proves
+        // one of them is only half a check. The set must show at least TWO distinct kinds of
+        // mention-that-is-not-a-relationship: a MODEL list (Oracle naming OpenAI as an integration
+        // option) and a COMPETITOR list (NVIDIA naming Tesla among rivals). In a market where every
+        // issuer discusses AI, both will recur.
+        let refuted: Vec<_> = VERIFIED
+            .iter()
+            .filter(|e| e.structure == Structure::Refuted)
+            .collect();
+        assert!(
+            refuted.len() >= 2,
+            "at least two refutations are needed to cover two failure modes"
+        );
+        assert!(
+            refuted
+                .iter()
+                .any(|e| e.citation.to_lowercase().contains("model")),
+            "a model-list refutation must be present"
+        );
+        assert!(
+            refuted
+                .iter()
+                .any(|e| e.citation.to_lowercase().contains("compet")
+                    || e.citation.to_lowercase().contains("rival")),
+            "and a competitor-list refutation"
+        );
+        // Every refutation contributes nothing.
+        for e in &refuted {
+            assert_eq!(
+                e.structure.points(),
+                0.0,
+                "{} must contribute nothing",
+                e.counterparty
+            );
+        }
     }
 
     #[test]

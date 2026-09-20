@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 272 tests green offline; live assertions opt-in.
+- 273 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -576,7 +576,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Sixteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Seventeen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -586,6 +586,11 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **NVDA / Tesla — REFUTED.** Tesla appears in NVIDIA's 10-K only in the COMPETITION risk
+  factor, listed among "companies with internal teams designing SoC products ... such as Tesla,
+  Inc." alongside AMD, Broadcom and Intel. A rival list, not a relationship. Recorded because it is
+  a SECOND KIND of false positive: Oracle's was a model-integration list, this is a competitor list,
+  and a detector that scored mentions would score rivals as counterparties.
 - **NVDA / CoreWeave** — NVIDIA holds CoreWeave's **listed equity**, reclassified from
   non-marketable to marketable on listing and marked at FairValueInputsLevel1. Scored LOW (28)
   because NVIDIA states the gain was "not significant": the relationship, not the amount, is the
