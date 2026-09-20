@@ -40,6 +40,16 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
+    /// THE RESELLER CARRYING A LONG-TERM LIABILITY IT HAS PASSED ON. A vendor signs a multi-year
+    /// lease, sublicenses the entire obligation to an AI customer, and remains liable if the
+    /// sublicensee fails — while the obligation is disclosed as an OFF-BALANCE-SHEET arrangement.
+    /// The vendor books the relationship but not the asset, and the counterparty is a private AI
+    /// company whose ability to pay is unrated.
+    ///
+    /// Ranked ABOVE the landlord structure: the landlord at least owns the asset it is secured on,
+    /// whereas here the vendor has no asset at all and a contingent liability the size of the whole
+    /// contract term.
+    VendorSublicensingItsOwnLeaseLiability,
     /// THE PHYSICAL BUILDOUT FINANCED ON A TENANT'S CREDIT. A datacentre landlord borrows at a
     /// speculative rate to build, leases to an AI company whose own credit is unrated or
     /// sub-investment-grade, and the LANDLORD'S bondholders carry the risk — not the hyperscaler.
@@ -118,6 +128,7 @@ impl Structure {
             Structure::SupplyCommitmentScaledToFinancedDemand => 50.0,
             Structure::VendorOrganisedThirdPartyCapital => 42.0,
             Structure::LandlordDebtSecuredByTenantCredit => 35.0,
+            Structure::VendorSublicensingItsOwnLeaseLiability => 38.0,
             Structure::VendorFinancingItsOwnCustomer => 48.0,
             Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
@@ -138,6 +149,9 @@ impl Structure {
             }
             Structure::LandlordDebtSecuredByTenantCredit => {
                 "datacentre buildout financed on a speculative-grade tenant's credit"
+            }
+            Structure::VendorSublicensingItsOwnLeaseLiability => {
+                "vendor sublicensing a long-term lease while remaining liable for it"
             }
             Structure::VendorFinancingItsOwnCustomer => {
                 "vendor investing in, contracting with, and lending to the same counterparty"
@@ -334,6 +348,37 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     commitment includes 'contractual obligations related to the performance of \
                     AWS chips', which makes AWS chip performance a contractual term of revenue it \
                     is simultaneously investing to obtain.",
+    },
+    VerifiedEdge {
+        filer: "SMCI",
+        counterparty: "Lambda",
+        structure: Structure::VendorSublicensingItsOwnLeaseLiability,
+        scale: Scale::Moderate,
+        citation: "Super Micro Computer Form 8-K filed 2024-06-21, Item 1.01 and Item 2.03, \
+                   verbatim: \"the Company entered into a Master Colocation Services Agreement ... \
+                   to lease certain data center space\" ... \"the Company has agreed to lease 21 MW \
+                   of a multi-tenanted facility from the Supplier for a term of 10 years. The \
+                   Company's aggregate financial obligation for the term of the Service Order is \
+                   estimated to be $600.0 million\" ... \"Concurrent with the execution of the MCSA \
+                   and the Service Order, the Company entered into that certain Sublicense ... with \
+                   Lambda, Inc. (the \"Sublicensee\") to sublicense all of the Company's rights and \
+                   obligations with respect to the Data Center Space.\" Critically: \"The payments \
+                   owed by the Company under the Service Order ... may be accelerated by the \
+                   Supplier in the event of a default ... Upon such acceleration, the Company has a \
+                   right to seek reimbursement for such accelerated payments from Sublicensee\" — \
+                   i.e. SMCI remains liable and must chase Lambda. Filed under Item 2.03, \
+                   \"Creation of a Direct Financial Obligation or an Obligation under an \
+                   Off-Balance Sheet Arrangement of a Registrant\".",
+        magnitude: "a $600.0 MILLION aggregate obligation over 10 years for 21 MW, sublicensed in \
+                    full to Lambda, a PRIVATE company. SMCI has a right of reimbursement, not a \
+                    release from the obligation.",
+        falsifier: "Shown wrong if the sublicense transfers the liability outright rather than \
+                    leaving SMCI with a reimbursement right — the filing says SMCI 'has a right to \
+                    seek reimbursement', which is a claim against Lambda, not a novation. Also \
+                    falsified if Lambda is well-capitalised and the reimbursement right is \
+                    effectively money-good, or if the arrangement is a disclosed agency or \
+                    pass-through rather than SMCI's own obligation. The word 'sublicense' rather \
+                    than 'assign' is the load-bearing detail.",
     },
     VerifiedEdge {
         filer: "APLD",
@@ -637,6 +682,7 @@ pub fn rubric_ceiling() -> f64 {
     // how much of the scale the present evidence occupies.
     let max = [
         Structure::SupplyCommitmentScaledToFinancedDemand,
+        Structure::VendorSublicensingItsOwnLeaseLiability,
         Structure::LandlordDebtSecuredByTenantCredit,
         Structure::VendorOrganisedThirdPartyCapital,
         Structure::VendorFinancingItsOwnCustomer,
@@ -722,6 +768,45 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn the_sublicense_records_that_the_liability_was_not_transferred() {
+        // THE WORD IS THE FINDING. "Sublicense" leaves SMCI liable; "assign" would have released
+        // it. The entry rests on that distinction plus Item 2.03's off-balance-sheet framing, so
+        // both must be in the record or the entry is just "a vendor leased a building".
+        let e = VERIFIED
+            .iter()
+            .find(|e| e.structure == Structure::VendorSublicensingItsOwnLeaseLiability)
+            .expect("the SMCI edge must be present");
+        assert!(
+            e.citation
+                .contains("sublicense all of the Company's rights"),
+            "the sublicense language must be quoted"
+        );
+        assert!(
+            e.citation.contains("right to seek reimbursement")
+                || e.citation.contains("right of reimbursement"),
+            "and the reimbursement right, which is what shows liability was retained: {}",
+            e.citation
+        );
+        assert!(
+            e.citation.contains("Off-Balance Sheet") || e.citation.contains("off-balance"),
+            "and the Item 2.03 off-balance-sheet disclosure"
+        );
+        assert!(
+            e.magnitude.contains("$600.0 MILLION"),
+            "the size must be stated"
+        );
+        assert!(
+            e.magnitude.contains("PRIVATE"),
+            "and that Lambda is private"
+        );
+        // It ranks above the landlord structure: the landlord owns the asset, SMCI owns nothing.
+        assert!(
+            Structure::VendorSublicensingItsOwnLeaseLiability.points()
+                > Structure::LandlordDebtSecuredByTenantCredit.points()
+        );
     }
 
     #[test]
