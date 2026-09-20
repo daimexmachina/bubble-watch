@@ -147,6 +147,39 @@ committing to free-registration API keys, unlike every US source the tool curren
 
 ## 7. Recommended sequence
 
+### Late additions from the L1b lens (verified by the orchestrator from primary filings)
+
+Three findings landed after the first draft and they change the picture:
+
+**(a) Export controls are LOOSENING, not tightening.** Federal Register, re-fetched: `count: 2`
+BIS "advanced computing" documents in twelve months — one (2026-07-14) *eases* UAE access, the other
+(2026-01-15) revises license-review policy. A quiet policy period **argues against** the
+"controls are capping AI revenue" story, so it belongs on the **falsification** side of the model,
+not the stress side. Cheap to add (open JSON), and it earns its place by cutting the other way.
+
+**(b) ASML's end-use mix flipped toward memory — a deflationary signal in the compute stack.**
+From the statutory interim report: **logic revenue FELL 10.0% while logic unit volume ROSE 14.6%**
+(average selling price −22%), while **memory revenue rose 53.2%**. The marginal lithography spend is
+moving to memory (HBM), and leading-edge logic is buying more machines at lower average price. That
+is exactly the kind of unit-economics change the current model's price-proxy cannot see.
+
+**(c) ASML discloses its own Level-3 AI marks.** The same filing describes its **Mistral AI**
+valuation: business expansion rate **~60%**, peer multiples **7.1x–61.4x**, VC target return
+**30%–50%**, with an explicit warning of possible significant remeasurement. A primary-source account
+of how AI private marks are actually set — directly useful to the unfinshed L3 financing lens.
+
+**International demand, measured from a primary filing** (ASML H1 2025→2026 net sales by region):
+South Korea **+60.5%**, Taiwan **+17.3%**, **China −22.3%**, US **−0.2%**. Growth is entirely
+non-China and concentrated in the two countries that physically build AI hardware — corroborating
+the Taiwan/Korea export signals independently.
+
+**Confirmed unreachable:** China's NBS portal (**403, `UrlACL`** — a source-IP allowlist, not a
+parameter problem), Huawei and Cambricon as SEC filers (0 matches in `company_tickers.json`).
+Sovereign AI (G42, HUMAIN) has **no quantified commitments** in its corporate pages — a clean
+negative; measuring it would need press or counterparty filings.
+
+---
+
 **Tier 1 — do first (keyless, live, closes a stated gap)**
 
 1. **`inference_demand`** — OpenRouter daily token volume + open-weight share + free-tier share.
