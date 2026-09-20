@@ -1548,6 +1548,23 @@ impl Indicator for CircularFinancing {
         // The unread edges, stated as a count rather than hidden. The scan found far more
         // edges than have been read; every unread one contributes NOTHING, so this indicator
         // understates and that direction is named.
+        // NAME THE ENTRIES. The category summary above ("vendor sublicensing a long-term lease
+        // x1") tells a reader how many of each KIND exist but never WHO or HOW MUCH — so the one
+        // thing that makes this indicator credible, that each figure traces to a filing, was
+        // invisible in the rendered report. A reader could not tell that "x1" was Super Micro's
+        // $600M Lambda sublicense.
+        let mut edge_list = String::from(" THE VERIFIED ENTRIES, each read in a filing: ");
+        for e in crate::circular_rubric::VERIFIED.iter() {
+            edge_list.push_str(&format!(
+                "[{} x {} — {} ({}); {}] ",
+                e.filer,
+                e.counterparty,
+                e.structure.label(),
+                format!("{:.0}", e.structure.points() + e.scale.points()),
+                e.magnitude
+            ));
+        }
+
         let unread_note = format!(
             "Only {} edge(s) have been READ and classified; the scan finds 47 real \
              ecosystem edges, so the great majority contribute nothing. An unread edge scores \
@@ -1608,6 +1625,7 @@ impl Indicator for CircularFinancing {
                 crate::circular_rubric::Structure::RelatedPartySupply.points(),
                 crate::circular_rubric::Structure::Refuted.points()
             ) + " "
+                + &edge_list
                 + &unread_note,
             provenance: crate::model::Provenance {
                 source: "sec-edgar (read filings)".into(),
