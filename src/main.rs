@@ -484,6 +484,16 @@ fn run(cli: &Cli) -> Result<(), String> {
                 "Within-methodology range is the ONLY part attributable to the market. Every other \
                  movement in this table is the instrument changing."
             );
+            if d.phase_changes_at_model_boundary > 0 {
+                println!();
+                println!(
+                    "  ! The PHASE LABEL crossed at a model boundary ('{}' -> '{}'), so the TIMING \
+                     OVERLAY also changed without the market moving: 'early' quotes 30-72 months \
+                     and 'mid' quotes 15-42. A reader who saw the earlier range and the later one \
+                     would reasonably conclude the window had halved. It had not.",
+                    d.phase_first, d.phase_last
+                );
+            }
             for w in &warnings {
                 println!("  ! {}", w);
             }

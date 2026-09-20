@@ -119,11 +119,14 @@ impl DriftAttribution {
         // crossing happened at a model boundary, the label moved because an indicator was rewritten.
         let phase_note = if self.phase_changes_at_model_boundary > 0 {
             format!(
-                " SEPARATELY: the PHASE LABEL changed {} time(s) at a METHODOLOGY boundary — it went \
-                 from '{}' to '{}' — so the tool reported a different phase for the same market \
-                 because an indicator was rewritten, not because conditions changed. Phase labels \
-                 are assigned by absolute thresholds on a composite that the model itself moves, so \
-                 a phase crossing is not by itself evidence of anything.",
+                " SEPARATELY, AND THIS ALSO MOVES THE TIMING OVERLAY: the PHASE LABEL changed {} \
+                 time(s) at a METHODOLOGY boundary — it went from '{}' to '{}' — so the tool \
+                 reported a different phase, AND A DIFFERENT TIME RANGE, for the same market \
+                 because an indicator was rewritten rather than because conditions changed. The \
+                 timing overlay is keyed to the phase band, so a model-caused band crossing halves \
+                 or doubles the quoted range without the market moving at all. Phase labels are \
+                 assigned by absolute thresholds on a composite the model itself moves, so neither \
+                 a phase crossing nor a range change is by itself evidence of anything.",
                 self.phase_changes_at_model_boundary, self.phase_first, self.phase_last
             )
         } else {
