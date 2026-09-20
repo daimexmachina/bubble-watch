@@ -40,6 +40,16 @@ use serde::{Deserialize, Serialize};
 /// and is stated here so it can be argued with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Structure {
+    /// THE COMPLETE LOOP: the vendor invests in the counterparty, signs a multi-year contract
+    /// to sell it compute, AND extends it a credit facility — with the facility gated on its
+    /// OWN delivery of that compute. All three flows run between the same two parties, so the
+    /// revenue, the equity and the credit are one arrangement.
+    ///
+    /// Ranked BELOW the upstream supply amplifier on size ($100B vs $279B) but recorded as its
+    /// own class because it is structurally distinct: the supply commitment is the vendor
+    /// betting on demand, whereas this is the vendor FINANCING the counterparty that pays it,
+    /// with the drawdown conditioned on the vendor performing. Amazon -> Anthropic.
+    VendorFinancingItsOwnCustomer,
     /// THE AMPLIFIER, and the largest single number in the model. The vendor commits upstream
     /// to buy supply on the belief that the demand it is itself financing is real. If the
     /// financed customer fails, the vendor holds BOTH a guarantee over the customer's leases
@@ -86,6 +96,7 @@ impl Structure {
     pub fn points(self) -> f64 {
         match self {
             Structure::SupplyCommitmentScaledToFinancedDemand => 50.0,
+            Structure::VendorFinancingItsOwnCustomer => 48.0,
             Structure::SupplierGuaranteeAndInvestment => 45.0,
             Structure::EquityForPurchases => 40.0,
             Structure::AbsorbedUnitDebt => 30.0,
@@ -99,6 +110,9 @@ impl Structure {
         match self {
             Structure::SupplyCommitmentScaledToFinancedDemand => {
                 "upstream supply commitments scaled to demand the vendor itself finances"
+            }
+            Structure::VendorFinancingItsOwnCustomer => {
+                "vendor investing in, contracting with, and lending to the same counterparty"
             }
             Structure::SupplierGuaranteeAndInvestment => {
                 "supplier guaranteeing and investing in its customer's infrastructure"
@@ -184,6 +198,66 @@ pub struct VerifiedEdge {
 /// THE VERIFIED SET. Adding an entry is a deliberate act: it requires having READ a filing,
 /// extracted a magnitude, and written what would falsify it.
 pub const VERIFIED: &[VerifiedEdge] = &[
+    VerifiedEdge {
+        filer: "AMZN",
+        counterparty: "Anthropic",
+        structure: Structure::VendorFinancingItsOwnCustomer,
+        scale: Scale::Severe,
+        citation: "Amazon Q2 2026 10-Q (filed 2026-07-31), Note on equity investments, verbatim: \
+                   \"Anthropic — From Q3 2023 to Q4 2025, we invested $8.0 billion in convertible \
+                   notes from Anthropic, which are classified as available-for-sale and reported \
+                   at fair value ... and as Level 3 assets\" ... \"In Q2 2026, AWS and Anthropic \
+                   announced an expansion of the strategic collaboration and existing multi-year \
+                   commitment by more than $100.0 billion over 10.0 years, which includes \
+                   contractual obligations related to the performance of AWS chips\" ... \
+                   \"Additionally, we entered into a financing arrangement to make available to \
+                   Anthropic an aggregate facility not to exceed $20.0 billion that will expire \
+                   \"30 months after an Anthropic liquidity event, including an initial public \
+                   offering ... At inception, there is no amount available to be drawn against \
+                   and as we reach certain delivery milestones of compute' [text continues].\"",
+        magnitude: "$8.0B invested in Anthropic convertible notes (Q3 2023-Q4 2025), converted in \
+                    part to nonvoting preferred stock; MORE THAN $100 BILLION of AWS cloud \
+                    commitment over 10 years; PLUS a financing facility of up to $20.0 BILLION, \
+                    drawable only as compute delivery milestones are reached, expiring 30 months \
+                    after an Anthropic liquidity event such as an IPO.",
+        falsifier: "Shown wrong if the cloud commitment and the equity stake are independent \
+                    transactions between unrelated parties — but they are not: AWS announced the \
+                    cloud expansion and holds the equity, and the $20B facility only becomes \
+                    drawable as Amazon HITS COMPUTE DELIVERY MILESTONES, which ties the credit to \
+                    the vendor's own performance rather than to the counterparty's credit. Also \
+                    falsified if the convertible notes convert and the stake is monetised without \
+                    the cloud commitment being drawn. The notes were Level 3 assets — the filer's \
+                    own valuation, not a market price.",
+    },
+    VerifiedEdge {
+        filer: "AMZN",
+        counterparty: "OpenAI",
+        structure: Structure::VendorFinancingItsOwnCustomer,
+        scale: Scale::Severe,
+        citation: "Amazon Q2 2026 10-Q, Note on equity investments, verbatim: \"In Q1 2026, AWS \
+                   and OpenAI Group PBC (\"OpenAI\") announced an expansion of the existing $38.0 \
+                   billion multi-year commitment and commercial arrangement with OpenAI by $100.0 \
+                   billion over 8.0 years, which includes contractual obligations related to the \
+                   performance of AWS chips\" ... \"We also invested $15.0 billion in Series C \
+                   Preferred Stock of OpenAI and entered into an equity commitment letter \
+                   agreement ... pursuant to which we agreed to purchase additional shares of \
+                   Series C Preferred Stock ... with an aggregate purchase price of $35.0 \
+                   billion. In Q2 2026, we invested $13.7 billion of the Commitment Amount in \
+                   Series C Preferred Stock. We account for our $28.7 billion investment in \
+                   Series C Preferred Stock recorded on our consolidated balance sheet as of \
+                   June 30, 2026.\"",
+        magnitude: "an existing $38.0 BILLION AWS commitment expanded BY $100.0 BILLION over 8 \
+                    years; $15.0B invested in OpenAI Series C plus a $35.0B equity commitment \
+                    letter, of which $13.7B was drawn in Q2 2026, for a $28.7 BILLION carrying \
+                    value on the balance sheet at 2026-06-30.",
+        falsifier: "Shown wrong if the equity investment and the cloud commitment are shown to be \
+                    arm's-length and independently negotiated. The strongest counter is that the \
+                    cloud arrangement is a commercial contract that would exist regardless of the \
+                    equity — but Amazon itself describes the two in the SAME note and the \
+                    commitment includes 'contractual obligations related to the performance of \
+                    AWS chips', which makes AWS chip performance a contractual term of revenue it \
+                    is simultaneously investing to obtain.",
+    },
     VerifiedEdge {
         filer: "NVDA",
         counterparty: "(upstream supply chain)",
@@ -363,6 +437,7 @@ pub fn rubric_ceiling() -> f64 {
     // how much of the scale the present evidence occupies.
     let max = [
         Structure::SupplyCommitmentScaledToFinancedDemand,
+        Structure::VendorFinancingItsOwnCustomer,
         Structure::SupplierGuaranteeAndInvestment,
         Structure::EquityForPurchases,
         Structure::AbsorbedUnitDebt,
@@ -431,6 +506,36 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn the_complete_loop_is_recognised_where_all_three_flows_share_one_counterparty() {
+        // Amazon invests in the lab, contracts to sell it compute, AND lends to it — with the
+        // facility drawable only as Amazon hits compute delivery milestones. Three flows, two
+        // parties. That is structurally distinct from a supply commitment, and it is why it is
+        // its own class rather than folded into one.
+        let amzn: Vec<_> = VERIFIED.iter().filter(|e| e.filer == "AMZN").collect();
+        assert_eq!(amzn.len(), 2, "both AMZN counterparties must be recorded");
+        for e in &amzn {
+            assert_eq!(e.structure, Structure::VendorFinancingItsOwnCustomer);
+            assert!(
+                e.magnitude.contains("BILLION"),
+                "both must carry a magnitude: {}",
+                e.magnitude
+            );
+        }
+        // The Anthropic edge specifically must record the milestone gate, because that is what
+        // ties the CREDIT to the vendor's own performance rather than the counterparty's credit.
+        let a = amzn.iter().find(|e| e.counterparty == "Anthropic").unwrap();
+        assert!(
+            a.citation.contains("delivery milestones") || a.citation.contains("milestone"),
+            "the compute-delivery gate must be recorded: {}",
+            a.citation
+        );
+        assert!(
+            a.citation.contains("Level 3"),
+            "and the Level 3 classification, since these are the filer's own valuations"
+        );
     }
 
     #[test]
@@ -556,6 +661,16 @@ mod tests {
             Structure::SupplyCommitmentScaledToFinancedDemand.points()
                 > Structure::SupplierGuaranteeAndInvestment.points(),
             "the upstream amplifier outranks the guarantee"
+        );
+        assert!(
+            Structure::SupplyCommitmentScaledToFinancedDemand.points()
+                > Structure::VendorFinancingItsOwnCustomer.points(),
+            "the largest single commitment outranks the complete loop on size"
+        );
+        assert!(
+            Structure::VendorFinancingItsOwnCustomer.points()
+                > Structure::SupplierGuaranteeAndInvestment.points(),
+            "a vendor financing its own customer outranks a guarantee"
         );
         assert!(
             Structure::SupplierGuaranteeAndInvestment.points()
