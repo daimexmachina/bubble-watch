@@ -69,6 +69,20 @@ enum Cmd {
     },
     /// Show exactly how the composite was built, indicator by indicator.
     Explain,
+    /// Scan the cohort's 10-Ks for circular-financing disclosure edges, by naming a
+    /// counterparty. Networked. Reports SILENCE separately from a zero, because a
+    /// counterparty named nowhere is a coverage limit, not a clean bill of health.
+    Circular {
+        /// Search window start (YYYY-MM-DD).
+        #[arg(long, default_value = "2024-01-01")]
+        start: String,
+        /// Search window end (YYYY-MM-DD).
+        #[arg(long, default_value = "2026-09-20")]
+        end: String,
+        /// Pause between requests, in milliseconds. EDGAR rate-limits.
+        #[arg(long, default_value_t = 200)]
+        pause_ms: u64,
+    },
     /// Probe each source and print its health.
     Sources,
     /// Show direction of travel: the recorded run history and the delta against
@@ -112,6 +126,68 @@ fn run(cli: &Cli) -> Result<(), String> {
     };
 
     match &cli.cmd {
+        Cmd::Circular {
+            start,
+            end,
+            pause_ms,
+        } => {
+            let fetcher = bubble_watch::http::Fetcher::new(cli.offline, cache.clone());
+            let res = bubble_watch::sources::circularity::scan(&fetcher, start, end, *pause_ms);
+            println!("CIRCULAR-FINANCING DISCLOSURE SCAN");
+            println!("{}", "=".repeat(72));
+            println!(
+                "Filers scanned: {}. Edges found: {}. Failed queries: {}.",
+                res.filers_scanned,
+                res.edges.len(),
+                res.errors.len()
+            );
+            println!();
+            if res.edges.is_empty() {
+                println!("No disclosure edges found. This is NOT a clean result — see the");
+                println!("silence notes below before reading anything into it.");
+            } else {
+                println!(
+                    "{:<7} {:<12} {:>5}  {}",
+                    "FILER", "COUNTERPARTY", "HITS", "LATEST FILINGS"
+                );
+                for e in &res.edges {
+                    println!(
+                        "{:<7} {:<12} {:>5}  {}",
+                        e.filer,
+                        e.counterparty,
+                        e.hits,
+                        e.dates
+                            .iter()
+                            .take(3)
+                            .cloned()
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    if let Some(p) = &e.verified_passage {
+                        println!("        verified: {}", p);
+                    }
+                    match &e.magnitude {
+                        Some(m) => println!("        magnitude: {}", m),
+                        None => println!("        magnitude: not disclosed / not yet read"),
+                    }
+                }
+            }
+            if !res.silent.is_empty() {
+                println!();
+                println!("COUNTERPARTIES NAMED NOWHERE (read as a coverage limit, not as safety):");
+                for s in &res.silent {
+                    println!("  ! {}", s);
+                }
+            }
+            if !res.errors.is_empty() {
+                println!();
+                println!("FAILED QUERIES (reported, not treated as zeros):");
+                for e in &res.errors {
+                    println!("  ! {}", e);
+                }
+            }
+            Ok(())
+        }
         Cmd::Sources => {
             let f = bubble_watch::http::Fetcher::new(cli.offline, cache.clone());
             let obs = bubble_watch::sources::fetch_all(&f, cli.offline);

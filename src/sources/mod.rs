@@ -1,6 +1,7 @@
 //! Source registry: the only module allowed to touch the network.
 
 pub mod census;
+pub mod circularity;
 pub mod edgar;
 pub mod eia;
 pub mod fred;
