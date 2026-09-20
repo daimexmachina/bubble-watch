@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 275 tests green offline; live assertions opt-in.
+- 276 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -542,6 +542,7 @@ disagree with it**. This does the second. Points:
 | related-party supply under common control | 10 |
 | upstream supply commitments scaled to demand the vendor finances | 50 |
 | read and REFUTED | 0 |
+| real, material supply relationship with NO financing element | 0 |
 
 Plus a **bounded scale term** (0/2/5/8 points) by disclosed exposure against the filer's market
 cap, **capped below the weakest structure** so the rubric cannot become a size contest. A test
@@ -576,7 +577,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Twenty verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Twenty-one verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -586,6 +587,12 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **NVDA / Anthropic — REAL BUT NOT A CIRCULARITY, and a distinct category.** NVIDIA's Q3 FY2026
+  release: "for the first time, Anthropic will run and scale on NVIDIA infrastructure, initially
+  adopting 1 gigawatt of compute capacity". A material, named commitment — with **no stake, facility
+  or guarantee** disclosed for Anthropic, while the SAME release discloses all three for OpenAI. A
+  `Refuted` label would be wrong here (the detector fired correctly on a real relationship), and
+  scoring it would inflate the reading. It is its own category and scores zero.
 - **CRWV / Lambda and CRWV / Crusoe — REFUTED, from ONE sentence.** CoreWeave's competition risk
   factor: "We also compete with smaller cloud service providers focused on AI, including Crusoe and
   Lambda." A single clause produced TWO apparent relationships, neither real — the highest

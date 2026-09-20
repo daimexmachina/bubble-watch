@@ -128,6 +128,16 @@ pub enum Structure {
     /// model-integration list. Scores zero and is recorded so the instrument's ability to
     /// come back LOWER is visible rather than invisible.
     Refuted,
+    /// REAL, MATERIAL, AND NOT A CIRCULARITY. A genuine commercial relationship of disclosed
+    /// SIGNIFICANCE — a named capacity commitment — with NO financing element anywhere: no stake,
+    /// no facility, no guarantee.
+    ///
+    /// Scores zero, like `Refuted`, but is a DISTINCT category because the two say different things.
+    /// `Refuted` means "the detector was wrong to fire". This means "the detector fired correctly on
+    /// a real relationship, and it is not a circularity". Collapsing them would either hide a
+    /// material commercial fact or let it inflate the score. NVIDIA -> Anthropic (1 GW) is the case:
+    /// the largest new lab customer of the period, with nothing financing-shaped attached.
+    UnsignedSupplyRelationship,
 }
 
 impl Structure {
@@ -147,6 +157,7 @@ impl Structure {
             Structure::RelatedPartyRevenueWithStake => 25.0,
             Structure::RelatedPartySupply => 10.0,
             Structure::Refuted => 0.0,
+            Structure::UnsignedSupplyRelationship => 0.0,
         }
     }
 
@@ -178,6 +189,9 @@ impl Structure {
             Structure::RelatedPartyRevenueWithStake => "related-party revenue with an equity stake",
             Structure::RelatedPartySupply => "related-party supply under common control",
             Structure::Refuted => "read and REFUTED — not a financing relationship",
+            Structure::UnsignedSupplyRelationship => {
+                "real and material supply relationship with NO financing element"
+            }
         }
     }
 }
@@ -673,6 +687,41 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     in a commercial context rather than in the risk factors. At present the mention \
                     carries no commercial content at all.",
     },
+    // A REAL RELATIONSHIP THAT IS NOT A CIRCULARITY — and the distinction matters.
+    //
+    // NVIDIA Q3 FY2026 earnings release (Form 8-K Exhibit 99.1, filed 2025-11-19), verbatim:
+    //
+    //   "Announced that, for the first time, Anthropic will run and scale on NVIDIA infrastructure,
+    //    initially adopting 1 gigawatt of compute capacity with NVIDIA Grace Blackwell and Vera Rubin
+    //    systems."
+    //
+    // A 1 GW commitment is the largest new lab customer disclosed in that period. NO financing
+    // element is disclosed for it: no NVIDIA stake in Anthropic, no facility, no guarantee — checked
+    // in the same release, which DOES disclose finance-shaped structures for OpenAI ($500B capital
+    // platforms, the PORTS-Pike guarantee).
+    //
+    // So it scores ZERO for circularity while being recorded as REAL. See `UnsignedSupplyRelationship`
+    // for why this is a distinct category from `Refuted`.
+    VerifiedEdge {
+        filer: "NVDA",
+        counterparty: "Anthropic",
+        structure: Structure::UnsignedSupplyRelationship,
+        scale: Scale::Undisclosed,
+        citation: "NVIDIA Q3 FY2026 earnings release (Form 8-K Exhibit 99.1, filed 2025-11-19), \
+                   verbatim: \"Announced that, for the first time, Anthropic will run and scale on \
+                   NVIDIA infrastructure, initially adopting 1 gigawatt of compute capacity with \
+                   NVIDIA Grace Blackwell and Vera Rubin systems.\" The same release discloses NO \
+                   equity stake, facility or guarantee for Anthropic, while it DOES disclose \
+                   finance-shaped structures elsewhere (the $500 billion capital platforms and the \
+                   PORTS-Pike guarantee for OpenAI).",
+        magnitude: "1 GIGAWATT of compute capacity — a material, named commitment. No dollar figure \
+                    is stated, and the ABSENCE of a financing element is the finding.",
+        falsifier: "Shown wrong if NVIDIA discloses a stake in, financing for, or guarantee over \
+                    Anthropic — which would convert this from a customer relationship into a \
+                    financed one and move it into a scored structure. Note the contrast with OpenAI, \
+                    where NVIDIA discloses exactly those elements for the same period: the absence \
+                    here is specific, not a gap in NVIDIA's disclosure.",
+    },
     // FOURTH AND FIFTH REFUTATIONS, and they arrived as ONE SENTENCE OF COMPETITION DISCLOSURE.
     // CoreWeave's 10-Qs name both Lambda and Crusoe only as COMPETITORS:
     //
@@ -828,6 +877,7 @@ pub fn rubric_ceiling() -> f64 {
         Structure::RelatedPartyRevenueWithStake,
         Structure::RelatedPartySupply,
         Structure::Refuted,
+        Structure::UnsignedSupplyRelationship,
     ]
     .iter()
     .map(|s| s.points())
@@ -1033,6 +1083,42 @@ mod tests {
         assert!(
             e.falsifier.contains("ANNOUNCEMENT"),
             "and it must be labelled an announcement"
+        );
+    }
+
+    #[test]
+    fn a_real_but_unfinanced_relationship_is_distinct_from_a_refutation() {
+        // TWO ZERO-SCORING CATEGORIES THAT SAY DIFFERENT THINGS, and collapsing them would either
+        // hide a material commercial fact or let it inflate the score.
+        //
+        //   Refuted                    — the detector was WRONG to fire (a competitor or model list);
+        //   UnsignedSupplyRelationship — the detector fired CORRECTLY on a real relationship that
+        //                                simply has no financing element.
+        //
+        // NVIDIA x Anthropic is the second: a disclosed 1 GW commitment with no stake, facility or
+        // guarantee attached. It must be recorded as real AND score nothing.
+        let e = VERIFIED
+            .iter()
+            .find(|e| e.structure == Structure::UnsignedSupplyRelationship)
+            .expect("the NVDA/Anthropic relationship must be present");
+        assert_eq!(e.counterparty, "Anthropic");
+        assert_eq!(e.structure.points(), 0.0, "it must not inflate the score");
+        assert!(
+            e.magnitude.contains("1 GIGAWATT"),
+            "and its size must be stated: {}",
+            e.magnitude
+        );
+        assert!(
+            e.falsifier.contains("stake") && e.falsifier.contains("guarantee"),
+            "the falsifier must name what WOULD make it a circularity"
+        );
+        // And it must NOT be filed under the refutation category, because it is not a false
+        // positive — the detector was right to surface it.
+        assert_ne!(e.structure, Structure::Refuted);
+        // Both categories score zero, which is why they can coexist.
+        assert_eq!(
+            Structure::Refuted.points(),
+            Structure::UnsignedSupplyRelationship.points()
         );
     }
 
