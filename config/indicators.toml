@@ -110,9 +110,24 @@ high_above = 0.85
 # coverage is within this many percentage points of the current run.
 # ---------------------------------------------------------------------------
 [trend]
-# Minimum elapsed days before a run may serve as the baseline. Guards against a
-# re-run minutes later being presented as a trend.
-min_gap_days = 1.0
+# Minimum elapsed time before a run may serve as the baseline, in days. Guards
+# against a re-run minutes later being presented as a trend.
+#
+# MEASURED FROM RECORDED TIMESTAMPS, not from calendar dates. It was a calendar-date
+# difference until this was fixed, and that defeated the guard at exactly the case it
+# names: two runs either side of UTC midnight differed by "1 day" while being 17 minutes
+# apart, and a direction of travel was reported from it. Only a run near midnight could
+# trigger it, which is precisely where a scheduled job tends to land.
+#
+# 0.9 = 21.6 hours, chosen deliberately rather than left at 1.0:
+#   * it still rejects any same-day re-run (a morning run and an evening run are ~12h
+#     apart and are refused, which is the guard's whole purpose);
+#   * it tolerates up to ~2.4 hours of timer jitter, so a genuine daily run that fires a
+#     few minutes early is NOT discarded. A daily timer firing at 0.9977 days is normal,
+#     and demanding a strict 24h would silently drop most legitimate comparisons.
+# Raising this toward 1.0 makes the guard reject real daily observations over a few
+# minutes of drift; lowering it toward 0.5 starts admitting intra-day noise as a trend.
+min_gap_days = 0.9
 # Maximum permitted difference in weighted coverage, in percentage points,
 # between the current run and a candidate baseline run.
 coverage_tolerance_pp = 5.0

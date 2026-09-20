@@ -184,6 +184,10 @@ pub fn append(dir: &Path, point: &TrendPoint) -> Result<(), String> {
 /// Whole days between two YYYY-MM-DD dates, or None if either is unparseable.
 ///
 /// Returns a signed value: positive when `to` is later than `from`.
+///
+/// NOTE: this is a CALENDAR-DATE difference and must not be used to decide whether two
+/// runs are far enough apart to compare. Two runs either side of midnight differ by one
+/// calendar day while being minutes apart. Use `elapsed_days` for that.
 pub fn days_between(from: &str, to: &str) -> Option<f64> {
     let f = parse_date(from)?;
     let t = parse_date(to)?;
@@ -192,6 +196,60 @@ pub fn days_between(from: &str, to: &str) -> Option<f64> {
 
 fn parse_date(s: &str) -> Option<chrono::NaiveDate> {
     chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()
+}
+
+fn parse_ts(s: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+    chrono::DateTime::parse_from_rfc3339(s)
+        .ok()
+        .map(|d| d.with_timezone(&chrono::Utc))
+}
+
+/// True elapsed time between two runs, in fractional days.
+///
+/// WHY THIS EXISTS RATHER THAN A DATE DIFFERENCE. `min_gap_days` is documented as guarding
+/// against "a re-run minutes later being presented as a trend". A calendar-date comparison
+/// defeats that guard at exactly the moment it matters: two runs either side of UTC midnight
+/// differ by one calendar day while being minutes apart. That was not hypothetical — this
+/// host's archive contained two runs 17 minutes apart, on 2026-09-19 and 2026-09-20, which
+/// the date-based rule accepted as a "1 day" baseline and reported a direction of travel
+/// from. A guard that fails at midnight for a cron job that runs near midnight is not a
+/// guard.
+///
+/// Prefers `generated_at` because it carries the real instant.
+///
+/// FALLBACK IS DELIBERATELY CONSERVATIVE. If either timestamp is unparseable (an archive
+/// written before the field was populated, or a hand-edited row), the smallest elapsed time
+/// CONSISTENT with the two calendar dates is used: `date_gap - 1` days, floored at zero.
+/// Two timestamps on adjacent dates can be one second apart, so a one-calendar-day
+/// difference credits ZERO days. Crediting a gap that cannot be demonstrated would be the
+/// same mistake as scoring a missing indicator, and the refusal is reported with its reason.
+fn elapsed_days(candidate: &TrendPoint, current: &TrendPoint) -> Option<f64> {
+    if let (Some(a), Some(b)) = (
+        parse_ts(&candidate.generated_at),
+        parse_ts(&current.generated_at),
+    ) {
+        return Some((b - a).num_seconds() as f64 / 86_400.0);
+    }
+    let d = days_between(&candidate.date, &current.date)?;
+    Some((d - 1.0).max(0.0))
+}
+
+/// Render an elapsed-days value at a scale a reader can act on.
+///
+/// "0.0 days" tells a reader nothing; "17 minutes" tells them the comparison was refused
+/// because the two runs were minutes apart. Sub-day values are rendered in hours or minutes
+/// precisely because those are the cases where the smallness IS the point.
+fn fmt_elapsed(d: f64) -> String {
+    let ad = d.abs();
+    if ad >= 1.0 {
+        return format!("{} day(s)", fmt_days(d));
+    }
+    let mins = d * 1_440.0;
+    if mins.abs() >= 60.0 {
+        format!("{:.1} hour(s)", d * 24.0)
+    } else {
+        format!("{:.0} minute(s)", mins)
+    }
 }
 
 /// Is this archived point usable as a baseline for the current run?
@@ -213,15 +271,13 @@ fn parse_date(s: &str) -> Option<chrono::NaiveDate> {
 /// cannot drift apart.
 pub fn is_eligible(
     candidate: &TrendPoint,
-    current_coverage: f64,
-    current_methodology: &str,
-    today: &str,
+    current: &TrendPoint,
     t: &TrendCfg,
 ) -> Result<f64, String> {
     // A run from the same day is never its own baseline, regardless of how
     // `min_gap_days` is configured: comparing today with today would report
     // 0.0 as if it were a measurement of market change.
-    if candidate.date == today {
+    if candidate.date == current.date {
         return Err(format!(
             "the most recent archive entry is from today, below the {} day minimum gap — a \
              comparison against today would report 0.0 as though it measured market change, \
@@ -229,15 +285,21 @@ pub fn is_eligible(
             fmt_days(t.min_gap_days)
         ));
     }
-    let gap = days_between(&candidate.date, today)
+    // Real elapsed time, from timestamps. NOT a calendar-date difference — see
+    // `elapsed_days` for why the distinction is load-bearing.
+    let gap = elapsed_days(candidate, current)
         .ok_or_else(|| format!("baseline date '{}' is unparseable", candidate.date))?;
     if gap < t.min_gap_days {
         return Err(format!(
-            "most recent baseline is {} day(s) old, below the {} day minimum — the configured \
+            "the most recent baseline is {} old, below the {} day minimum — the configured \
              minimum exists so that a re-run minutes or hours later cannot be presented as a \
-             trend, because the elapsed period is what makes a change interpretable",
-            fmt_days(gap),
-            fmt_days(t.min_gap_days)
+             trend, and the elapsed period is what makes a change interpretable. Measured from \
+             the recorded timestamps ({} and {}), not from the calendar dates, because two \
+             runs either side of midnight differ by a calendar day while being minutes apart",
+            fmt_elapsed(gap),
+            fmt_days(t.min_gap_days),
+            candidate.generated_at,
+            current.generated_at
         ));
     }
     // Methodology must match. Redefining an indicator changes what the composite
@@ -246,16 +308,16 @@ pub fn is_eligible(
     // silent fallback: the alternative would be to report a market move that is
     // really an accounting change.
     let cm = methodology_of(candidate);
-    if cm != current_methodology {
+    if cm != current.methodology_version {
         return Err(format!(
             "baseline was computed under methodology {} and this run under {} — the composite \
              means something different across that change, so the two are not comparable; the \
              difference would be partly a MODEL change rather than a market move",
-            cm, current_methodology
+            cm, current.methodology_version
         ));
     }
 
-    let diff_pp = (candidate.coverage - current_coverage).abs() * 100.0;
+    let diff_pp = (candidate.coverage - current.coverage).abs() * 100.0;
     if diff_pp > t.coverage_tolerance_pp {
         return Err(format!(
             "coverage differs by {:.1}pp (baseline {:.0}% vs current {:.0}%), above the {:.1}pp \
@@ -263,7 +325,7 @@ pub fn is_eligible(
              a change in the market, so the two runs are not on the same scale",
             diff_pp,
             candidate.coverage * 100.0,
-            current_coverage * 100.0,
+            current.coverage * 100.0,
             t.coverage_tolerance_pp
         ));
     }
@@ -291,7 +353,6 @@ pub fn compute(
     recorded: bool,
     warnings: Vec<String>,
 ) -> Trend {
-    let current_methodology = methodology_of(current).to_string();
     // The displayed series includes today's run.
     let mut all = archive.to_vec();
     all.push(current.clone());
@@ -310,7 +371,7 @@ pub fn compute(
     // but each one still has to pass the coverage test to be used.
     let mut rejections: Vec<String> = Vec::new();
     for c in candidates.iter().rev() {
-        match is_eligible(c, current.coverage, &current_methodology, &current.date, t) {
+        match is_eligible(c, current, t) {
             Ok(gap) => {
                 let delta = build_delta(c, current, readings, gap, t);
                 return Trend {
@@ -432,6 +493,14 @@ mod tests {
         point_v(date, composite, coverage, phase, METHOD)
     }
 
+    /// A point whose real timestamp is NOT the date's noon, so midnight-straddling
+    /// cases can be expressed exactly.
+    fn point_ts(date: &str, ts: &str, composite: f64) -> TrendPoint {
+        let mut p = point(date, composite, 1.0, "early");
+        p.generated_at = ts.into();
+        p
+    }
+
     fn point_v(date: &str, composite: f64, coverage: f64, phase: &str, method: &str) -> TrendPoint {
         TrendPoint {
             date: date.into(),
@@ -470,6 +539,76 @@ mod tests {
     fn date_extraction_handles_timestamps_and_plain_dates() {
         assert_eq!(date_of("2026-09-17T18:22:24Z"), "2026-09-17");
         assert_eq!(date_of("2026-09-17"), "2026-09-17");
+    }
+
+    #[test]
+    fn a_run_minutes_apart_is_never_a_baseline_even_across_midnight() {
+        // THE DEFECT THIS GUARDS. The gap test used a CALENDAR-DATE difference, so two
+        // runs either side of UTC midnight differed by "1 day" while being minutes apart.
+        // This host's archive really contained such a pair: 2026-09-19T23:47:36Z and
+        // 2026-09-20T00:04:49Z, 17 minutes apart, and the tool reported a direction of
+        // travel from it. `min_gap_days` is documented as existing so that "a re-run
+        // minutes later" cannot be presented as a trend — the guard was failing at exactly
+        // the case it names, and only near midnight, which is where a cron job can land.
+        let baseline = point_ts("2026-09-19", "2026-09-19T23:47:36Z", 30.0);
+        let current = point_ts("2026-09-20", "2026-09-20T00:04:49Z", 30.0);
+
+        let why = is_eligible(&baseline, &current, &t())
+            .expect_err("17 minutes must not qualify as a baseline");
+        assert!(
+            why.contains("minute"),
+            "the refusal must state the real elapsed time, not '1 day': {}",
+            why
+        );
+        assert!(
+            !why.contains("1 day(s) old"),
+            "must not claim a day elapsed when 17 minutes did: {}",
+            why
+        );
+        // And it must say the measurement came from timestamps, since that is the fix.
+        assert!(why.contains("timestamps"), "must state the basis: {}", why);
+    }
+
+    #[test]
+    fn a_genuine_daily_gap_is_accepted() {
+        // The complement: the fix must not become a guard that refuses everything. A real
+        // daily run ~24h later is a legitimate baseline.
+        let baseline = point_ts("2026-09-18", "2026-09-18T20:34:16Z", 30.0);
+        let current = point_ts("2026-09-19", "2026-09-19T20:36:15Z", 34.0);
+        let gap = is_eligible(&baseline, &current, &t()).expect("a ~24h gap is comparable");
+        assert!(
+            (gap - 1.001).abs() < 0.01,
+            "the reported gap must be the REAL elapsed time: {}",
+            gap
+        );
+    }
+
+    #[test]
+    fn elapsed_time_falls_back_conservatively_when_timestamps_are_unusable() {
+        // An archive row with an unparseable timestamp must not be credited with a gap it
+        // cannot demonstrate. Two calendar dates one day apart are consistent with a gap of
+        // anything from one second to ~48 hours, so the floor is zero days.
+        let mut baseline = point("2026-09-18", 30.0, 1.0, "early");
+        baseline.generated_at = "not-a-timestamp".into();
+        let mut current = point("2026-09-19", 34.0, 1.0, "early");
+        current.generated_at = "also-not-a-timestamp".into();
+
+        let gap = elapsed_days(&baseline, &current).expect("dates are still parseable");
+        assert!(
+            gap.abs() < 1e-9,
+            "a one-date difference cannot demonstrate a full day, got {}",
+            gap
+        );
+        // So the candidate is refused, with a reason, rather than silently credited.
+        assert!(is_eligible(&baseline, &current, &t()).is_err());
+    }
+
+    #[test]
+    fn sub_day_durations_render_at_a_scale_a_reader_can_use() {
+        assert_eq!(fmt_elapsed(0.0119), "17 minute(s)");
+        assert_eq!(fmt_elapsed(0.5), "12.0 hour(s)");
+        assert_eq!(fmt_elapsed(1.0), "1 day(s)");
+        assert_eq!(fmt_elapsed(7.0), "7 day(s)");
     }
 
     #[test]
@@ -644,16 +783,22 @@ mod tests {
         // happened. Each rejection now carries its own rationale, and this asserts the
         // coverage rationale appears ONLY when coverage is actually the problem.
         let t = TrendCfg {
+            // 1.0 here on purpose: this test wants a strict threshold so its
+            // candidates are separated by cause, not by duration.
             min_gap_days: 1.0,
             coverage_tolerance_pp: 2.0,
             ..t()
         };
-        let today = "2026-09-19";
+        // The "current" run these candidates are tested against: methodology 2.0 so the
+        // methodology branch is reached only when a candidate deliberately differs, and
+        // coverage 1.0 so the coverage branch is reached only when a candidate differs.
+        let mut cur = point("2026-09-19", 30.0, 1.0, "early");
+        cur.methodology_version = "2.0".into();
 
         // Identical coverage, different methodology -> must NOT mention coverage.
         let mut c = point("2026-09-01", 30.0, 1.0, "early");
         c.methodology_version = "1.9".into();
-        let why = is_eligible(&c, 1.0, "2.0", today, &t).unwrap_err();
+        let why = is_eligible(&c, &cur, &t).unwrap_err();
         assert!(
             !why.to_lowercase().contains("coverage"),
             "a methodology refusal must not blame coverage: {}",
@@ -666,8 +811,8 @@ mod tests {
         );
 
         // Same-day -> must say today, not coverage.
-        let same = point(today, 30.0, 1.0, "early");
-        let why = is_eligible(&same, 1.0, "2.0", today, &t).unwrap_err();
+        let same = point(&cur.date.clone(), 30.0, 1.0, "early");
+        let why = is_eligible(&same, &cur, &t).unwrap_err();
         assert!(
             !why.to_lowercase().contains("coverage"),
             "a same-day refusal must not blame coverage: {}",
@@ -677,7 +822,7 @@ mod tests {
 
         // Insufficient elapsed gap -> must not blame coverage.
         let near = point("2026-09-19", 30.0, 1.0, "early");
-        let why = is_eligible(&near, 1.0, "2.0", today, &t).unwrap_err();
+        let why = is_eligible(&near, &cur, &t).unwrap_err();
         assert!(
             !why.to_lowercase().contains("coverage"),
             "a gap refusal must not blame coverage: {}",
@@ -690,7 +835,7 @@ mod tests {
         // version of this test tripped over).
         let mut c2 = point("2026-09-01", 30.0, 0.55, "early");
         c2.methodology_version = "2.0".into();
-        let why = is_eligible(&c2, 1.0, "2.0", today, &t).unwrap_err();
+        let why = is_eligible(&c2, &cur, &t).unwrap_err();
         assert!(
             why.to_lowercase().contains("coverage"),
             "a coverage refusal must name coverage: {}",
@@ -722,10 +867,16 @@ mod tests {
             vec![],
         );
         let r = tr.reason.unwrap();
+        // Derive the expected substring from the ACTUAL configured threshold rather than
+        // hardcoding it: the literal went stale when min_gap_days changed from 1 to 0.9,
+        // and a test that breaks on a config change it does not care about trains people
+        // to update literals instead of reading failures.
+        let gap_label = format!("below the {} day minimum gap", fmt_days(t().min_gap_days));
         assert_eq!(
-            r.matches("below the 1 day minimum gap").count(),
+            r.matches(&gap_label).count(),
             1,
-            "the same rejection must be stated once: {}",
+            "the same rejection must be stated once (looking for {:?}): {}",
+            gap_label,
             r
         );
         assert!(

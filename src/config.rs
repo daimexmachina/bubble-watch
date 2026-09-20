@@ -24,11 +24,13 @@ pub struct Config {
 }
 
 impl TrendCfg {
-    /// Conservative defaults, identical to the shipped config, so a config
-    /// written before v1.1 still loads and behaves the same way.
+    /// Defaults for a config written before v1.1, so it still loads and behaves
+    /// sensibly. MATCHES the shipped config's `[trend]` block, and a test asserts that,
+    /// because these two silently diverging would mean a pre-v1.1 config measured elapsed
+    /// time differently from a current one without saying so.
     pub fn defaults() -> TrendCfg {
         TrendCfg {
-            min_gap_days: 1.0,
+            min_gap_days: 0.9,
             coverage_tolerance_pp: 5.0,
             flat_band: 1.0,
             sparkline_points: 30,

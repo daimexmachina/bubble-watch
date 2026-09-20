@@ -274,6 +274,36 @@ fn a_missing_explosiveness_test_is_disclosed_not_silent() {
 }
 
 #[test]
+fn the_pre_v11_trend_defaults_match_the_shipped_config() {
+    // `TrendCfg::defaults()` exists so a config written before v1.1 still loads and behaves
+    // the same way, and its doc comment claims it matches the shipped `[trend]` block. Once
+    // min_gap_days was changed from 1.0 to 0.9 in the shipped config, that claim was false:
+    // an old config would have measured the elapsed-time guard differently from a current
+    // one, silently. Assert the equality so the two cannot drift apart again.
+    let c = cfg();
+    let d = bubble_watch::config::TrendCfg::defaults();
+    assert!(
+        (c.trend.min_gap_days - d.min_gap_days).abs() < 1e-12,
+        "shipped min_gap_days {} != defaults {}",
+        c.trend.min_gap_days,
+        d.min_gap_days
+    );
+    assert!(
+        (c.trend.coverage_tolerance_pp - d.coverage_tolerance_pp).abs() < 1e-12,
+        "shipped coverage_tolerance_pp {} != defaults {}",
+        c.trend.coverage_tolerance_pp,
+        d.coverage_tolerance_pp
+    );
+    assert!(
+        (c.trend.flat_band - d.flat_band).abs() < 1e-12,
+        "shipped flat_band {} != defaults {}",
+        c.trend.flat_band,
+        d.flat_band
+    );
+    assert_eq!(c.trend.sparkline_points, d.sparkline_points);
+}
+
+#[test]
 fn a_fixture_backed_indicator_refuses_to_report_a_stale_value() {
     // The frontier premium reads a committed fixture, so it CANNOT update itself. Without
     // the staleness guard it would report the same gap forever while retrieved_at showed
