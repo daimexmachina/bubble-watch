@@ -309,20 +309,20 @@ apples-to-apples comparison is guaranteed{}.",
         None => {
             // Say that it cannot be computed, and why. Silence here would look
             // like "nothing has changed", which is a different claim entirely.
-            let why = r
-                .trend
-                .reason
-                .as_deref()
-                .unwrap_or("there is no earlier reading to compare against yet");
-            format!(
-                "This report cannot yet say whether things are getting better or worse, because \
-{}. It is worth knowing that the tool will not compare two readings taken under different \
-conditions: if some of the data was missing on one day, the difference between the two scores \
-would reflect the missing data rather than the market. Rather than show you a number that means \
-nothing, it says nothing and tells you why. Run it again on another day and a comparison will \
-appear.",
-                why.trim_end_matches('.')
-            )
+            //
+            // THE RAW REASON IS DELIBERATELY NOT EMBEDDED HERE. It used to be interpolated in
+            // full, and because every rejected archive entry contributes its own sentence the
+            // plain-English block grew into the single largest wall of text on the page (~3,300
+            // words of near-identical refusal). The specifics belong in the technical detail,
+            // which is collapsed; this block states the situation in plain terms and says where
+            // the detail is. It must stay short enough to actually be read.
+            "This report cannot yet say whether things are getting better or worse — there is no \
+earlier reading it is willing to compare against. It will not compare two readings taken under \
+different conditions, because the difference would then reflect the conditions rather than the \
+market. Rather than show you a number that means nothing, it says nothing and tells you why; the \
+exact reason is in the collapsed note below and in the caveats at the foot of this page. Run it \
+again on another day and a comparison will appear."
+                .to_string()
         }
     };
 

@@ -78,8 +78,43 @@ fn gauge(score: f64) -> String {
     )
 }
 
+/// How many characters of an indicator's reading are shown before the rest is collapsed.
+///
+/// NAMED SO THE TEST CANNOT DRIFT FROM THE RENDERER. The first version of the test hardcoded its
+/// own window (200) while the renderer used 240, so a 236-character fixture was asserted as
+/// "withheld" when the renderer correctly showed it in full — the test was checking its own number.
+pub const LEAD_CHARS: usize = 240;
+
+/// A one-sentence lead from a long detail string, plus whether anything was withheld.
+///
+/// WHY THIS EXISTS. The indicator table used to dump the ENTIRE detail inline. `circularity` alone
+/// contributed **1,565 words to a single table cell** and the table totalled **4,560 words of prose**
+/// — the single largest block on the page. The full text is still rendered (inside a collapsed
+/// block) because it is the audit trail and tests read the stripped text; this only decides what is
+/// visible before the reader asks for more.
+///
+/// CHARACTER-SAFE: the slice is taken over collected `char`s, so the returned string is always on a
+/// char boundary. The detail text contains em dashes, curly quotes and `·`, and a naive
+/// `&detail[..n]` byte slice would panic mid-character.
+fn lead_of(detail: &str, max_chars: usize) -> (String, bool) {
+    let chars: Vec<char> = detail.chars().collect();
+    if chars.len() <= max_chars {
+        return (detail.to_string(), false);
+    }
+    let window: String = chars[..max_chars].iter().collect();
+    // Prefer a sentence end, so the lead reads as a sentence rather than a cut-off phrase.
+    let cut = match window.rfind(". ") {
+        Some(i) if i >= 40 => i + 1,
+        _ => match window.rfind(' ') {
+            Some(i) if i > 10 => i,
+            _ => window.len(),
+        },
+    };
+    (window[..cut].trim_end().to_string(), true)
+}
+
 fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
-    let (status_cls, status_txt, value_txt, stress_txt, detail) = match &r.reading {
+    let (status_cls, value_txt, stress_txt, detail, as_of_txt) = match &r.reading {
         Reading::Scored {
             stress,
             value,
@@ -88,28 +123,32 @@ fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
             provenance,
         } => (
             "ok",
-            format!("as of {}", esc(&provenance.as_of)),
-            format!("{:.4} {}", value, esc(unit)),
-            format!("{:.1}", stress),
             format!(
-                "{} <span class='prov'>[{}, {}]</span>",
-                esc(detail),
+                "<b>{:.4}</b> <span class='unit'>{}</span>",
+                value,
+                esc(unit)
+            ),
+            format!("{:.1}", stress),
+            detail.clone(),
+            format!(
+                "as of {} &middot; {} <span class='prov'>[{}]</span>",
+                esc(&provenance.as_of),
                 esc(&provenance.source),
                 esc(&provenance.endpoint)
             ),
         ),
         Reading::Unavailable { reason } => (
             "gap",
-            "GAP".to_string(),
-            "—".to_string(),
-            "—".to_string(),
-            esc(reason),
+            "&mdash;".to_string(),
+            "&mdash;".to_string(),
+            reason.clone(),
+            String::new(),
         ),
     };
 
     let contrib = match r.contribution {
         Some(c) => format!("{:.2}", c),
-        None => "—".to_string(),
+        None => "&mdash;".to_string(),
     };
     let pct = if total_weight > 0.0 {
         r.weight / total_weight * 100.0
@@ -117,16 +156,36 @@ fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
         0.0
     };
 
+    // The lead is what the reader sees; the rest is one click away rather than in their face.
+    let (lead, withheld) = lead_of(&detail, LEAD_CHARS);
+    let rest = if withheld {
+        // Full text, unabridged, inside the disclosure. Never a lossy copy: the point of collapsing
+        // is to DEFER the detail, not to destroy it — the audit trail must survive intact.
+        let remainder = detail
+            .chars()
+            .skip(lead.chars().count())
+            .collect::<String>()
+            .trim_start()
+            .to_string();
+        format!(
+            "<details class='tech'><summary>Full reading ({} words)</summary>\
+             <div class='f-d'>{}</div></details>",
+            detail.split_whitespace().count(),
+            esc(&remainder)
+        )
+    } else {
+        String::new()
+    };
+
     format!(
-        r#"<tr class="{cls}">
+        r##"<tr class="{cls}">
   <td class="id">{id}<div class="lbl">{label}</div></td>
   <td class="num">{wt:.0}%</td>
   <td class="num stress">{stress}</td>
   <td class="num">{contrib}</td>
   <td class="val">{value}</td>
-  <td class="st">{st}</td>
-  <td class="dt">{detail}</td>
-</tr>"#,
+  <td class="rd">{lead}{also}<div class="prov">{asof}</div>{rest}</td>
+</tr>"##,
         cls = status_cls,
         id = esc(&r.id),
         label = esc(&r.label),
@@ -134,8 +193,14 @@ fn reading_row(r: &IndicatorReading, total_weight: f64) -> String {
         stress = stress_txt,
         contrib = contrib,
         value = value_txt,
-        st = status_txt,
-        detail = detail
+        lead = esc(&lead),
+        also = if withheld {
+            " <span class='more'>…</span>"
+        } else {
+            ""
+        },
+        asof = as_of_txt,
+        rest = rest
     )
 }
 
@@ -180,7 +245,7 @@ fn judgments_card(r: &Report) -> String {
          falsified would make any outcome confirm it, which is the reasoning this report exists \
          to refuse.</p>\
          <table class='jtab'><tbody>{rows}</tbody></table>\
-         <p style='margin:12px 0 0;font-size:12px;color:#777'>This section is <b>not</b> part of \
+         <p style='margin:12px 0 0;font-size:12px;color:#6b6b6b'>This section is <b>not</b> part of \
          the score. Judgment is declared here rather than hidden inside the indicator anchors, \
          where it would be indistinguishable from arithmetic.</p></div>",
         n = r.judgments.len(),
@@ -226,7 +291,7 @@ fn falsifiers_card(r: &Report) -> String {
          falsification tests currently read as <b>counter-evidence</b> to the bubble thesis. These are \
          measurements chosen to DISPROVE it, and the answers are reported whichever way they fall.</p>\
          <table class='ftab'><tbody>{rows}</tbody></table>\
-         <p style='margin:12px 0 0;font-size:12px;color:#777'>These are <b>not</b> part of the score. \
+         <p style='margin:12px 0 0;font-size:12px;color:#6b6b6b'>These are <b>not</b> part of the score. \
          Averaging evidence for and against into one number would merge opposite meanings, so they are \
          reported beside it. &ldquo;n/a&rdquo; means the data cannot support a direction &mdash; stated rather than forced.</p></div>",
         against = against,
@@ -253,7 +318,7 @@ fn explosiveness_card(r: &Report) -> String {
          <div class='expl-stat' style='color:{col}'>{stat:.2}</div>\
          <div style='font-size:13.5px;margin-bottom:6px'><b>{sig}</b> &mdash; simulated 5% critical value {p95:.2}</div>\
          <div style='font-size:12.5px;color:#555'>Window tested: <b>{ws}</b> to <b>{we}</b> over {n} monthly observations.</div>\
-         <p style='margin:12px 0 0;font-size:12.5px;color:#777'>A formal hypothesis test on the price \
+         <p style='margin:12px 0 0;font-size:12.5px;color:#6b6b6b'>A formal hypothesis test on the price \
          series &mdash; a different KIND of evidence from every indicator in the score above, which is a \
          hand-anchored judgement. <b>It is deliberately not part of the composite.</b> If it disagrees with \
          the score, that disagreement is the point: the two measure different things and neither is a \
@@ -322,7 +387,7 @@ fn exposure_card(r: &Report) -> String {
          bubble-like the configuration is &mdash; so it is <b>never folded into the composite</b>.</p>\
          <table><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th><th>due&nbsp;&lt;1y/CFO</th>\
          <th>leases/CFO</th><th>commitments/CFO</th><th>RPO/revenue</th></tr></thead><tbody>{rows}</tbody></table>\
-         <p style='margin:12px 0 0;font-size:12px;color:#777'>A missing figure is <b>named</b>, never shown as \
+         <p style='margin:12px 0 0;font-size:12px;color:#6b6b6b'>A missing figure is <b>named</b>, never shown as \
          0.00: an absent disclosure is not a small number. Near-term debt is the &ldquo;who is tested first&rdquo; \
          column, and for this cohort it is small for every company, so a maturity wall is not the \
          mechanism in this cycle &mdash; the unconditional commitments are.</p></div>",
@@ -686,7 +751,7 @@ svg .latest {{ fill:#6a1b9a; }}
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Score over recorded runs</h3>
   {series}
-  <p style="margin:10px 0 0;font-size:12px;color:#777">The shaded bands are the documented phases
+  <p style="margin:10px 0 0;font-size:12px;color:#6b6b6b">The shaded bands are the documented phases
   (early below 35, mid 35–55, late 55–75, critical above 75) and the scale is fixed at 0–100, so a
   small move looks small rather than being stretched to fill the chart. These are comparisons of
   measured state, not a forecast.</p>
@@ -736,7 +801,7 @@ pub fn render_index() -> String {
      <h1>AI Bubble Watch</h1>\
      <ul><li><a href='dashboard.html'>History and trends</a> — the score over time, one row per day</li>\
      <li><a href='latest.html'>Latest full report</a> — the complete current reading with provenance</li></ul>\
-     <p style='color:#777;font-size:12.5px'>A state descriptor, not a forecast and not investment advice.</p>\
+     <p style='color:#6b6b6b;font-size:12.5px'>A state descriptor, not a forecast and not investment advice.</p>\
      </body></html>"
         .to_string()
 }
@@ -897,7 +962,7 @@ fn trend_card(r: &Report) -> String {
             // alternative to retuning thresholds.
             let margin_block = match &r.band_margin {
                 Some(m) => format!(
-                    "<br><span style='color:#666'>{}</span>",
+                    "<br><span style='color:#555'>{}</span>",
                     esc(&m.statement())
                 ),
                 None => String::new(),
@@ -908,7 +973,7 @@ fn trend_card(r: &Report) -> String {
                  <b>Most of this history is the MODEL changing, not the market.</b><br>\
                  Across {} methodology version(s), model changes account for <b>{:+.1}</b> points \
                  of movement. {} Model-caused movement is roughly <b>{}</b> of the total.<br>\
-                 <span style='color:#666'>A composite from one methodology version and a composite \
+                 <span style='color:#555'>A composite from one methodology version and a composite \
                  from another are two DIFFERENT INSTRUMENTS, not one instrument at two times. The \
                  tool refuses that comparison everywhere else; this table is the one place it was \
                  still implied.</span>{}{}</div>",
@@ -928,7 +993,7 @@ fn trend_card(r: &Report) -> String {
     format!(
         "<div class='card'><h3 style='margin-top:0;font-size:15px'>Direction of travel</h3>\
          <p class='lm-b' style='margin:0 0 10px'>{plain}</p>{body}<div style='margin-top:14px'>{spark}</div>{table}{attr}{warn}\
-         <p style='margin:10px 0 0;font-size:12px;color:#777'>The trend is context only. It never enters the score \
+         <p style='margin:10px 0 0;font-size:12px;color:#6b6b6b'>The trend is context only. It never enters the score \
          above, because the score is what the trend is measured from.</p></div>",
         plain = esc(&r.layman.direction_of_travel),
         body = body,
@@ -937,6 +1002,127 @@ fn trend_card(r: &Report) -> String {
         attr = attribution,
         warn = warn
     )
+}
+
+/// The report stylesheet, as a single source of truth.
+///
+/// EXTRACTED SO A TEST CAN ASSERT ON IT. Both defects fixed here — a table that overflowed the
+/// page by 333px and a set of muted greys below the 4.5:1 contrast floor — were invisible to the
+/// suite because the CSS lived only inside one large `format!` literal. Double braces are
+/// format-escapes: this string is interpolated, not emitted raw.
+pub const REPORT_CSS: &str = r#"
+:root {{ color-scheme: light dark; }}
+* {{ box-sizing: border-box; }}
+body {{ margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#fafafa; color:#1a1a1a; max-width:1240px; }}
+@media (prefers-color-scheme: dark) {{ body {{ background:#121212; color:#e8e8e8; }}
+  table {{ border-color:#333 !important; }} th {{ background:#1e1e1e !important; }}
+  td, th {{ border-color:#2a2a2a !important; }} .card {{ background:#1a1a1a !important; border-color:#2e2e2e !important; }} }}
+h1 {{ font-size:20px; margin:0 0 2px; }}
+.sub {{ color:#6b6b6b; font-size:12px; margin-bottom:20px; }}
+.card {{ background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:18px; margin-bottom:18px; }}
+.score {{ font-size:54px; font-weight:700; line-height:1; letter-spacing:-1px; }}
+.score small {{ font-size:16px; font-weight:400; color:#6b6b6b; }}
+.phase {{ display:inline-block; padding:3px 10px; border-radius:999px; color:#fff; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }}
+table {{ border-collapse:collapse; width:100%; font-size:13px; }}
+/* FIXED LAYOUT, SCOPED TO THE INDICATOR TABLE ONLY. Applied globally it would squash the
+   sources and run-history tables, which have their own column counts. This table has six
+   columns and a prose column that was pushing the page to 1,718px. */
+table.ind {{ table-layout:fixed; }}
+table.ind th:nth-child(1) {{ width:17%; }} table.ind th:nth-child(2) {{ width:7%; }}
+table.ind th:nth-child(3) {{ width:7%; }}  table.ind th:nth-child(4) {{ width:10%; }}
+table.ind th:nth-child(5) {{ width:19%; }} table.ind th:nth-child(6) {{ width:40%; }}
+th {{ text-align:left; background:#f2f2f2; padding:8px; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#555; }}
+td {{ padding:8px; border-bottom:1px solid #eee; vertical-align:top; }}
+td.num {{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }}
+td.id {{ font-weight:600; }}          /* was nowrap: a long indicator id forced the table past the page width */
+td .lbl {{ font-weight:400; color:#6b6b6b; font-size:11px; white-space:normal; }}
+td.stress {{ font-weight:700; }}
+/* The VALUE column was `nowrap` and its unit text ran to 859px, which pushed the whole table to
+   1,718px inside a 1,385px viewport and made the page scroll sideways on every screen. It wraps
+   now; the number itself stays unbroken via the <b>. */
+td.val {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; overflow-wrap:anywhere; }}
+td.val .unit {{ font-family:inherit; font-size:11px; color:#6b6b6b; }}
+td.rd {{ font-size:12.5px; color:#333; overflow-wrap:anywhere; }}
+td.rd .more {{ color:#6b6b6b; font-weight:600; }}
+td.dt {{ color:#555; font-size:12px; overflow-wrap:anywhere; }}
+.prov {{ color:#6b6b6b; font-size:11px; overflow-wrap:anywhere; }}
+tr.gap {{ background:rgba(198,40,40,.06); }}
+tr.gap td.stress {{ color:#b3261e; }}
+tr.warn td:nth-child(2) {{ color:#a84800; font-weight:600; }}
+tr.ok td:nth-child(2) {{ color:#2e7d32; }}
+ul {{ margin:6px 0 0; padding-left:20px; }}
+li {{ margin-bottom:4px; font-size:13px; }}
+.note {{ background:#fff8e1; border-left:3px solid #f9a825; padding:10px 14px; border-radius:4px; font-size:13px; }}
+.card.lm {{ border-left:4px solid #1a73e8; }}
+/* The blind-spot card is deliberately visually distinct: it is not data quality,
+   it is a permanent limit on what the score can mean. */
+.card.blind {{ border-left:4px solid #b3261e; background:#fdf5f4; }}
+@media (prefers-color-scheme: dark) {{ .card.blind {{ background:#241a1a !important; border-color:#7f3b36 !important; }} }}
+.lm-intro {{ font-size:14px; margin:0 0 14px; color:#333; }}
+.lm-grid {{ display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }}
+.lm-block {{ background:#f5f8fd; border-radius:6px; padding:11px 13px; }}
+.lm-h {{ font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#1557b0; margin-bottom:4px; }}
+.lm-b {{ font-size:13.5px; line-height:1.55; color:#222; }}
+.lm-bottom {{ margin-top:14px; padding:11px 13px; background:#eef3fb; border-radius:6px; font-size:13.5px; line-height:1.55; }}
+@media (prefers-color-scheme: dark) {{
+  .lm-intro {{ color:#ddd; }}
+  .lm-block {{ background:#1e2733; }}
+  .lm-b {{ color:#e8e8e8; }}
+  .lm-bottom {{ background:#1e2733; }}
+}}
+.disc {{ color:#6b6b6b; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
+/* Falsification panel. Colour-coded by verdict so the AGAINST rows are
+   impossible to miss, since they are the ones a reader most needs to see. */
+.card.fals {{ border-left:4px solid #2e7d32; }}
+table.ftab {{ margin:0; }}
+table.ftab td {{ border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }}
+td.f-mark {{ font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }}
+tr.f-counter td.f-mark {{ color:#2e7d32; }}
+tr.f-forb td.f-mark {{ color:#ef6c00; }}
+tr.f-uninf td.f-mark {{ color:#888888; }}
+tr.f-counter {{ background:rgba(46,125,50,.05); }}
+.f-q {{ font-weight:600; font-size:13px; }}
+.f-r {{ font-size:12.5px; color:#333; margin-top:2px; }}
+.f-d {{ font-size:11.5px; color:#6b6b6b; margin-top:4px; line-height:1.5; }}
+.card.expl {{ border-left:4px solid #1a73e8; }}
+details.tech {{ margin-top:10px; font-size:12px; }}
+details.tech summary {{ cursor:pointer; color:#5f5f5f; }}
+details.tech .f-d {{ margin-top:6px; padding:8px 10px; background:#f7f7f7; border-radius:4px; }}
+@media (prefers-color-scheme: dark) {{ details.tech .f-d {{ background:#1e1e1e; }} }}
+.expl-stat {{ font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }}
+.card.exp {{ border-left:4px solid #6a1b9a; }}
+.card.judg {{ border-left:4px solid #5f6368; }}
+table.jtab td {{ border-bottom:1px solid #eee; padding:10px 8px; vertical-align:top; }}
+.j-claim {{ font-weight:600; font-size:13px; }}
+.j-meta {{ font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:#5f5f5f; margin:2px 0 5px; }}
+.j-ev, .j-fal {{ font-size:12px; color:#444; margin-top:4px; line-height:1.5; }}
+.j-fal {{ color:#7a3e12; }}
+tr.j-sup {{ background:rgba(239,108,0,.05); }}
+tr.j-aga {{ background:rgba(46,125,50,.06); }}
+@media (prefers-color-scheme: dark) {{
+  table.jtab td {{ border-color:#2a2a2a; }}
+  .j-ev {{ color:#ccc; }} .j-fal {{ color:#e0a878; }}
+}}
+.nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
+.exp-note {{ font-size:11.5px; color:#6b6b6b; }}
+.exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
+.exp-nh {{ font-weight:600; }}
+tr.exp-nr {{ background:rgba(179,38,30,.03); }}
+.exp-note ul {{ margin:2px 0 8px; padding-left:18px; }}
+.exp-note li {{ margin-bottom:2px; }}
+@media (prefers-color-scheme: dark) {{
+  table.ftab td {{ border-color:#2a2a2a; }}
+  .f-r {{ color:#ddd; }}
+  tr.f-counter {{ background:rgba(46,125,50,.12); }}
+}}
+.spark-empty {{ font-size:12.5px; color:#6b6b6b; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
+@media (prefers-color-scheme: dark) {{ .spark-empty {{ background:#1e1e1e; color:#aaa; }} }}
+"#;
+
+/// The stylesheet as rendered (format escapes resolved), for tests to assert against.
+pub fn style_block() -> String {
+    REPORT_CSS.replace("{{", "{").replace("}}", "}")
 }
 
 pub fn render(r: &Report) -> String {
@@ -1015,100 +1201,7 @@ pub fn render(r: &Report) -> String {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>bubble-watch — {date}</title>
 <style>
-:root {{ color-scheme: light dark; }}
-* {{ box-sizing: border-box; }}
-body {{ margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  background:#fafafa; color:#1a1a1a; max-width:1240px; }}
-@media (prefers-color-scheme: dark) {{ body {{ background:#121212; color:#e8e8e8; }}
-  table {{ border-color:#333 !important; }} th {{ background:#1e1e1e !important; }}
-  td, th {{ border-color:#2a2a2a !important; }} .card {{ background:#1a1a1a !important; border-color:#2e2e2e !important; }} }}
-h1 {{ font-size:20px; margin:0 0 2px; }}
-.sub {{ color:#777; font-size:12px; margin-bottom:20px; }}
-.card {{ background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:18px; margin-bottom:18px; }}
-.score {{ font-size:54px; font-weight:700; line-height:1; letter-spacing:-1px; }}
-.score small {{ font-size:16px; font-weight:400; color:#888; }}
-.phase {{ display:inline-block; padding:3px 10px; border-radius:999px; color:#fff; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }}
-table {{ border-collapse:collapse; width:100%; font-size:13px; }}
-th {{ text-align:left; background:#f2f2f2; padding:8px; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#666; }}
-td {{ padding:8px; border-bottom:1px solid #eee; vertical-align:top; }}
-td.num {{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }}
-td.id {{ font-weight:600; white-space:nowrap; }}
-td .lbl {{ font-weight:400; color:#888; font-size:11px; white-space:normal; }}
-td.stress {{ font-weight:700; }}
-td.val {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; white-space:nowrap; }}
-td.dt {{ color:#555; font-size:12px; }}
-.prov {{ color:#999; font-size:11px; }}
-tr.gap {{ background:rgba(198,40,40,.06); }}
-tr.gap td.stress {{ color:#b3261e; }}
-tr.warn td:nth-child(2) {{ color:#a84800; font-weight:600; }}
-tr.ok td:nth-child(2) {{ color:#2e7d32; }}
-ul {{ margin:6px 0 0; padding-left:20px; }}
-li {{ margin-bottom:4px; font-size:13px; }}
-.note {{ background:#fff8e1; border-left:3px solid #f9a825; padding:10px 14px; border-radius:4px; font-size:13px; }}
-.card.lm {{ border-left:4px solid #1a73e8; }}
-/* The blind-spot card is deliberately visually distinct: it is not data quality,
-   it is a permanent limit on what the score can mean. */
-.card.blind {{ border-left:4px solid #b3261e; background:#fdf5f4; }}
-@media (prefers-color-scheme: dark) {{ .card.blind {{ background:#241a1a !important; border-color:#7f3b36 !important; }} }}
-.lm-intro {{ font-size:14px; margin:0 0 14px; color:#333; }}
-.lm-grid {{ display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }}
-.lm-block {{ background:#f5f8fd; border-radius:6px; padding:11px 13px; }}
-.lm-h {{ font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#1a73e8; margin-bottom:4px; }}
-.lm-b {{ font-size:13.5px; line-height:1.55; color:#222; }}
-.lm-bottom {{ margin-top:14px; padding:11px 13px; background:#eef3fb; border-radius:6px; font-size:13.5px; line-height:1.55; }}
-@media (prefers-color-scheme: dark) {{
-  .lm-intro {{ color:#ddd; }}
-  .lm-block {{ background:#1e2733; }}
-  .lm-b {{ color:#e8e8e8; }}
-  .lm-bottom {{ background:#1e2733; }}
-}}
-.disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
-/* Falsification panel. Colour-coded by verdict so the AGAINST rows are
-   impossible to miss, since they are the ones a reader most needs to see. */
-.card.fals {{ border-left:4px solid #2e7d32; }}
-table.ftab {{ margin:0; }}
-table.ftab td {{ border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }}
-td.f-mark {{ font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }}
-tr.f-counter td.f-mark {{ color:#2e7d32; }}
-tr.f-forb td.f-mark {{ color:#ef6c00; }}
-tr.f-uninf td.f-mark {{ color:#888888; }}
-tr.f-counter {{ background:rgba(46,125,50,.05); }}
-.f-q {{ font-weight:600; font-size:13px; }}
-.f-r {{ font-size:12.5px; color:#333; margin-top:2px; }}
-.f-d {{ font-size:11.5px; color:#777; margin-top:4px; line-height:1.5; }}
-.card.expl {{ border-left:4px solid #1a73e8; }}
-details.tech {{ margin-top:10px; font-size:12px; }}
-details.tech summary {{ cursor:pointer; color:#777; }}
-details.tech .f-d {{ margin-top:6px; padding:8px 10px; background:#f7f7f7; border-radius:4px; }}
-@media (prefers-color-scheme: dark) {{ details.tech .f-d {{ background:#1e1e1e; }} }}
-.expl-stat {{ font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }}
-.card.exp {{ border-left:4px solid #6a1b9a; }}
-.card.judg {{ border-left:4px solid #5f6368; }}
-table.jtab td {{ border-bottom:1px solid #eee; padding:10px 8px; vertical-align:top; }}
-.j-claim {{ font-weight:600; font-size:13px; }}
-.j-meta {{ font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:#888; margin:2px 0 5px; }}
-.j-ev, .j-fal {{ font-size:12px; color:#444; margin-top:4px; line-height:1.5; }}
-.j-fal {{ color:#7a3e12; }}
-tr.j-sup {{ background:rgba(239,108,0,.05); }}
-tr.j-aga {{ background:rgba(46,125,50,.06); }}
-@media (prefers-color-scheme: dark) {{
-  table.jtab td {{ border-color:#2a2a2a; }}
-  .j-ev {{ color:#ccc; }} .j-fal {{ color:#e0a878; }}
-}}
-.nd {{ color:#b3261e; font-size:11px; font-style:italic; }}
-.exp-note {{ font-size:11.5px; color:#777; }}
-.exp-nr td {{ padding-top:0; border-bottom:1px solid #eee; }}
-.exp-nh {{ font-weight:600; }}
-tr.exp-nr {{ background:rgba(179,38,30,.03); }}
-.exp-note ul {{ margin:2px 0 8px; padding-left:18px; }}
-.exp-note li {{ margin-bottom:2px; }}
-@media (prefers-color-scheme: dark) {{
-  table.ftab td {{ border-color:#2a2a2a; }}
-  .f-r {{ color:#ddd; }}
-  tr.f-counter {{ background:rgba(46,125,50,.12); }}
-}}
-.spark-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
-@media (prefers-color-scheme: dark) {{ .spark-empty {{ background:#1e1e1e; color:#aaa; }} }}
+{css}
 </style></head><body>
 
 <h1>AI Bubble Watch</h1>
@@ -1136,7 +1229,7 @@ tr.exp-nr {{ background:rgba(179,38,30,.03); }}
   <div class="note">{pdetail}</div>
   <div style="margin-top:16px">{gauge}</div>
   <div style="margin-top:6px;font-size:13px">{analog}</div>
-  <div style="margin-top:10px;font-size:12px;color:#777">{analogcaveat}</div>
+  <div style="margin-top:10px;font-size:12px;color:#6b6b6b">{analogcaveat}</div>
 </div>
 
 {judgcard}
@@ -1156,8 +1249,8 @@ tr.exp-nr {{ background:rgba(179,38,30,.03); }}
 
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Indicators</h3>
-  <table>
-    <thead><tr><th>Indicator</th><th>Weight</th><th>Stress</th><th>Contribution</th><th>Value</th><th>Data</th><th>Reading &amp; provenance</th></tr></thead>
+  <table class="ind">
+    <thead><tr><th>Indicator</th><th>Weight</th><th>Stress</th><th>Contribution</th><th>Value</th><th>Reading &amp; provenance</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
 </div>
@@ -1180,6 +1273,7 @@ tr.exp-nr {{ background:rgba(179,38,30,.03); }}
 
 <p class="disc">{disc}</p>
 </body></html>"##,
+        css = REPORT_CSS,
         date = esc(&r.generated_at),
         gen = esc(&r.generated_at),
         ver = esc(&r.version),
@@ -1329,6 +1423,212 @@ mod tests {
             assert!(!seen.contains(&c), "phase colour {} is reused", c);
             seen.push(c);
         }
+    }
+
+    #[test]
+    fn muted_text_meets_the_contrast_threshold_on_every_background_it_lands_on() {
+        // THE FAILURE THIS CATCHES. The phase pills were already guarded, but the MUTED GREY
+        // LABELS were not — and they are what the reader actually squints at. Measured on the
+        // shipped report: provenance `#999` on white was 2.85:1, the judgment meta strip `#888`
+        // was 3.27:1 on its orange tint, and the blue block headings `#1a73e8` were 4.23:1 on
+        // `#f5f8fd`. All below the 4.5:1 AA threshold, none caught by any test.
+        //
+        // READ OUT OF THE REAL STYLESHEET, NOT HARDCODED. My first version listed the expected hex
+        // values as literals, which made it a test of my own assumptions: restoring the old `#999`
+        // in the CSS still passed. It extracts the declared colour from `REPORT_CSS` instead, so a
+        // regression in the sheet fails the test.
+        let css = style_block();
+        let colour_of = |selector: &str| -> String {
+            // Find `selector {` then the first `color:#xxxxxx` inside that rule.
+            let at = css.find(&format!("{} {{", selector)).unwrap_or_else(|| {
+                panic!(
+                    "the stylesheet must still declare {} (it is asserted on)",
+                    selector
+                )
+            });
+            let rule = &css[at..css[at..].find('}').map(|e| at + e).unwrap_or(css.len())];
+            let i = rule
+                .find("color:#")
+                .unwrap_or_else(|| panic!("{} must still declare a color", selector));
+            let tail = &rule[i + "color:".len()..];
+            tail[..7].to_string()
+        };
+
+        // (selector, background it sits on, what it is)
+        let pairs: [(&str, &str, &str); 7] = [
+            (".prov", "#ffffff", "provenance on a white card"),
+            (
+                ".sub",
+                "#fafafa",
+                "the generated-at subheading on the page background",
+            ),
+            (".f-d", "#ffffff", "collapsed detail text on a white card"),
+            (".j-meta", "#fef8f2", "judgment meta on the SUPPORTS tint"),
+            (".j-meta", "#f2f7f3", "judgment meta on the AGAINST tint"),
+            (
+                ".lm-h",
+                "#f5f8fd",
+                "block heading on its pale blue background",
+            ),
+            (
+                ".disc",
+                "#fafafa",
+                "the footer disclaimer on the page background",
+            ),
+        ];
+        for (sel, bg, what) in pairs {
+            let fg = colour_of(sel);
+            let ratio = contrast(&fg, bg);
+            assert!(
+                ratio >= 4.5,
+                "{}: {} declares {} on {}, only {:.2}:1 — below the 4.5:1 threshold",
+                what,
+                sel,
+                fg,
+                bg,
+                ratio
+            );
+        }
+    }
+
+    #[test]
+    fn a_long_indicator_detail_is_led_with_a_sentence_not_a_truncated_word() {
+        // The indicator table used to dump the whole detail inline — `circularity` contributed
+        // 1,565 words to ONE table cell. It is now led by a short extract with the full text
+        // collapsed. Two properties matter: the lead must end cleanly, and nothing may be LOST
+        // (collapsing defers the detail, it does not delete it).
+        // A window long enough to contain the first sentence end must cut there. The fixture has to
+        // exceed the window, or nothing is withheld and the assertion is vacuous — my first version
+        // used a 139-char string against a 200-char window and the test correctly refused it.
+        let long =
+            "First sentence here. Second sentence that is quite a bit longer and keeps going \
+                    for a while so the lead must cut somewhere sensible. Third sentence follows to \
+                    push this well past any reasonable window so the extract really is withheld, \
+                    and a fourth sentence exists purely to make the fixture unambiguous in length, \
+                    and it continues for a while longer still so there is no doubt at all.";
+        assert!(
+            long.chars().count() > LEAD_CHARS,
+            "the fixture must exceed the renderer's own window ({}); it is {} chars",
+            LEAD_CHARS,
+            long.chars().count()
+        );
+        let (lead, withheld) = lead_of(long, LEAD_CHARS);
+        assert!(withheld, "a long detail must be reported as withheld");
+        assert!(
+            lead.ends_with('.'),
+            "when a sentence end is inside the window, the lead must cut there, got {:?}",
+            lead
+        );
+
+        // When the window contains NO sentence end, it must fall back to a WORD boundary rather
+        // than chopping mid-word.
+        let (short_win, w2) = lead_of(long, 40);
+        assert!(w2, "a 40-char window must withhold the rest");
+        assert!(
+            long.starts_with(&short_win),
+            "the fallback must be a clean PREFIX of the detail, got {:?}",
+            short_win
+        );
+        let next = long.chars().nth(short_win.chars().count());
+        assert!(
+            next == Some(' '),
+            "the fallback must not stop mid-word (next char: {:?}) in {:?}",
+            next,
+            short_win
+        );
+        assert!(
+            lead.split_whitespace().count() < long.split_whitespace().count(),
+            "the lead must actually be shorter than the detail"
+        );
+
+        // Short details are passed through untouched and not marked as withheld.
+        let short = "A short reading.";
+        let (l2, w2) = lead_of(short, 240);
+        assert_eq!(l2, short);
+        assert!(!w2);
+
+        // MULTI-BYTE SAFETY: the real details contain em dashes, curly quotes and middots, and a
+        // byte-offset slice would panic or split a character.
+        let unicode = "É".repeat(300);
+        let (l3, _) = lead_of(&unicode, 100);
+        assert_eq!(l3.chars().count(), 100, "must cut on a character boundary");
+
+        // AND THE CALL SITE, not just the helper. A unit test of `lead_of` alone passed while
+        // `reading_row` was hacked to emit a 3-character lead — the row was never exercised. These
+        // assert the RENDERED row, which is what the reader actually sees.
+        let mk = |detail: &str| crate::model::IndicatorReading {
+            id: "circularity".into(),
+            label: "Test".into(),
+            weight: 12.0,
+            rationale: String::new(),
+            reading: crate::model::Reading::Scored {
+                stress: 46.5,
+                value: 46.5,
+                unit: "pct".into(),
+                detail: detail.into(),
+                provenance: crate::model::Provenance {
+                    source: "sec-edgar".into(),
+                    endpoint: "sec.gov/Archives".into(),
+                    as_of: "2026-09-20".into(),
+                    retrieved_at: "2026-09-20T00:00:00Z".into(),
+                },
+            },
+            contribution: Some(3.53),
+        };
+
+        let row = reading_row(&mk(long), 158.0);
+        // The full audit text must survive somewhere in the row (collapsing DEFERS, never deletes).
+        for needle in ["First sentence here.", "no doubt at all."] {
+            assert!(
+                row.contains(needle),
+                "the rendered row must still carry the audit text {:?}",
+                needle
+            );
+        }
+        assert!(
+            row.contains("<details class='tech'>"),
+            "a long reading must be collapsed, not printed inline. ROW=\n{}",
+            row
+        );
+        // The visible lead is what precedes the disclosure — it must not be the whole detail.
+        let visible = row.split("<details").next().unwrap();
+        assert!(
+            visible.split_whitespace().count() < long.split_whitespace().count(),
+            "the visible part of the row must be shorter than the full detail"
+        );
+        assert!(
+            !visible.contains("no doubt at all."),
+            "the tail of the detail must NOT be visible before the reader expands it"
+        );
+    }
+
+    #[test]
+    fn the_indicator_table_cannot_overflow_the_page() {
+        // MEASURED DEFECT: the VALUE column was `white-space:nowrap` and the indicator table
+        // rendered 1,718px wide inside a 1,385px viewport — 82 elements past the page edge, so
+        // the report scrolled sideways on every screen. A fixed layout with declared column
+        // widths is what prevents that; assert the rule survives rather than trusting it.
+        //
+        // Asserted against the generated STYLE tag rather than a fabricated Report, so this stays
+        // a check on the real stylesheet even as the report's data model changes.
+        // `style_block()` RESOLVES the format escapes, so these are single-braced: asserting the
+        // double-braced source form here was my own bug and the test caught it.
+        let style = style_block();
+        assert!(
+            style.contains("table.ind { table-layout:fixed; }"),
+            "the indicator table must keep a fixed layout, or a long value widens the page"
+        );
+        for col in 1..=6 {
+            assert!(
+                style.contains(&format!("table.ind th:nth-child({}) {{", col)),
+                "column {} must keep a declared width, or the prose column re-widens the table",
+                col
+            );
+        }
+        assert!(
+            !style.contains("td.val { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; white-space:nowrap; }"),
+            "the VALUE column must not be nowrap again; that is what forced the page to 1,718px"
+        );
     }
 
     #[test]

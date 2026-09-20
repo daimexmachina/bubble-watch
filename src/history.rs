@@ -252,6 +252,174 @@ fn fmt_elapsed(d: f64) -> String {
     }
 }
 
+/// Why an archived run cannot serve as a baseline.
+///
+/// GROUPED BY CAUSE, and that is the whole point of the type. Every rejected run used to emit its
+/// own full sentence including its own timestamps, so no two rejections were ever byte-identical
+/// and the existing `unique.contains(&r)` dedup could not collapse them. A real archive of 59 runs
+/// produced 20 near-identical paragraphs — 3,283 words of refusal text on the rendered page. The
+/// causes are few and stable; the per-run details are what vary, so the cause is separated from the
+/// detail and only the cause is deduplicated.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Cause {
+    /// Recorded on the same calendar date as the current run.
+    SameDay,
+    /// Real elapsed time is below `min_gap_days`.
+    GapTooShort,
+    /// Computed under a different methodology version, so not comparable.
+    Methodology,
+    /// Weighted coverage differs by more than `coverage_tolerance_pp`.
+    Coverage,
+    /// The recorded date could not be parsed.
+    Unparseable,
+}
+
+impl Cause {
+    /// The cause-level sentence: what this refusal MEANS and why the rule exists.
+    ///
+    /// `distinct` is the deduplicated set of per-run labels for this cause. Some causes can name
+    /// their values inline usefully (a methodology version change is only meaningful with both
+    /// versions in it, and there are rarely many); others cannot, because a long list of elapsed
+    /// times is exactly the bloat this type exists to prevent. `MAX_NAMED_VALUES` bounds the
+    /// former so it can never become the latter.
+    ///
+    /// `current_version` is the current run's methodology, needed because a methodology refusal is
+    /// only interpretable with both sides named.
+    fn summary(self, t: &TrendCfg, distinct: &[String], current_version: &str) -> String {
+        let named = if distinct.is_empty() || distinct.len() > MAX_NAMED_VALUES {
+            String::new()
+        } else {
+            distinct.join(", ")
+        };
+        match self {
+            Cause::SameDay => format!(
+                "the most recent archive entry is from today, below the {} day minimum gap — a \
+                 comparison against today would report 0.0 as though it measured market change, \
+                 and the archive permits only one point per date",
+                fmt_days(t.min_gap_days)
+            ),
+            Cause::GapTooShort => format!(
+                "the baseline is below the {} day minimum elapsed gap — the configured minimum \
+                 exists so that a re-run minutes or hours later cannot be presented as a trend, \
+                 and the elapsed period is what makes a change interpretable. Measured from the \
+                 recorded timestamps, not from the calendar dates, because two runs either side \
+                 of midnight differ by a calendar day while being minutes apart",
+                fmt_days(t.min_gap_days)
+            ),
+            Cause::Methodology if !named.is_empty() => format!(
+                "the baseline was computed under methodology {} and this run under {} — the \
+                 composite means something different across that change, so the two are not \
+                 comparable; the difference would be partly a MODEL change rather than a market \
+                 move",
+                named, current_version
+            ),
+            Cause::Methodology => "the baseline was computed under an earlier methodology \
+                 version — the composite means something different across that change, so the \
+                 two are not comparable; the difference would be partly a MODEL change rather \
+                 than a market move"
+                .to_string(),
+            Cause::Coverage => format!(
+                "baseline coverage differs by more than the {:.1}pp tolerance — the difference \
+                 would partly reflect WHICH SOURCES answered rather than a change in the market, \
+                 so the two runs are not on the same scale",
+                t.coverage_tolerance_pp
+            ),
+            Cause::Unparseable => {
+                "at least one archived baseline has a date that could not be parsed".to_string()
+            }
+        }
+    }
+
+    /// A SHORT label identifying one rejected run, for the "(N: a, b, c +more)" clause.
+    /// Kept short on purpose: distinct values here are what make the list grow.
+    fn example(self, candidate: &TrendPoint, current: &TrendPoint) -> String {
+        match self {
+            Cause::Methodology => methodology_of(candidate).to_string(),
+            Cause::GapTooShort => match elapsed_days(candidate, current) {
+                Some(g) => format!("{} old", fmt_elapsed(g)),
+                None => candidate.date.clone(),
+            },
+            Cause::Coverage => format!("{:.0}%", candidate.coverage * 100.0),
+            Cause::SameDay | Cause::Unparseable => candidate.date.clone(),
+        }
+    }
+}
+
+/// One rejected baseline: which cause, and the per-run detail.
+///
+/// The detail is retained (it carries the actual timestamps) because it is the audit trail, but it
+/// is rendered only inside a collapsed `<details>` block. The reader-facing text uses the cause.
+/// The `example` label is computed at rejection time, where the candidate is in scope, so the
+/// grouping code never has to reconstruct it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Refusal {
+    pub cause: Cause,
+    pub detail: String,
+    /// Short per-run label ("14.3 hour(s) old", "1.9"), already formatted.
+    pub example: String,
+}
+
+/// How many distinct per-run examples to name before falling back to a "+N more" count. Three is
+/// enough to show the shape of the problem without turning the sentence back into a list.
+const MAX_EXAMPLES: usize = 3;
+
+/// How many distinct values a cause may name INLINE before it stops naming them. Distinct from
+/// `MAX_EXAMPLES`: this bounds the cause sentence, and only causes where the value is essential to
+/// the meaning (methodology) use it.
+const MAX_NAMED_VALUES: usize = 3;
+
+/// Render the grouped refusal: one sentence per CAUSE, with a count and a bounded sample of the
+/// runs that hit it. Replaces one full paragraph per rejected run.
+///
+/// MEASURED EFFECT: an archive of 59 runs previously rendered 3,283 words of refusal text because
+/// no two rejections were byte-identical (each embedded its own timestamps) and the old
+/// `unique.contains(&r)` dedup therefore collapsed nothing. This is the fix.
+pub fn describe_refusals(refusals: &[Refusal], t: &TrendCfg, current_version: &str) -> String {
+    // First-seen order, so the output is deterministic and reads newest-first as the archive does.
+    let mut groups: Vec<(Cause, Vec<String>)> = Vec::new();
+    for r in refusals {
+        match groups.iter_mut().find(|(c, _)| *c == r.cause) {
+            Some((_, exs)) => exs.push(r.example.clone()),
+            None => groups.push((r.cause, vec![r.example.clone()])),
+        }
+    }
+
+    let mut parts: Vec<String> = Vec::new();
+    for (cause, examples) in &groups {
+        // DISTINCT examples only: 22 runs rejected for "too short a gap" are all described by the
+        // same handful of elapsed times, and repeating "14.3 hour(s) old" ten times is noise.
+        let mut distinct: Vec<&String> = Vec::new();
+        for e in examples {
+            if !distinct.contains(&e) {
+                distinct.push(e);
+            }
+        }
+        let shown = distinct
+            .iter()
+            .take(MAX_EXAMPLES)
+            .map(|e| e.as_str())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let extra = distinct.len().saturating_sub(MAX_EXAMPLES);
+        let sample = if extra > 0 {
+            format!("{}, +{} more", shown, extra)
+        } else {
+            shown
+        };
+        parts.push(format!(
+            "{} [{} run(s): {}]",
+            cause.summary(
+                t,
+                &distinct.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
+                current_version
+            ),
+            examples.len(),
+            sample
+        ));
+    }
+    parts.join("; ")
+}
+
 /// Is this archived point usable as a baseline for the current run?
 ///
 /// Both conditions are refusals, not preferences:
@@ -274,33 +442,63 @@ pub fn is_eligible(
     current: &TrendPoint,
     t: &TrendCfg,
 ) -> Result<f64, String> {
+    is_eligible_cause(candidate, current, t).map_err(|r| r.detail)
+}
+
+/// The same test as `is_eligible`, but returning the cause alongside the detail so the report can
+/// state each cause once rather than repeating it per rejected run.
+pub fn is_eligible_cause(
+    candidate: &TrendPoint,
+    current: &TrendPoint,
+    t: &TrendCfg,
+) -> Result<f64, Refusal> {
+    let refuse = |cause: Cause, detail: String| {
+        Err(Refusal {
+            cause,
+            detail,
+            example: cause.example(candidate, current),
+        })
+    };
     // A run from the same day is never its own baseline, regardless of how
     // `min_gap_days` is configured: comparing today with today would report
     // 0.0 as if it were a measurement of market change.
     if candidate.date == current.date {
-        return Err(format!(
-            "the most recent archive entry is from today, below the {} day minimum gap — a \
-             comparison against today would report 0.0 as though it measured market change, \
-             and the archive permits only one point per date",
-            fmt_days(t.min_gap_days)
-        ));
+        return refuse(
+            Cause::SameDay,
+            format!(
+                "the most recent archive entry is from today, below the {} day minimum gap — a \
+                 comparison against today would report 0.0 as though it measured market change, \
+                 and the archive permits only one point per date",
+                fmt_days(t.min_gap_days)
+            ),
+        );
     }
     // Real elapsed time, from timestamps. NOT a calendar-date difference — see
     // `elapsed_days` for why the distinction is load-bearing.
-    let gap = elapsed_days(candidate, current)
-        .ok_or_else(|| format!("baseline date '{}' is unparseable", candidate.date))?;
+    let gap = match elapsed_days(candidate, current) {
+        Some(g) => g,
+        None => {
+            return refuse(
+                Cause::Unparseable,
+                format!("baseline date '{}' is unparseable", candidate.date),
+            )
+        }
+    };
     if gap < t.min_gap_days {
-        return Err(format!(
-            "the most recent baseline is {} old, below the {} day minimum — the configured \
-             minimum exists so that a re-run minutes or hours later cannot be presented as a \
-             trend, and the elapsed period is what makes a change interpretable. Measured from \
-             the recorded timestamps ({} and {}), not from the calendar dates, because two \
-             runs either side of midnight differ by a calendar day while being minutes apart",
-            fmt_elapsed(gap),
-            fmt_days(t.min_gap_days),
-            candidate.generated_at,
-            current.generated_at
-        ));
+        return refuse(
+            Cause::GapTooShort,
+            format!(
+                "the most recent baseline is {} old, below the {} day minimum — the configured \
+                 minimum exists so that a re-run minutes or hours later cannot be presented as a \
+                 trend, and the elapsed period is what makes a change interpretable. Measured from \
+                 the recorded timestamps ({} and {}), not from the calendar dates, because two \
+                 runs either side of midnight differ by a calendar day while being minutes apart",
+                fmt_elapsed(gap),
+                fmt_days(t.min_gap_days),
+                candidate.generated_at,
+                current.generated_at
+            ),
+        );
     }
     // Methodology must match. Redefining an indicator changes what the composite
     // measures, so a difference across methodology changes is a difference in the
@@ -309,25 +507,31 @@ pub fn is_eligible(
     // really an accounting change.
     let cm = methodology_of(candidate);
     if cm != current.methodology_version {
-        return Err(format!(
-            "baseline was computed under methodology {} and this run under {} — the composite \
-             means something different across that change, so the two are not comparable; the \
-             difference would be partly a MODEL change rather than a market move",
-            cm, current.methodology_version
-        ));
+        return refuse(
+            Cause::Methodology,
+            format!(
+                "baseline was computed under methodology {} and this run under {} — the composite \
+                 means something different across that change, so the two are not comparable; the \
+                 difference would be partly a MODEL change rather than a market move",
+                cm, current.methodology_version
+            ),
+        );
     }
 
     let diff_pp = (candidate.coverage - current.coverage).abs() * 100.0;
     if diff_pp > t.coverage_tolerance_pp {
-        return Err(format!(
-            "coverage differs by {:.1}pp (baseline {:.0}% vs current {:.0}%), above the {:.1}pp \
-             tolerance — the difference would partly reflect WHICH SOURCES answered rather than \
-             a change in the market, so the two runs are not on the same scale",
-            diff_pp,
-            candidate.coverage * 100.0,
-            current.coverage * 100.0,
-            t.coverage_tolerance_pp
-        ));
+        return refuse(
+            Cause::Coverage,
+            format!(
+                "coverage differs by {:.1}pp (baseline {:.0}% vs current {:.0}%), above the {:.1}pp \
+                 tolerance — the difference would partly reflect WHICH SOURCES answered rather than \
+                 a change in the market, so the two runs are not on the same scale",
+                diff_pp,
+                candidate.coverage * 100.0,
+                current.coverage * 100.0,
+                t.coverage_tolerance_pp
+            ),
+        );
     }
     Ok(gap)
 }
@@ -369,9 +573,9 @@ pub fn compute(
     // the gap and the coverage rule. Older runs are considered so that a run
     // recorded during a source outage does not permanently blind the feature —
     // but each one still has to pass the coverage test to be used.
-    let mut rejections: Vec<String> = Vec::new();
+    let mut rejections: Vec<Refusal> = Vec::new();
     for c in candidates.iter().rev() {
-        match is_eligible(c, current, t) {
+        match is_eligible_cause(c, current, t) {
             Ok(gap) => {
                 let delta = build_delta(c, current, readings, gap, t);
                 return Trend {
@@ -382,20 +586,15 @@ pub fn compute(
                     recorded,
                 };
             }
-            Err(why) => rejections.push(why),
+            Err(r) => rejections.push(r),
         }
     }
 
-    // Deduplicate the reasons: several archived entries can be rejected for the
-    // identical cause (three runs recorded on one day all fail the gap test), and
-    // repeating the same sentence once per entry is noise, not information.
-    let mut unique: Vec<String> = Vec::new();
-    for r in rejections {
-        if !unique.contains(&r) {
-            unique.push(r);
-        }
-    }
-
+    // GROUP BY CAUSE, not by message. The old code deduplicated the full message strings, which
+    // could never collapse anything: every rejection embeds its own timestamps, so 22 runs
+    // rejected for the same cause produced 22 distinct strings and the page carried ~3,300 words
+    // of near-identical refusal text. Grouping on the cause (and rendering the per-run values as
+    // a short bounded sample) reduces that to at most one sentence per cause.
     let reason = if candidates.is_empty() {
         "No previous run is recorded yet, so direction of travel cannot be computed. This is \
          expected on a first run. Run the tool again on a later day and a comparison will appear."
@@ -404,7 +603,7 @@ pub fn compute(
         format!(
             "No eligible baseline run: {}. A direction of travel is deliberately NOT reported \
              rather than computed against a run that is not comparable.",
-            unique.join("; ")
+            describe_refusals(&rejections, t, &current.methodology_version)
         )
     };
 
