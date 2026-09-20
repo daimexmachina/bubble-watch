@@ -673,6 +673,37 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     in a commercial context rather than in the risk factors. At present the mention \
                     carries no commercial content at all.",
     },
+    // THIRD REFUTATION, AND THE SUBTLEST — because the relationship is REAL. Amazon and Databricks
+    // genuinely collaborate. What does not exist is a CIRCULAR-FINANCING structure: no equity
+    // stake, no vendor financing, no guarantee, no lease liability. A commercial partnership that
+    // is described in deal language is not the same thing as one party funding the other's demand.
+    //
+    // This is the refutation that matters most for calibration, because it shows the detector
+    // firing on a legitimate commercial relationship and the rubric correctly declining to score it.
+    // Without this class, "Amazon and Databricks announced a collaboration" would read as evidence.
+    VerifiedEdge {
+        filer: "AMZN",
+        counterparty: "Databricks",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation: "Amazon Q3 2024 earnings release (Form 8-K Exhibit 99.1, filed 2024-10-31), \
+                   verbatim: \"Entered a strategic collaboration with Databricks to accelerate the \
+                   development of custom models built with Databricks Mosaic AI on AWS, and for \
+                   Databricks to leverage AWS Trainium chips as the preferred AI chip to help \
+                   customers improve price-performance when building generative AI applications.\" \
+                   This is a commercial partnership described in ordinary deal language: a cloud \
+                   provider and a data-platform company co-selling. There is no equity investment, \
+                   no vendor financing, no guarantee and no lease obligation in the disclosure.",
+        magnitude: "none attributable to a circular structure — the relationship is a commercial \
+                    collaboration with no financing element disclosed. Contrast the AMZN entries \
+                    that DO score: the same issuer discloses an $8B Anthropic stake, a $20B \
+                    financing facility and a $100B cloud commitment for OpenAI, all with financing \
+                    terms. The absence of those terms here is the distinguishing fact.",
+        falsifier: "Shown wrong if Amazon discloses an equity stake in Databricks, a financing \
+                    facility for it, or a guarantee over its infrastructure — any of which would \
+                    convert a commercial collaboration into a financed one. At present the \
+                    disclosure contains no such term, which is why it scores zero.",
+    },
     // THE REFUTATION. Kept in the set deliberately: it is the evidence that this rubric can
     // come back LOWER, which is what separates it from a one-way alarm.
     VerifiedEdge {
@@ -1065,8 +1096,20 @@ mod tests {
         // facility drawable only as Amazon hits compute delivery milestones. Three flows, two
         // parties. That is structurally distinct from a supply commitment, and it is why it is
         // its own class rather than folded into one.
-        let amzn: Vec<_> = VERIFIED.iter().filter(|e| e.filer == "AMZN").collect();
-        assert_eq!(amzn.len(), 2, "both AMZN counterparties must be recorded");
+        let amzn: Vec<_> = VERIFIED
+            .iter()
+            .filter(|e| {
+                e.filer == "AMZN" && e.structure == Structure::VendorFinancingItsOwnCustomer
+            })
+            .collect();
+        // FILTERED BY STRUCTURE, not by filer alone. Amazon now has THREE entries — the two scored
+        // loops plus a REFUTED Databricks partnership — so counting all AMZN rows asserted 3 against
+        // a literal 2 and failed. The test is about the financed loops, so it selects those.
+        assert_eq!(
+            amzn.len(),
+            2,
+            "both financed AMZN counterparties must be recorded"
+        );
         for e in &amzn {
             assert_eq!(e.structure, Structure::VendorFinancingItsOwnCustomer);
             assert!(
@@ -1075,6 +1118,13 @@ mod tests {
                 e.magnitude
             );
         }
+        // And the Databricks partnership is recorded as a REFUTATION, not a third loop.
+        assert!(
+            VERIFIED.iter().any(|e| e.filer == "AMZN"
+                && e.counterparty == "Databricks"
+                && e.structure == Structure::Refuted),
+            "the real-but-unfinanced Databricks partnership must be a refutation"
+        );
         // The Anthropic edge specifically must record the milestone gate, because that is what
         // ties the CREDIT to the vendor's own performance rather than the counterparty's credit.
         let a = amzn.iter().find(|e| e.counterparty == "Anthropic").unwrap();

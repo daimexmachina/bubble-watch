@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 273 tests green offline; live assertions opt-in.
+- 274 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -576,7 +576,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Seventeen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Eighteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -586,6 +586,12 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **AMZN / Databricks — REFUTED, and the subtlest case.** Amazon's disclosure is real:
+  "Entered a strategic collaboration with Databricks ... to leverage AWS Trainium chips as the
+  preferred AI chip". It is a COMMERCIAL PARTNERSHIP, not a financing structure — no equity, no
+  facility, no guarantee, no lease. Contrast the AMZN entries that DO score, from the same issuer:
+  an $8B Anthropic stake, a $20B facility, a $100B cloud commitment. The absence of financing terms
+  is the distinguishing fact.
 - **NVDA / Tesla — REFUTED.** Tesla appears in NVIDIA's 10-K only in the COMPETITION risk
   factor, listed among "companies with internal teams designing SoC products ... such as Tesla,
   Inc." alongside AMD, Broadcom and Intel. A rival list, not a relationship. Recorded because it is
