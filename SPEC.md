@@ -375,7 +375,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 274 tests green offline; live assertions opt-in.
+- 275 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -576,7 +576,7 @@ raises it, and a refutation lowers it.
 
 ### 15.4 What the filings actually disclosed
 
-Eighteen verified entries, every one with a citation, a magnitude, and a **written falsifier**.
+Twenty verified entries, every one with a citation, a magnitude, and a **written falsifier**.
 The figures are quoted from filings rather than summed, and that is deliberate — see §15.8:
 
 - **NVDA** — **$500B** of third-party capital organised with Apollo, BlackRock, Blackstone,
@@ -586,6 +586,10 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **AMZN** — $8B in Anthropic notes (Level 3) plus a >$100B cloud commitment and a **$20B facility
   drawable only as AMZN hits compute-delivery milestones**; and $38B + $100B + $28.7B with OpenAI.
 - **AMD** — a warrant for 160M shares at $0.01, vesting against 6 GW of purchases: **9.8% of AMD**.
+- **CRWV / Lambda and CRWV / Crusoe — REFUTED, from ONE sentence.** CoreWeave's competition risk
+  factor: "We also compete with smaller cloud service providers focused on AI, including Crusoe and
+  Lambda." A single clause produced TWO apparent relationships, neither real — the highest
+  concentration of false positives found anywhere in this research.
 - **AMZN / Databricks — REFUTED, and the subtlest case.** Amazon's disclosure is real:
   "Entered a strategic collaboration with Databricks ... to leverage AWS Trainium chips as the
   preferred AI chip". It is a COMMERCIAL PARTNERSHIP, not a financing structure — no equity, no
@@ -610,7 +614,7 @@ The figures are quoted from filings rather than summed, and that is deliberate �
 - **CRWV** — $18.4B of OpenAI commitments against revenue that is **67% Microsoft**, which closes
   the loop MSFT → OpenAI → CoreWeave → MSFT.
 
-### 15.5 Two refutations, retained on purpose
+### 15.5 Refutations, retained on purpose
 
 A rubric that could only rise would be an alarm. Two entries score **zero** and are kept so the
 instrument's ability to come back LOWER is visible:

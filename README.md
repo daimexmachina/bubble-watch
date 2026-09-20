@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 274 tests, no network required
+cargo test                                         # 275 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -192,7 +192,7 @@ a keyword count into a directed edge.
 
 It is scored from a **rubric**, not a ratio — the rubric and its point values are printed in the
 report so a reader can disagree with them. Every scored entry carries a citation to a filing that
-was read, a magnitude, and a **written falsifier**. Eighteen entries. Each magnitude below is quoted from the filing rather than summed, because
+was read, a magnitude, and a **written falsifier**. Twenty entries. Each magnitude below is quoted from the filing rather than summed, because
 **the set contains both dollar figures and percentage shares, several entries restate the same
 commitment, and two entries are REFUTATIONS that contribute nothing** — so any single headline
 total would be a number this tool has not earned:
@@ -216,6 +216,8 @@ total would be a number this tool has not earned:
 | ORCL → OpenAI | **0** | read and **REFUTED** — model-integration list |
 | NVDA → Tesla | **0** | read and **REFUTED** — competitor list |
 | AMZN → Databricks | **0** | read and **REFUTED** — real partnership, **no financing** |
+| CRWV → Lambda | **0** | read and **REFUTED** — competitor, same sentence as Crusoe |
+| CRWV → Crusoe | **0** | read and **REFUTED** — competitor |
 | ORCL backlog counterparty | **0** | **$638B** of RPO, no counterparty named |
 
 **Microsoft → OpenAI → CoreWeave → Microsoft is a closed loop**, with every leg in a filing.

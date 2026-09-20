@@ -673,6 +673,47 @@ pub const VERIFIED: &[VerifiedEdge] = &[
                     in a commercial context rather than in the risk factors. At present the mention \
                     carries no commercial content at all.",
     },
+    // FOURTH AND FIFTH REFUTATIONS, and they arrived as ONE SENTENCE OF COMPETITION DISCLOSURE.
+    // CoreWeave's 10-Qs name both Lambda and Crusoe only as COMPETITORS:
+    //
+    //   "We also compete with smaller cloud service providers focused on AI, including Crusoe and
+    //    Lambda."
+    //
+    // Both had three mentions each, all in 10-Qs, which looked like recurring commercial disclosure.
+    // It is recurring competition disclosure. A neocloud's peers are named in its risk factors by
+    // design, and a detector that scored mentions would have recorded CoreWeave as having business
+    // relationships with two of its rivals.
+    //
+    // Worth recording as a PAIR rather than two separate entries: the finding is that one sentence
+    // produced two apparent edges, which is the highest concentration of false positives found in a
+    // single line anywhere in this research.
+    VerifiedEdge {
+        filer: "CRWV",
+        counterparty: "Lambda",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation: "CoreWeave 10-Q (filed 2025-11-13), competition risk factor, verbatim: \"We also \
+                   compete with smaller cloud service providers focused on AI, including Crusoe and \
+                   Lambda.\" Named three times across CoreWeave's 10-Qs and never in a commercial, \
+                   investment or related-party context.",
+        magnitude: "none attributable to a circular structure — the mentions are a competitor list.",
+        falsifier: "Shown wrong if a CoreWeave filing names Lambda as a customer, supplier or \
+                    counterparty in a commercial context. At present the only mention is the \
+                    competition sentence.",
+    },
+    VerifiedEdge {
+        filer: "CRWV",
+        counterparty: "Crusoe",
+        structure: Structure::Refuted,
+        scale: Scale::Undisclosed,
+        citation: "CoreWeave 10-Q (filed 2025-11-13), competition risk factor, verbatim: \"We also \
+                   compete with smaller cloud service providers focused on AI, including Crusoe and \
+                   Lambda.\" The SAME SENTENCE that produced the Lambda edge — one line, two \
+                   apparent relationships, neither real.",
+        magnitude: "none attributable to a circular structure — the mentions are a competitor list.",
+        falsifier: "Shown wrong if a CoreWeave filing names Crusoe in a commercial context rather \
+                    than in the competition sentence.",
+    },
     // THIRD REFUTATION, AND THE SUBTLEST — because the relationship is REAL. Amazon and Databricks
     // genuinely collaborate. What does not exist is a CIRCULAR-FINANCING structure: no equity
     // stake, no vendor financing, no guarantee, no lease liability. A commercial partnership that
@@ -992,6 +1033,47 @@ mod tests {
         assert!(
             e.falsifier.contains("ANNOUNCEMENT"),
             "and it must be labelled an announcement"
+        );
+    }
+
+    #[test]
+    fn a_single_sentence_can_produce_multiple_apparent_edges() {
+        // The highest concentration of false positives found anywhere in this research: ONE clause
+        // in CoreWeave's competition risk factor — "including Crusoe and Lambda" — produced TWO
+        // apparent relationships, neither real. A detector that scored mention counts would have
+        // recorded a neocloud as having business relationships with two of its named rivals.
+        //
+        // The test asserts both are present AND both are refutations, so a future edit cannot
+        // quietly promote one back to a structure.
+        for cp in ["Lambda", "Crusoe"] {
+            let e = VERIFIED
+                .iter()
+                .find(|e| e.filer == "CRWV" && e.counterparty == cp)
+                .unwrap_or_else(|| panic!("{} must be recorded", cp));
+            assert_eq!(
+                e.structure,
+                Structure::Refuted,
+                "{} is a competitor, not a counterparty",
+                cp
+            );
+            assert!(
+                e.citation.contains("compete"),
+                "{}'s refutation must quote the competition sentence",
+                cp
+            );
+        }
+        // And both cite the same sentence, which is the point.
+        let a = VERIFIED
+            .iter()
+            .find(|e| e.counterparty == "Lambda" && e.filer == "CRWV")
+            .unwrap();
+        let b = VERIFIED
+            .iter()
+            .find(|e| e.counterparty == "Crusoe" && e.filer == "CRWV")
+            .unwrap();
+        assert!(
+            a.citation.contains("Crusoe") && b.citation.contains("Lambda"),
+            "each must record that the same sentence named the other"
         );
     }
 
