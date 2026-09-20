@@ -5,6 +5,7 @@
 //! midpoint, and no silent fallback.
 
 pub mod backtest;
+pub mod circular_rubric;
 pub mod config;
 pub mod exposure;
 pub mod falsifiers;

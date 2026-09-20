@@ -120,11 +120,17 @@ fn offline_mode_scores_only_fixture_backed_indicators() {
         r.coverage
     );
     for i in &r.indicators {
-        let network_backed = !matches!(
-            i.id.as_str(),
-            "frontier_premium" // reads tests/fixtures/arena_frontier_gap.json
-        );
-        if network_backed && i.reading.is_available() {
+        // FIXTURE-BACKED indicators legitimately score offline, because their input is
+        // committed with recorded provenance rather than fetched. The distinction this test
+        // protects is REAL versus INVENTED data, not online versus offline.
+        //
+        //   frontier_premium — reads tests/fixtures/arena_frontier_gap.json (LMArena parquet
+        //                      extracted once, because the source is 56MB of parquet);
+        //   circularity      — reads src/circular_rubric.rs, whose every entry carries a
+        //                      citation to a filing that was actually read. It performs no
+        //                      fetch, so there is nothing for offline mode to disable.
+        let fixture_backed = matches!(i.id.as_str(), "frontier_premium" | "circularity");
+        if !fixture_backed && i.reading.is_available() {
             panic!(
                 "indicator '{}' produced a score with all sources offline — that would be \
                  fabricated data",
@@ -135,7 +141,7 @@ fn offline_mode_scores_only_fixture_backed_indicators() {
     // And the claim is still reported honestly rather than as a confident number.
     assert!(
         r.confidence == "low",
-        "a 4%-coverage composite must not claim better than low confidence, got {}",
+        "a low-coverage composite must not claim better than low confidence, got {}",
         r.confidence
     );
     let _ = std::fs::remove_dir_all(&tmp);

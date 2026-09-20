@@ -85,6 +85,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "narrative_saturation" => Some(Box::new(fundamentals::NarrativeSaturation)),
         "depreciation_subsidy" => Some(Box::new(fundamentals::DepreciationSubsidy)),
         "frontier_premium" => Some(Box::new(fundamentals::FrontierPremium)),
+        "circularity" => Some(Box::new(fundamentals::CircularFinancing)),
         "capex_vs_cashflow" => Some(Box::new(fundamentals::CapexVsCashflow)),
         "funding_gap" => Some(Box::new(fundamentals::FundingGap)),
         "leverage" => Some(Box::new(fundamentals::Leverage)),

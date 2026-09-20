@@ -1487,6 +1487,99 @@ impl Indicator for DepreciationSubsidy {
 /// one release moves it sharply.
 pub struct FrontierPremium;
 
+/// Circular financing, scored from the VERIFIED rubric.
+///
+/// This replaces the weight-0 declared gap. The structure of the argument — why a rubric and
+/// not a ratio, why only read edges count, and why the bias is toward calm — is in
+/// `circular_rubric`.
+///
+/// The value reported is the rubric total; the anchors map it to a stress score. It is NOT
+/// derived from hit counts, so "NVDA names NVIDIA 136 times" can never influence it.
+pub struct CircularFinancing;
+
+impl Indicator for CircularFinancing {
+    fn id(&self) -> &'static str {
+        "circularity"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator.iter().find(|i| i.id == self.id()) {
+            Some(i) => i,
+            None => {
+                return Reading::Unavailable {
+                    reason: "no config entry for circularity".into(),
+                }
+            }
+        };
+        if ic.weight <= 0.0 {
+            return Reading::Unavailable {
+                reason: "circularity is configured at weight 0".into(),
+            };
+        }
+
+        let total = crate::circular_rubric::rubric_total();
+        let ceiling = crate::circular_rubric::rubric_ceiling();
+        let n = crate::circular_rubric::VERIFIED.len();
+        let read = crate::circular_rubric::VERIFIED
+            .iter()
+            .filter(|e| e.structure != crate::circular_rubric::Structure::Refuted)
+            .count();
+        let refuted = n - read;
+        let stress = crate::score::interpolate(total, &ic.anchors);
+
+        // The unread edges, stated as a count rather than hidden. The scan found far more
+        // edges than have been read; every unread one contributes NOTHING, so this indicator
+        // understates and that direction is named.
+        let unread_note = format!(
+            "Only {} edge(s) have been READ and classified; the scan finds roughly 48 real \
+             ecosystem edges, so the great majority contribute nothing. An unread edge scores \
+             ZERO rather than partially, so this reading UNDERSTATES circular financing and \
+             biases the composite toward CALM. Treat it as a lower bound: a low number means \
+             'little has been verified', never 'little is there'.",
+            n
+        );
+
+        Reading::Scored {
+            stress,
+            value: total,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "Rubric total {:.0} of a present ceiling of {:.0} ({:.0}% of the expressible \
+                 scale). Structures verified by reading primary filings: {}. Of {} edges, {} are \
+                 real structures and {} was READ AND REFUTED — Oracle names OpenAI only as a \
+                 model-provider list, so its RPO growth of 359% to $455B is not attributable to \
+                 a named counterparty. That refutation is retained deliberately: it is the \
+                 evidence that this rubric can come back LOWER, which is what separates it from \
+                 a tally of mentions. THE RUBRIC IS THE JUDGMENT AND IT IS ARGUABLE: an equity \
+                 warrant issued as consideration for purchases scores {}; a parent absorbing an \
+                 AI unit's debt scores {}; disclosed related-party revenue with an equity stake \
+                 scores {}; a related-party supply deal scores {}; a refutation scores {}.",
+                total,
+                ceiling,
+                total / ceiling * 100.0,
+                crate::circular_rubric::summary(),
+                n,
+                read,
+                refuted,
+                crate::circular_rubric::Structure::EquityForPurchases.points(),
+                crate::circular_rubric::Structure::AbsorbedUnitDebt.points(),
+                crate::circular_rubric::Structure::RelatedPartyRevenueWithStake.points(),
+                crate::circular_rubric::Structure::RelatedPartySupply.points(),
+                crate::circular_rubric::Structure::Refuted.points()
+            ) + " "
+                + &unread_note,
+            provenance: crate::model::Provenance {
+                source: "sec-edgar (read filings)".into(),
+                endpoint: "sec.gov Archives: AMD 8-K 2025-10-06; SPCX 10-Q 2026-08-04; MSFT \
+                           10-K 2026-07-29; ORCL 8-K 2025-09-09"
+                    .into(),
+                as_of: ctx.obs.retrieved_at.chars().take(10).collect(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 impl Indicator for FrontierPremium {
     fn id(&self) -> &'static str {
         "frontier_premium"

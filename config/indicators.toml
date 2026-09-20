@@ -80,7 +80,20 @@
 # ---------------------------------------------------------------------------
 
 [meta]
-schema_version = "2.0"
+# METHODOLOGY CHANGED 2026-09-20 — schema_version 2.0 -> 2.1.
+#
+# `circularity` moved from weight 0.0 (a declared gap) to weight 6.0 (a scored rubric over
+# verified structures). Total weight 146 -> 152, so every archived run under 2.0 carries a
+# composite computed on a different basis and is NOT comparable. The trend code refuses
+# across this boundary automatically and says why, which is the intended behaviour.
+#
+# A note on the direction of this change, because it cuts against the model's own bias
+# warning: the composite has drifted UP through this session largely by ADDING indicators
+# that score high. Adding circularity at 6.0 raises it again. The defence is not that the
+# new indicator is low, it is that it is EVIDENCE-CAPPED — it can only score structures that
+# were read in a filing and classified, so it rises only when someone does the reading, and
+# it has already come back lower once (the Oracle refutation).
+schema_version = "2.1"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -760,9 +773,23 @@ anchors = [[0.0, 92.0], [15.0, 80.0], [30.0, 62.0], [50.0, 42.0], [80.0, 26.0], 
 
 [[indicator]]
 id = "circularity"
-label = "Circular financing in the AI buildout (not measured)"
-weight = 0.0
-source = "none"
-unit = "share of counterparty revenue funded by the reporting company's own investment"
-rationale = "A real hole in the model, not a failed fetch. Named as a first-order concern by both the BIS [L1] and the IMF [L3], whose GFSR carries a figure captioned 'Artificial Intelligence Circularity'. The pattern: an investor takes a stake in an AI lab or neocloud, which then commits to buying chips, compute or cloud capacity back from the investor, so some reported revenue is the investor's own capital returning. This matters because it makes revenue less independent, and because it turns an equity risk into a revenue risk so a valuation fall hits balance sheet, revenue and earnings together. It is not scored because the measure required is a RELATIONSHIP between companies while every indicator here is a price or a single-company aggregate. SEC XBRL carries no reliable link from an investment to the revenue it generates: the customer-concentration tags that would (us-gaap:ConcentrationRiskPercentage1, us-gaap:ConRevenues) return HTTP 404 for MSFT, that disclosure being 10-K narrative rather than a tagged concept. THE COHORT IS A DELIBERATE CHOICE, NOT AN OVERSIGHT, AND IT WAS REVIEWED ON 2026-09-17: the five scored filers are the CAPITAL SPENDERS — the companies that build and operate the infrastructure. NVIDIA is the largest single node in the circular deals and is absent from those five, but it was measured and found to be structurally the wrong side of the trade to include in the capex indicators: it is FABLESS, with capex at 0.005x operating cash flow and 0.042x revenue against 0.512x and 0.268x for the cohort. Adding it would drag both capex ratios DOWN about 18% and make them measure the supplier rather than the spender, which is a category error rather than an improvement. The circularity gap therefore remains, and it remains for a stated reason. The large private AI labs (OpenAI, Anthropic) also file no public financials, so the counterparties that receive the circular investment are not measurable either. NOTE: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss IS available and returns real values for the cohort, but it is mark-to-market P&L on stakes held, not the amount invested and not the revenue flowing back, so it is deliberately NOT used as a proxy. See [L1] and [L3]. EFFECT: this gap biases the composite toward 'calm', never toward alarm — recycled flows inflate capex and revenue together, so capex reads as genuine demand and capex/revenue is understated. Treat a low score as less reassuring than usual on this dimension."
-anchors = [[0.0, 0.0], [100.0, 100.0]]
+label = "Circular financing in the AI buildout (verified structures only)"
+# WAS 0.0 AS A DECLARED GAP. Raised to 6.0 at methodology 2.1, on evidence.
+#
+# WHY THE GAP WAS CLOSED. The weight-0 entry said circularity was unmeasurable because "the
+# measure required is a RELATIONSHIP between companies while every indicator here is a price
+# or a single-company aggregate". That was too strong. A relationship IS disclosed, in
+# related-party and equity-method accounting, and EDGAR full-text search filtered by `ciks=`
+# attributes it to a filer. The structures below were read in the filings themselves.
+#
+# WHY THE WEIGHT IS SMALL (6.0). The evidence is a handful of read edges, not a series. The
+# rubric is coarse by design, so a small weight limits how far a coarse judgment can move the
+# composite. This is deliberately NOT sized to the importance of the topic — circular
+# financing may well be the single most important feature of this bubble — it is sized to the
+# STRENGTH OF THE EVIDENCE, which is what a weight is meant to express.
+weight = 6.0
+source = "sec-edgar (read filings)"
+unit = "rubric points from verified, classified circular structures (present ceiling 200)"
+rationale = "SCORED FROM A RUBRIC, NOT A RATIO, AND THAT IS STATED RATHER THAN HIDDEN. Every other indicator here is a number retrieved from a source: a spread, a percentage, a ratio. Circular financing is not available as a number, because no free source publishes 'share of counterparty revenue funded by the investor's own capital'. The honest options were to leave it at weight 0 as a gap, or to state the scoring rule explicitly, apply it only to edges whose filing text was actually READ, and let a reader disagree with the weights. This does the second. THE RUBRIC, and it is arguable: equity issued to a customer as consideration for its purchases = 40; a parent absorbing its AI unit's debt onto its own balance sheet = 30; disclosed related-party revenue alongside an equity stake = 25; a related-party supply deal under common control = 10; a mention that was read and REFUTED = 0. WHAT MAKES IT FALSIFIABLE RATHER THAN ASTROLOGY: every scored element is a specific structure in a specific filing, with a citation, a magnitude, and a written falsifier, so each edge can be shown wrong. One ALREADY WAS — Oracle's two OpenAI hits are a model-integration list, not a contract, and score ZERO. An unfalsifiable indicator could not produce that outcome; this one did on its first real test, and the refutation is retained in the set deliberately because it is the evidence that the rubric can come back LOWER. WHAT IS SCORED: only edges whose text was read. The scan finds roughly 48 real ecosystem edges and about five have been read, so the great majority contribute NOTHING, and an unread edge scores zero rather than partially. The reading is therefore a LOWER BOUND and its direction of bias is toward CALM — the opposite of alarm. Treat a low number as 'little has been verified yet', never as 'little is there'. WHAT IS DELIBERATELY NOT SCORED: hit counts. A raw count would let 'NVDA names NVIDIA 136 times' and 'CRWV names CoreWeave 145 times' — companies naming THEMSELVES — dominate the reading. The rubric consumes only classified structures. ALSO NOT SCORED: NPORT-P fund holdings, which give the investor side with real dollar values (Anthropic $56.5M, OpenAI $49.3M) but cannot distinguish a circular arrangement from an ordinary portfolio position. NOT USED AS A PROXY: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss, which is mark-to-market P&L on stakes held rather than the amount invested or the revenue flowing back. See [L1] and [L3]."
+anchor_note = "Rubric total maps to stress. 0 = nothing verified. The present verified set totals 105 of a 200-point ceiling, i.e. roughly half the expressible scale, which is the honest framing: real structures are present AND the scale retains headroom for structures not yet read."
+anchors = [[0.0, 5.0], [15.0, 20.0], [40.0, 35.0], [80.0, 55.0], [140.0, 80.0], [200.0, 95.0]]
