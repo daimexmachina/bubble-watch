@@ -340,6 +340,41 @@ fn verified_passage(filer: &str, counterparty: &str) -> Option<String> {
              made total funding commitments of $13.0 billion...\""
                 .to_string(),
         ),
+        ("AMD", "OpenAI") => Some(
+            "AMD Form 8-K filed 2025-10-06 (Item 1.01, Material Definitive Agreement), \
+             verbatim: \"On October 5, 2025, Advanced Micro Devices, Inc. issued to OpenAI \
+             OpCo, LLC a warrant to purchase up to an aggregate of 160 million shares of \
+             common stock of the Company at an exercise price of $0.01 per share. The Warrant \
+             Shares vest in tranches based on milestones tied to purchases of AMD Instinct GPU \
+             products by Warrantholder... with the first tranche of shares vesting after the \
+             delivery of the initial one (1) gigawatt of AMD Instinct MI450 Series GPU products \
+             and full vesting for the 160 million shares contingent upon Warrantholder, its \
+             affiliates or Authorized Purchasers purchasing six (6) gigawatts... Vesting of \
+             Warrant Shares are further subject to achievement of specified Company stock price \
+             targets that escalate to $600 per share for the final tranche.\" The 8-K Item 3.02 \
+             records this as an unregistered sale of equity securities. Exhibit 99.1 is the \
+             joint press release; AMD's CFO states the partnership is 'expected to deliver tens \
+             of billions of dollars in revenue for AMD'."
+                .to_string(),
+        ),
+        ("ORCL", "OpenAI") => Some(
+            "CONFIRMED, AND THE MENTIONS ARE NOT WHAT THEY LOOK LIKE. Oracle names OpenAI in \
+             its 10-K ZERO times and in 10-Qs ZERO times; both hits are 8-K earnings press \
+             releases, and in BOTH the name appears only as a MODEL PROVIDER, not as a \
+             contract counterparty. FY2026 Q1 (filed 2025-09-09), verbatim: \"we will introduce \
+             a new Cloud Infrastructure service called the 'Oracle AI Database' that enables our \
+             customers to use the Large Language Model of their choice—including Google's \
+             Gemini, OpenAI's ChatGPT, xAI's Grok, etc.—directly on top of the Oracle \
+             Database\". The SAME release reports RPO up 359% to $455 billion and attributes it \
+             to \"four multi-billion-dollar contracts with three different customers\" WITHOUT \
+             NAMING ANY OF THEM. So the largest AI infrastructure contract in the industry is \
+             disclosed as a NUMBER with no counterparty. This is why ORCL shows a hit here and \
+             why the hit must not be read as a disclosure of the contract: the instrument is \
+             finding a model-integration list, and the actual customer relationship is \
+             deliberately anonymous. Oracle's FY2026 10-K reinforces it: \"No single customer \
+             accounted for 10% or more of our total revenues in fiscal 2026, 2025 or 2024.\""
+                .to_string(),
+        ),
         ("SPCX", "Tesla") => Some(
             "SPCX FY2026 10-Q, Note 17 Related Party Transactions, verbatim: \"During the three \
              and six months ended June 30, 2026, the Company purchased $295 million and $329 \
@@ -368,6 +403,13 @@ fn known_magnitude(filer: &str, counterparty: &str) -> Option<String> {
         ("MSFT", "OpenAI") => Some(
             "revenue from OpenAI $24.1B (FY2026), receivable $6.0B, funding commitments $13.0B, \
              stake gain $6.5B"
+                .to_string(),
+        ),
+        ("AMD", "OpenAI") => Some(
+            "warrant for 160,000,000 AMD shares at a $0.01 strike, vesting against 6 GW of GPU \
+             purchases; equal to 9.8% of AMD's 1,632,475,042 shares outstanding (EDGAR dei, \
+             2026-07-29). AMD's stated expectation is 'tens of billions of dollars in revenue' \
+             from OpenAI."
                 .to_string(),
         ),
         ("SPCX", "Tesla") => Some("$329M of Megapack purchases in H1 2026".to_string()),
@@ -568,6 +610,57 @@ mod tests {
             msg.contains("never as a clean bill of health"),
             "must refuse the reassuring reading: {}",
             msg
+        );
+    }
+
+    #[test]
+    fn a_verified_passage_must_state_what_kind_of_relationship_it_is() {
+        // THE LESSON FROM READING THE PASSAGES. A verified hit is not automatically a
+        // circular-financing hit. Oracle names OpenAI twice, and in BOTH cases the name is a
+        // MODEL INTEGRATION LIST ("Google's Gemini, OpenAI's ChatGPT, xAI's Grok"), not a
+        // contract counterparty — while the same press release reports RPO up 359% to $455B
+        // from "four multi-billion-dollar contracts with three different customers" WITHOUT
+        // NAMING ANY OF THEM.
+        //
+        // A tool that surfaced "ORCL names OpenAI 2x" without that context would report the
+        // largest AI contract in the industry as DISCLOSED when it is in fact anonymous. So a
+        // verified passage must classify the relationship, not merely quote text.
+        let p = verified_passage("ORCL", "OpenAI").expect("ORCL x OpenAI was read");
+        assert!(
+            p.contains("MODEL PROVIDER"),
+            "the Oracle passage must classify the mention as a model-provider list: {}",
+            &p[..p.len().min(200)]
+        );
+        assert!(
+            p.contains("NOT a contract counterparty")
+                || p.contains("not as a contract counterparty"),
+            "and must say explicitly what it is NOT: {}",
+            &p[..p.len().min(200)]
+        );
+        assert!(
+            p.contains("455 billion") && p.contains("WITHOUT"),
+            "and must report that the RPO growth is unattributed: {}",
+            &p[..p.len().min(200)]
+        );
+    }
+
+    #[test]
+    fn the_amd_warrant_is_recorded_as_a_measured_magnitude() {
+        // The clearest circular structure found: AMD handed OpenAI a warrant for 160M shares
+        // at a $0.01 strike, vesting against 6 GW of GPU purchases. Both sides are each
+        // other's consideration. It is an 8-K disclosure, so a 10-K-only scan never sees it.
+        let m = known_magnitude("AMD", "OpenAI").expect("AMD x OpenAI has a magnitude");
+        assert!(m.contains("160,000,000"), "share count: {}", m);
+        assert!(
+            m.contains("9.8%"),
+            "must state the dilution, not just the count: {}",
+            m
+        );
+        let p = verified_passage("AMD", "OpenAI").expect("AMD x OpenAI was read");
+        assert!(
+            p.contains("$0.01") && p.contains("6") && p.contains("gigawatts"),
+            "the passage must carry the strike price and the vesting trigger: {}",
+            &p[..p.len().min(200)]
         );
     }
 
