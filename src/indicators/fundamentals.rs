@@ -1557,7 +1557,13 @@ impl Indicator for CircularFinancing {
 
         Reading::Scored {
             stress,
-            value: total,
+            // THE VALUE IS THE SCORED QUANTITY, WHICH IS THE FRACTION — not the rubric total.
+            //
+            // These were inconsistent: `unit` said "pct of the expressible rubric scale" while
+            // `value` carried the raw point total (230), so a reader or a consuming script would
+            // have taken a number in POINTS and interpreted it as a PERCENTAGE. The points total
+            // is still reported, in the detail text where it has room to say what it is.
+            value: fraction_pct,
             unit: ic.unit.clone(),
             detail: format!(
                 "Rubric total {:.0} of a present ceiling of {:.0} — {:.0}% of the expressible \

@@ -280,6 +280,75 @@ fn a_missing_explosiveness_test_is_disclosed_not_silent() {
 }
 
 #[test]
+fn every_scored_value_is_commensurate_with_its_own_unit() {
+    // A VALUE AND A UNIT THAT DISAGREE ABOUT SCALE IS A SILENT MISREADING WAITING TO HAPPEN.
+    //
+    // `circularity` shipped with `unit = "pct of the expressible rubric scale"` while `value`
+    // carried the raw point total (230) — a number in POINTS labelled as a PERCENTAGE. Nothing
+    // failed, because both fields are free-form; the report simply stated two things that
+    // cannot both be true, and a consuming script would have taken it at face value.
+    //
+    // This asserts the property that was violated, for EVERY scored indicator: where a unit
+    // claims a percentage, the value must actually lie on a percentage scale.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixture absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx { obs: &obs, cfg: &c };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-09-20T00:00:00Z");
+
+    for i in &r.indicators {
+        if !i.reading.is_available() {
+            continue;
+        }
+        let (Some(v), Some(u)) = (i.reading.value(), i.reading.unit()) else {
+            continue;
+        };
+        let unit_l = u.to_lowercase();
+        let claims_pct = unit_l.contains("pct")
+            || unit_l.contains("percent")
+            || unit_l.trim_start().starts_with('%');
+        if !claims_pct {
+            continue;
+        }
+        // A UNIT CAN DESCRIBE A LEVEL OR A CHANGE, AND ONLY LEVELS ARE BOUNDED 0-100.
+        // `breadth` legitimately reports -2.67 "pct" — the percentage CHANGE in the
+        // equal-weight/cap-weight ratio, which is signed and can exceed 100 in principle. So
+        // the assertion distinguishes the two: a bounded share must lie within 0-100, while a
+        // signed change must simply NOT be a raw point total masquerading as a percentage.
+        let is_change = unit_l.contains("change")
+            || unit_l.contains("spread")
+            || unit_l.contains("gap")
+            || unit_l.contains("deviation")
+            || unit_l.contains("vs ")
+            || unit_l.contains("minus");
+        if is_change {
+            // A change is unbounded in sign but should still be of plausible magnitude: a
+            // figure in the thousands would indicate points being passed off as percent.
+            assert!(
+                v.abs() <= 1000.0,
+                "indicator '{}' has unit {:?} (a change) but value {} — that magnitude suggests \
+                 the value is not on the scale the unit claims",
+                i.id,
+                u,
+                v
+            );
+        } else {
+            assert!(
+                (0.0..=100.0).contains(&v),
+                "indicator '{}' has unit {:?} but value {} — a bounded share must lie within \
+                 0-100, so either the unit or the value is describing the wrong quantity",
+                i.id,
+                u,
+                v
+            );
+        }
+    }
+}
+
+#[test]
 fn the_pre_v11_trend_defaults_match_the_shipped_config() {
     // `TrendCfg::defaults()` exists so a config written before v1.1 still loads and behaves
     // the same way, and its doc comment claims it matches the shipped `[trend]` block. Once

@@ -403,6 +403,20 @@ impl Reading {
     pub fn is_available(&self) -> bool {
         matches!(self, Reading::Scored { .. })
     }
+    /// The underlying primitive, in `unit`. None when the reading is a gap.
+    pub fn value(&self) -> Option<f64> {
+        match self {
+            Reading::Scored { value, .. } => Some(*value),
+            Reading::Unavailable { .. } => None,
+        }
+    }
+    /// The unit the primitive is expressed in. None when the reading is a gap.
+    pub fn unit(&self) -> Option<&str> {
+        match self {
+            Reading::Scored { unit, .. } => Some(unit.as_str()),
+            Reading::Unavailable { .. } => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
