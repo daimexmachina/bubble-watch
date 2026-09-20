@@ -871,6 +871,27 @@ fn trend_card(r: &Report) -> String {
                  date, so ALL recorded change is model change."
                     .to_string()
             };
+            // THE PHASE AND TIMING CROSSING GOES IN THE SAME BLOCK, because it is the consequence
+            // a reader acts on. The phase label and the quoted time range are keyed to absolute
+            // composite thresholds, so a model edit can move BOTH without the market moving — the
+            // archive shows 'early' -> 'mid' at a methodology boundary, which halves the quoted
+            // window. Saying only "the composite is model-driven" understates what that did.
+            let phase_block = if d.phase_changes_at_model_boundary > 0 {
+                format!(
+                    "<br><b style='color:#8a5a00'>The PHASE LABEL and the TIMING OVERLAY moved with \
+                     it.</b> The phase crossed {} time(s) at a methodology boundary ('{}' to '{}'), \
+                     so the same market was reported as '{}' with one time range and '{}' with \
+                     another — 'early' quotes 30-72 months, 'mid' quotes 15-42. <b>The window \
+                     halved without the market moving.</b> The timing output is already stated to \
+                     be not-a-probability and fitted on n=2; this is a different caveat: a model \
+                     edit can move it, so two ranges from different methodology versions are not \
+                     comparable either.",
+                    d.phase_changes_at_model_boundary, d.phase_first, d.phase_last,
+                    d.phase_first, d.phase_last
+                )
+            } else {
+                String::new()
+            };
             format!(
                 "<div style='margin-top:14px;padding:10px 12px;border-left:3px solid #b8860b;\
                  background:#fffbf0;font-size:12.5px;line-height:1.5'>\
@@ -880,11 +901,12 @@ fn trend_card(r: &Report) -> String {
                  <span style='color:#666'>A composite from one methodology version and a composite \
                  from another are two DIFFERENT INSTRUMENTS, not one instrument at two times. The \
                  tool refuses that comparison everywhere else; this table is the one place it was \
-                 still implied.</span></div>",
+                 still implied.</span>{}</div>",
                 d.epochs.len(),
                 d.model_change,
                 market,
-                share
+                share,
+                phase_block
             )
         }
         _ => String::new(),
