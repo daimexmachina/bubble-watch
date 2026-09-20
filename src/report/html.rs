@@ -1273,7 +1273,7 @@ pub fn render(r: &Report) -> String {
 
 <p class="disc">{disc}</p>
 </body></html>"##,
-        css = REPORT_CSS,
+        css = style_block(),
         date = esc(&r.generated_at),
         gen = esc(&r.generated_at),
         ver = esc(&r.version),

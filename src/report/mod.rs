@@ -612,4 +612,49 @@ mod tests {
             "a citation must never become a resource load"
         );
     }
+
+    #[test]
+    fn the_rendered_report_actually_ships_working_css() {
+        // A DEFECT THIS SUITE COULD NOT SEE. The report stylesheet was extracted into `REPORT_CSS`
+        // and the renderer was bound to that CONSTANT rather than to `style_block()`, which
+        // resolves the format escapes. The page shipped 103 `{{` sequences inside its <style>
+        // block, which makes EVERY rule in it invalid — no background, no card border, no
+        // max-width, no fixed table layout. It rendered as unstyled browser default and all 282
+        // tests passed, because every CSS test called `style_block()` directly and so exercised the
+        // resolver while the RENDERER bound the raw escaped string. The two were never compared.
+        //
+        // The check is therefore on the RENDERED output, which is the only thing that matters.
+        let c = cfg();
+        let obs = Observations::default();
+        let r = build(
+            vec![scored("valuation_stretch", 14.0, 42.0)],
+            &obs,
+            &c,
+            "2026-09-16T00:00:00Z",
+        );
+        let h = crate::report::html::render(&r);
+        let start = h
+            .find("<style>")
+            .expect("the report must carry a stylesheet");
+        let end = h[start..]
+            .find("</style>")
+            .map(|e| start + e)
+            .expect("the stylesheet must be closed");
+        let css = &h[start..end];
+
+        assert!(
+            !css.contains("{{") && !css.contains("}}"),
+            "the rendered stylesheet contains un-resolved format escapes, so the browser discards \
+             EVERY rule in it and the page renders unstyled. The renderer must interpolate \
+             `style_block()`, not the escaped `REPORT_CSS` constant."
+        );
+        // And it must carry the rules the report depends on, so an empty-but-unbroken sheet fails too.
+        for rule in [".card {", "table.ind { table-layout:fixed; }", ".prov {"] {
+            assert!(
+                css.contains(rule),
+                "the rendered stylesheet is missing {:?} — the page would lose that styling",
+                rule
+            );
+        }
+    }
 }
