@@ -199,6 +199,55 @@ pub struct VerifiedEdge {
 /// extracted a magnitude, and written what would falsify it.
 pub const VERIFIED: &[VerifiedEdge] = &[
     VerifiedEdge {
+        filer: "CRWV",
+        counterparty: "OpenAI",
+        structure: Structure::VendorFinancingItsOwnCustomer,
+        scale: Scale::Severe,
+        citation: "CoreWeave FY2025 10-K (filed 2026-03-02): \"In May 2025, we entered into a \
+                   master services agreement with OpenAI OpCo, LLC (\"OpenAI\") and in September \
+                   2025, we entered into an order form under this master services agreement \
+                   pursuant to which OpenAI has committed to pay us up to approximately $6.5 \
+                   billion through May 31, 2031\" AND, separately: \"in March 2025, we entered \
+                   into a master services agreement with OpenAI, a private company, pursuant to \
+                   which OpenAI has committed to pay us up to approximately $11.9 billion through \
+                   October 2030.\" The concentration note adds: \"We recognized an aggregate of \
+                   approximately 67% of our revenue from our top customer, Microsoft, for the year \
+                   ended December 31, 2025.\"",
+        magnitude: "$6.5 BILLION committed through 2031 PLUS $11.9 BILLION committed through 2030 \
+                    = $18.4 BILLION of OpenAI commitments to CoreWeave, against a company whose \
+                    revenue is 67% from Microsoft and 77% from its top two customers.",
+        falsifier: "Shown wrong if the OpenAI order forms are not drawn — they are commitments to \
+                    pay UP TO an amount, not take-or-pay guarantees, and CoreWeave's own risk \
+                    section warns of 'customers in their early stages and/or private companies \
+                    that may have increased risk of insolvency' and that OpenAI is 'a private \
+                    company' whose ability to pay is unrated. Also falsified if Microsoft's 67% \
+                    share falls as OpenAI ramps, which would mean the concentration is \
+                    transitional rather than structural.",
+    },
+    VerifiedEdge {
+        filer: "CRWV",
+        counterparty: "MSFT",
+        structure: Structure::VendorFinancingItsOwnCustomer,
+        scale: Scale::Severe,
+        citation: "CoreWeave FY2025 10-K (filed 2026-03-02), concentration of credit risk note, \
+                   verbatim: \"We recognized an aggregate of approximately 67% of our revenue from \
+                   our top customer, Microsoft, for the year ended December 31, 2025. We \
+                   recognized an aggregate of approximately 77% of our revenue from our top two \
+                   customers for the year ended December 31, 2024, and approximately 73% of our \
+                   revenue for the year ended December 31, 2023, from our top three customers.\" \
+                   Read alongside the MSFT 10-K, which discloses a $13.0B funding commitment to \
+                   OpenAI and a $24.1B revenue relationship with it, and the CRWV 10-K, which \
+                   records OpenAI committing $18.4B to CoreWeave.",
+        magnitude:
+            "67% of CoreWeave's FY2025 revenue is MICROSOFT — a single customer. CoreWeave's \
+                    total revenue is roughly $5B scale, so this is a concentrated, \
+                    single-counterparty business.",
+        falsifier: "Shown wrong if the 67% is transitional while OpenAI's $18.4B ramps and the \
+                    customer base broadens. CoreWeave states it expects OpenAI to become 'a \
+                    significant customer in future periods', which if realised would falsify the \
+                    concentration reading without falsifying the circularity.",
+    },
+    VerifiedEdge {
         filer: "AMZN",
         counterparty: "Anthropic",
         structure: Structure::VendorFinancingItsOwnCustomer,
@@ -547,6 +596,37 @@ mod tests {
                 e.counterparty
             );
         }
+    }
+
+    #[test]
+    fn the_microsoft_openai_coreweave_chain_is_fully_representable() {
+        // The clearest COMPLETE LOOP found: Microsoft invests in OpenAI; OpenAI commits $18.4B
+        // to CoreWeave; CoreWeave buys NVIDIA GPUs; and 67% of CoreWeave's revenue IS Microsoft.
+        // Every link is in a filing, and all four must be present or the loop cannot be read.
+        let has = |f: &str, c: &str| VERIFIED.iter().any(|e| e.filer == f && e.counterparty == c);
+        assert!(has("MSFT", "OpenAI"), "Microsoft -> OpenAI");
+        assert!(has("CRWV", "OpenAI"), "OpenAI -> CoreWeave");
+        assert!(has("CRWV", "MSFT"), "CoreWeave's revenue is Microsoft");
+        assert!(has("NVDA", "OpenAI"), "NVIDIA in the same loop");
+        // And the CoreWeave figures must be exact, because a rounded commitment would make the
+        // loop look smaller than it is.
+        let cw = VERIFIED
+            .iter()
+            .find(|e| e.filer == "CRWV" && e.counterparty == "OpenAI")
+            .unwrap();
+        assert!(
+            cw.magnitude.contains("18.4"),
+            "the total must be stated: {}",
+            cw.magnitude
+        );
+        let ms = VERIFIED
+            .iter()
+            .find(|e| e.filer == "CRWV" && e.counterparty == "MSFT")
+            .unwrap();
+        assert!(
+            ms.magnitude.contains("67%"),
+            "the concentration must be stated"
+        );
     }
 
     #[test]
