@@ -325,7 +325,19 @@ fn host_of(url: &str) -> String {
 }
 
 /// Honest, descriptive UA for SEC endpoints (they require contact info).
-pub const UA_EDGAR: &str = "bubble-watch/0.1 (daim; personal research tool)";
+/// SEC requires a descriptive User-Agent that INCLUDES A CONTACT ADDRESS.
+///
+/// Measured on this host, 2026-09-20: the previous value — which named the tool and a
+/// purpose but carried NO contact address — now receives **HTTP 403** from
+/// `www.sec.gov/Archives/...`, with a body reading "Your Request Originates from an
+/// Undeclared Automated Tool". A browser User-Agent is refused too (also 403), so this is
+/// not bot-detection evasion: SEC's policy is that automated clients must be identifiable
+/// AND reachable, and a UA without a contact does not qualify.
+///
+/// Adding a contact address returns 200 for the identical request. The address is a
+/// deliberately non-routable placeholder so no real mailbox is published in a public repo;
+/// anyone deploying this should substitute their own.
+pub const UA_EDGAR: &str = "bubble-watch/0.1 (research; contact: research@example.invalid)";
 pub const UA_WEB: &str =
     "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 Chrome/120 Safari/537.36";
 pub const UA_FRED: &str = "Mozilla/5.0 (compatible; bubble-watch/0.1)";

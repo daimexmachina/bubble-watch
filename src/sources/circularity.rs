@@ -53,7 +53,7 @@ use crate::http::Fetcher;
 use serde::{Deserialize, Serialize};
 
 /// A descriptive UA is required by EDGAR policy.
-const UA: &str = "bubble-watch/0.1 (research tool; contact via repository)";
+const UA: &str = "bubble-watch/0.1 (research; contact: research@example.invalid)";
 
 /// A counterparty worth tracking: a private AI lab or compute provider that investors
 /// are known to fund, and whose revenue therefore may return to its funders.

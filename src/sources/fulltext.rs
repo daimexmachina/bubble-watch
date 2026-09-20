@@ -33,7 +33,7 @@ use crate::http::Fetcher;
 use crate::model::{Point, Provenance, Series};
 
 /// A descriptive UA is required by EDGAR policy, and a generic one gets throttled.
-const UA: &str = "bubble-watch/0.1 (research tool; contact via repository)";
+const UA: &str = "bubble-watch/0.1 (research; contact: research@example.invalid)";
 
 /// Query one form type over one date range and return the hit count.
 ///
