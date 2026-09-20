@@ -664,6 +664,136 @@ fn the_docs_do_not_contradict_the_build() {
             name
         );
     }
+
+    // THE SAME DRIFT HAPPENS IN THE CONFIG'S OWN PROSE, WHERE NOTHING WAS CHECKING FOR IT.
+    //
+    // README and SPEC were asserted above. The `rationale` and `anchor_note` strings in
+    // config/indicators.toml were NOT — and that prose ships to the reader in the JSON report,
+    // describing the model's own weights and counts in the same artifact the numbers appear in.
+    // When this assertion was added, the circularity rationale had been stale on TWO counts at
+    // once (claiming "roughly 48 real ecosystem edges" against a constant of 47, and "about five
+    // have been read" against 23), contradicting the 47/23 printed elsewhere in the SAME file.
+    //
+    // SCOPE: only the facts that are DERIVABLE from the build are asserted, because that is what
+    // can be checked mechanically. Prose about the rubric's judgment stays unwatched by design —
+    // a test that pinned every sentence would fail on every copy-edit and train people to edit
+    // the test rather than read the failure.
+    let c = cfg();
+    let circ = c
+        .indicator("circularity")
+        .expect("circularity must be configured");
+    let scanned = bubble_watch::circular_rubric::SCANNED_EDGES;
+    let read = bubble_watch::circular_rubric::VERIFIED.len();
+
+    // The scanned-edge count must be the CODE's number, not a remembered one.
+    let scanned_word = |n: usize| n.to_string();
+    assert!(
+        circ.rationale
+            .contains(&format!("{} real ecosystem edges", scanned_word(scanned))),
+        "the circularity rationale must state the real scanned-edge count ({}). It is derivable \
+         from SCANNED_EDGES — state it rather than remembering it.",
+        scanned
+    );
+
+    // The read count must likewise match VERIFIED.len().
+    //
+    // EXTRACTION, NOT A SUBSTRING BLACKLIST. A blacklist cannot work here: "five have been read"
+    // is a SUBSTRING of "twenty-five have been read", so a naive `!contains("five have been
+    // read")` would fail spuriously the moment the set reached 25 entries while the document was
+    // perfectly correct. Every "<count> have been read" phrase is therefore located and its
+    // preceding token compared against the real count, which also keeps working as the list grows
+    // without needing the words to be enumerated here.
+    let read_words = [
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty",
+        "twenty-one",
+        "twenty-two",
+        "twenty-three",
+        "twenty-four",
+        "twenty-five",
+        "twenty-six",
+        "twenty-seven",
+        "twenty-eight",
+        "twenty-nine",
+        "thirty",
+    ];
+    let read_word = read_words.get(read).copied().unwrap_or("many");
+    let needle = " have been read";
+    let mut found = 0usize;
+    for (i, _) in circ.rationale.match_indices(needle) {
+        // Walk back over the count token: letters and hyphens only, so "twenty-three" is one token
+        // and a preceding word like "roughly" is not mistaken for part of it.
+        let prefix = &circ.rationale[..i];
+        let start = prefix
+            .rfind(|ch: char| !(ch.is_ascii_alphabetic() || ch == '-'))
+            .map(|j| j + 1)
+            .unwrap_or(0);
+        let token = prefix[start..].trim();
+        // Ignore the words that legitimately precede the phrase without being a count.
+        if matches!(
+            token,
+            "been" | "have" | "was" | "were" | "not" | "never" | "all" | "only"
+        ) {
+            continue;
+        }
+        found += 1;
+        assert_eq!(
+            token, read_word,
+            "the circularity rationale states {:?} have been read, but {} entries are read ({}). \
+             This string ships to the reader in the JSON report, so it must not drift.",
+            token, read, read_word
+        );
+    }
+    assert!(
+        found > 0,
+        "the circularity rationale no longer states how many edges have been read; that count is a \
+         substantive fact a reader relies on, and it must be stated rather than dropped."
+    );
+
+    // NO AGGREGATE EXPOSURE TOTAL MAY APPEAR IN THE CONFIG EITHER. SPEC 15.8 forbids one in
+    // README and SPEC and explains why (mixed units, restated commitments, refutations that must
+    // contribute nothing); an early revision of this very config comment stated one anyway. The
+    // rule is asserted across every indicator's prose, not just circularity's.
+    for ind in &c.indicator {
+        let lower = ind.rationale.to_lowercase();
+        for phrase in [
+            "of disclosed exposure",
+            "combined exposure",
+            "total exposure",
+            "of exposure across",
+        ] {
+            if let Some(i) = lower.find(phrase) {
+                let window = &lower[i.saturating_sub(60)..i];
+                assert!(
+                    !window.contains('$') || !window.chars().any(|ch| ch.is_ascii_digit()),
+                    "the {} rationale appears to state an aggregate exposure total near {:?} — no \
+                     single total is honest here (SPEC 15.8). Quote each figure with its source.",
+                    ind.id,
+                    &ind.rationale
+                        [i.saturating_sub(60)..(i + phrase.len()).min(ind.rationale.len())]
+                );
+            }
+        }
+    }
 }
 
 #[test]

@@ -896,12 +896,14 @@ pub fn rubric_total() -> f64 {
 
 /// How many edges the scan knows about but which have not been read and classified.
 ///
-/// THE PROBLEM THIS SOLVES. The scored quantity is the fraction of the expressible scale, and
-/// the ceiling was `max_points * VERIFIED.len()` — the number of edges READ. Every time an edge
-/// is read it left the denominator and entered the numerator, so the fraction rose as a
-/// function of READING EFFORT rather than of what the market is doing. Left alone, the composite
-/// would drift upward every time someone did more work, which is a measurement artifact and not
-/// a fact about the AI economy.
+/// THE PROBLEM THIS SOLVES. An earlier revision scored the FRACTION of a ceiling that was
+/// `max_points * VERIFIED.len()` — the number of edges READ. Every time an edge was read it left
+/// the denominator and entered the numerator, so the fraction rose as a function of READING
+/// EFFORT rather than of what the market is doing. Left alone, the composite would drift upward
+/// every time someone did more work, which is a measurement artifact and not a fact about the AI
+/// economy. `SCANNED_EDGES` was then tried as the denominator; that measures COVERAGE, a
+/// confidence question rather than a stress question, and it buried a genuine 65% reading down to
+/// 12% purely because most edges are unread. Neither is used as the denominator now.
 ///
 /// The measured scan finds 47 real ecosystem edges: 67 hits, minus 2 SELF-MATCHES ("NVDA x
 /// NVIDIA" and "CRWV x CoreWeave" are companies naming THEMSELVES) and 18 generic-supplier
@@ -910,15 +912,15 @@ pub fn rubric_total() -> f64 {
 /// This was 48 in an earlier draft, from a filter that caught only the NVIDIA self-match and
 /// missed CoreWeave's. The error was found by re-deriving the count with a ticker-to-name map
 /// instead of an ad-hoc exclusion list. Recorded because the comment IS the audit trail for a
-/// stated number, and a wrong audit trail is worse than no number. Using that as the denominator means reading an edge moves points into
-/// the numerator while the denominator stays put — so the reading reflects what was FOUND rather
-/// than how hard anyone looked.
+/// stated number, and a wrong audit trail is worse than no number.
 ///
-/// A REFUTATION STILL LOWERS THE SCORE. It contributes 0 points, so it dilutes the mean toward
-/// zero — which is the property that makes this a measurement rather than an alarm. Tested.
+/// It is reported as COVERAGE, separately from the score, because "how much has been verified" is
+/// a confidence statement about the instrument and not a measure of market stress. An unread edge
+/// scores ZERO rather than partially, so the reading is a LOWER BOUND that biases toward CALM.
 ///
-/// Reported as COVERAGE, separately from the score, because "how much has been verified" is a
-/// confidence statement about the instrument and not a measure of market stress.
+/// A REFUTATION STILL LOWERS THE SCORE. It contributes 0 points while still counting as an edge,
+/// so it dilutes the mean toward zero — which is the property that makes this a measurement
+/// rather than an alarm. Tested.
 pub const SCANNED_EDGES: usize = 47;
 pub fn rubric_ceiling() -> f64 {
     // Uses the TRUE maximum structure rather than a named variant, so adding a stronger
@@ -1546,8 +1548,9 @@ mod tests {
         //
         //   * appending an AVERAGE edge (points equal to the current average) must leave the
         //     fraction essentially unchanged — finding more of the same tells you nothing new;
-        //   * appending a REFUTATION must LOWER it, because a refutation adds to the ceiling
-        //     and nothing to the total. A rubric that could not fall would be an alarm.
+        //   * appending a REFUTATION must LOWER it, because a refutation contributes zero points
+        //     while still counting as an edge, so it DILUTES the mean. A rubric that could not
+        //     fall would be an alarm.
         let t = rubric_total();
         let n = VERIFIED.len() as f64;
         let max = rubric_ceiling();
