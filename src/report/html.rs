@@ -542,10 +542,13 @@ pub fn render_dashboard(
                 if d.abs() < 0.5 {
                     continue;
                 }
-                let col = if d > 0.0 { "#ef6c00" } else { "#2e7d32" };
+                // A CLASS, not an inline colour: an inline style beats any rule, so the
+                // dark-mode media query could not reach these and they rendered at 3.08:1
+                // (light) and 3.39:1 (dark). See .chip-up / .chip-down.
+                let cls = if d > 0.0 { "chip-up" } else { "chip-down" };
                 chips.push_str(&format!(
-                    "<span class='chip' style='color:{col}'>{id} {d:+.1}</span>",
-                    col = col,
+                    "<span class='chip {cls}'>{id} {d:+.1}</span>",
+                    cls = cls,
                     id = esc(k),
                     d = d
                 ));
@@ -661,10 +664,10 @@ body {{ margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"
   svg .gapnote {{ fill:#d7a98c; }}
   svg .latest {{ fill:#c9a7e0; }} }}
 h1 {{ font-size:20px; margin:0 0 2px; }}
-.sub {{ color:#777; font-size:12px; margin-bottom:20px; }}
+.sub {{ color:#6b6b6b; font-size:12px; margin-bottom:20px; }}
 .card {{ background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:18px; margin-bottom:18px; }}
 .score {{ font-size:44px; font-weight:700; line-height:1; letter-spacing:-1px; }}
-.score small {{ font-size:15px; font-weight:400; color:#888; }}
+.score small {{ font-size:15px; font-weight:400; color:#6b6b6b; }}
 .phase {{ display:inline-block; padding:2px 9px; border-radius:999px; color:#fff; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.5px; }}
 table {{ border-collapse:collapse; width:100%; font-size:13px; }}
 th {{ text-align:left; background:#f2f2f2; padding:8px; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#666; }}
@@ -676,12 +679,14 @@ td.dt {{ color:#555; font-size:12px; overflow-wrap:anywhere; }}
 .prov {{ overflow-wrap:anywhere; }}
 td.chips {{ font-size:11.5px; }}
 .chip {{ display:inline-block; margin-right:7px; white-space:nowrap; font-variant-numeric:tabular-nums; }}
+.chip-up {{ color:#a84800; }}    /* was #ef6c00 = 3.08:1 on white */
+.chip-down {{ color:#2e7d32; }}
 a {{ color:#1a73e8; text-decoration:none; font-weight:600; }}
 a:hover {{ text-decoration:underline; }}
 .lm-b {{ font-size:13.5px; line-height:1.55; }}
 .spark-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
 code {{ background:#f1f1f1; padding:1px 5px; border-radius:3px; font-size:12.5px; }}
-.disc {{ color:#777; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
+.disc {{ color:#6b6b6b; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }}
 /* Falsification panel. Colour-coded by verdict so the AGAINST rows are
    impossible to miss, since they are the ones a reader most needs to see. */
 .card.fals {{ border-left:4px solid #2e7d32; }}
@@ -731,7 +736,22 @@ svg .band {{ opacity:1; }}
 svg .barlab {{ fill:#3c3c3c; }}
 svg .gapnote {{ fill:#7a5c4a; }}
 svg .latest {{ fill:#6a1b9a; }}
-.chart-empty {{ font-size:12.5px; color:#777; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
+.chart-empty {{ font-size:12.5px; color:#6b6b6b; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }}
+
+/* DASHBOARD DARK MODE — measured, same treatment as the report's.
+   This page has its OWN stylesheet, so fixing the report did not fix it: a scan of
+   the served dashboard found 4 failing elements in light and 6 in dark. */
+@media (prefers-color-scheme: dark) {{
+  .sub, .chart-empty, .ind-id, td.dt, .exp-note, .f-d, details.tech summary,
+  .prov, .lbl, li, p {{ color:#b0b0b0; }}
+  .disc {{ color:#b0b0b0; }}
+  th {{ background:#1e1e1e; color:#d0d0d0; border-color:#333; }}
+  a {{ color:#8ab4f8; }}
+  .chip-up {{ color:#ffb74d; }}
+  .chip-down {{ color:#81c784; }}
+  .score small {{ color:#b0b0b0; }}
+  .chart-empty {{ background:#1e1e1e; }}
+}}
 .ind-chart {{ border-top:1px solid #eee; padding-top:10px; margin-top:12px; }}
 .ind-chart:first-child {{ border-top:0; margin-top:0; padding-top:0; }}
 .ind-h {{ font-size:12.5px; font-weight:600; color:#333; }}
@@ -739,7 +759,11 @@ svg .latest {{ fill:#6a1b9a; }}
 @media (prefers-color-scheme: dark) {{
   .ind-chart {{ border-color:#2a2a2a; }}
   .ind-h {{ color:#ddd; }}
-  .chart-empty {{ background:#1e1e1e !important; color:#aaa !important; }}
+  /* .ind-id is declared ABOVE this block, so a rule here would be overridden by the
+     later plain declaration — it must come after, or use !important. This was the last
+     measured failure (3.27:1): my first dashboard dark block sits before .ind-id. */
+  .ind-id {{ color:#b0b0b0; }}
+  .chart-empty {{ background:#1e1e1e !important; color:#a8a8a8 !important; }}
 }}
 </style></head><body>
 
@@ -751,7 +775,7 @@ svg .latest {{ fill:#6a1b9a; }}
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Score over recorded runs</h3>
   {series}
-  <p style="margin:10px 0 0;font-size:12px;color:#6b6b6b">The shaded bands are the documented phases
+  <p class="mut" style="margin:10px 0 0;font-size:12px">The shaded bands are the documented phases
   (early below 35, mid 35–55, late 55–75, critical above 75) and the scale is fixed at 0–100, so a
   small move looks small rather than being stretched to fill the chart. These are comparisons of
   measured state, not a forecast.</p>
