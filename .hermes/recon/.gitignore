@@ -1,0 +1,38 @@
+# Reconnaissance scratch — never commit raw fetch bodies.
+#
+# NOTE ON PATHS: this file sits at .hermes/recon/, so patterns are relative to
+# THAT directory. The first version used ".hermes/recon/**", which can never
+# match from here and silently ignored nothing — `git check-ignore` returns no
+# match. That is a dangerous failure mode for an ignore rule: it looks like
+# protection and is not.
+#
+# Rationale for ignoring: the recon lenses download many MB of raw HTTP bodies
+# (HTML, parquet, XLSX, PDF). Those are scratch, not source. Committing them to
+# this PUBLIC repo adds ~22MB of third-party content and hundreds of thousands of
+# lines, trips the global pre-push guard on false positives (scraped CSS class
+# names match the dashed-token shape the guard looks for; scraped pages also carry
+# phone-shaped strings and absolute paths), and makes the repo a redistribution
+# point for material the project does not own.
+#
+# What IS committed: the written findings (*.md), the probe ledger
+# (*-results.jsonl) and the small probe scripts — the evidence, which is ours.
+
+# Whole capture directories.
+2026-09-20/raw/
+2026-09-20/l1/
+2026-09-20/l1b/
+
+# Raw response bodies and command output by extension, anywhere below here.
+**/*.body
+**/*.out
+**/*.err
+**/*.body.txt
+
+# Bulk artifacts pulled while probing.
+**/*.csv
+**/*.pdf
+
+# Any future dated capture dir keeps the same shape.
+*/raw/
+*/l1/
+*/l1b/
