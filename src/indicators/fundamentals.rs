@@ -2283,7 +2283,7 @@ mod tests {
 
     #[test]
     fn the_growth_reports_the_lag_it_used() {
-        let w: Vec<_> = (0..20).map(|i| wk("2025-01-01", 100)).collect();
+        let w: Vec<_> = (0..20).map(|_| wk("2025-01-01", 100)).collect();
         let g = yoy_growth_pct(&w).expect("growth");
         assert_eq!(g.lag_weeks, CALIBRATION_LAG_WEEKS);
         assert!(g.pct.abs() < 1e-9, "a flat series grows 0%");
@@ -2467,5 +2467,101 @@ mod tests {
             }
             other => panic!("missing data must not score, got {:?}", other),
         }
+    }
+
+    // ---- anchor_note prose must match the anchors ---------------------------
+
+    #[test]
+    fn the_energisation_anchor_note_states_the_arithmetic_the_anchors_actually_produce() {
+        // PROSE DRIFT, GUARDED. The anchor_note claimed "60 months — the current
+        // reading — sits at 26". The anchors actually map 60 months to 32 and 65
+        // months to 26, so the note had been written from a different value and was
+        // simply wrong. The config ships to the reader, so a wrong number there
+        // contradicts the number printed beside it in the same report.
+        //
+        // The claims in the note are DERIVABLE, so they can be checked rather than
+        // remembered. If the anchors are retuned, this fails and forces the note to
+        // be rewritten with the new arithmetic instead of going stale silently.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let ic = cfg.indicator("energisation_delay").expect("configured");
+
+        let at_60 = crate::score::interpolate(60.0, &ic.anchors);
+        let at_65 = crate::score::interpolate(65.0, &ic.anchors);
+        assert!(
+            (at_60 - 32.0).abs() < 0.5,
+            "the note claims 60 months computes to 32; it computes to {at_60:.1}"
+        );
+        assert!(
+            (at_65 - 26.0).abs() < 0.5,
+            "the note claims 65 months computes to 26; it computes to {at_65:.1}"
+        );
+
+        // And the note must actually CONTAIN those two claims, so a future edit
+        // cannot silently delete the arithmetic and leave a bare assertion that
+        // something is "low stress".
+        //
+        // READ FROM THE FILE, not the parsed config: `anchor_note` is not a field on
+        // IndicatorCfg (it is not deserialized), so it is invisible to the struct and
+        // would otherwise go unchecked — which is how the stale claim survived.
+        let raw = std::fs::read_to_string("config/indicators.toml").expect("config readable");
+        let start = raw
+            .find("id = \"energisation_delay\"")
+            .expect("the indicator must be configured");
+        let block = &raw[start..];
+        let note_at = block
+            .find("anchor_note = \"")
+            .expect("the indicator must carry an anchor_note");
+        let note_body = &block[note_at..];
+        let note = &note_body[..note_body.find('\n').unwrap_or(note_body.len())];
+
+        for needle in ["60 months computes to 32", "65 months to 26"] {
+            assert!(
+                note.contains(needle),
+                "the anchor_note must state {:?} so the claim is checkable: {}",
+                needle,
+                note
+            );
+        }
+
+        // The note must NOT still carry the corrected error.
+        assert!(
+            !note.contains("60 months — the current reading — sits at 26"),
+            "the anchor_note still carries the stale claim this test exists to catch"
+        );
+    }
+
+    #[test]
+    fn the_energisation_anchors_invert_as_the_rationale_claims() {
+        // The rationale says a LONGER wait reads as LESS stress. Assert the
+        // direction, so a future retune cannot silently un-invert it.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let ic = cfg.indicator("energisation_delay").expect("configured");
+        let short = crate::score::interpolate(20.0, &ic.anchors);
+        let long = crate::score::interpolate(70.0, &ic.anchors);
+        assert!(
+            short > long,
+            "anchors must INVERT: a 20-month queue ({short:.1}) must score HIGHER stress than a \
+             70-month queue ({long:.1})"
+        );
+    }
+
+    #[test]
+    fn the_inference_demand_anchor_note_and_config_agree_on_the_lag() {
+        // The rationale states the lag is 13 weeks "the calibrated lag". The code
+        // constant is the authority; if they diverge the shipped prose is wrong.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let ic = cfg.indicator("inference_demand").expect("configured");
+        assert!(
+            ic.rationale.contains("13-WEEK lag") || ic.rationale.contains("13-week lag"),
+            "the rationale must name the calibration lag the code uses ({} weeks)",
+            CALIBRATION_LAG_WEEKS
+        );
+        assert_eq!(
+            CALIBRATION_LAG_WEEKS, 13,
+            "the constant and the prose drifted apart"
+        );
     }
 }
