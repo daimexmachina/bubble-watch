@@ -382,6 +382,7 @@ pub fn build(obs: &Observations) -> Vec<Falsifier> {
         f1_revenue_arriving(obs),
         f2_credit_stress(obs),
         f3_self_correcting(obs),
+        f4_export_controls_binding(obs),
     ]
 }
 
@@ -391,6 +392,77 @@ pub fn counter_evidence_count(f: &[Falsifier]) -> usize {
     f.iter()
         .filter(|x| x.verdict == Verdict::CounterEvidence)
         .count()
+}
+
+/// F4 — Are export controls actually binding on non-US AI revenue?
+///
+/// ## Why a QUIET period is the counter-evidence
+///
+/// The natural framing is that US export controls cap where AI hardware and
+/// services can be sold, which would constrain revenue. If that were the binding
+/// constraint, the rule-making pace should be high and tightening. Measured over
+/// the twelve months to 2026-09-20: **two** BIS rules matched "advanced
+/// computing", and the most recent (2026-07-14) **eases** access for the United
+/// Arab Emirates.
+///
+/// So a LOW count reads as counter-evidence to the constraint narrative, and a
+/// HIGH count with recent tightening would read as consistent with it. The
+/// direction is the opposite of every other falsifier here, which is exactly why
+/// it is worth having.
+///
+/// ## Thresholds are a judgement, and are stated
+///
+/// There is no natural law about rule counts. The bands below are chosen from the
+/// observed pace (2/year) with generous margins, and they are deliberately coarse:
+/// this test exists to catch a REGIME change in policy activity, not to grade
+/// month-to-month noise.
+pub fn f4_export_controls_binding(obs: &Observations) -> Falsifier {
+    const ID: &str = "export_controls";
+    const QUESTION: &str = "Are US export controls tightening enough to bind non-US AI revenue?";
+
+    let Some(count) = obs.bis_year_count else {
+        return Falsifier {
+            id: ID.into(),
+            question: QUESTION.into(),
+            reading: "not measured".into(),
+            verdict: Verdict::Uninformative,
+            detail: "The Federal Register API did not return a rule count, so the pace of export-control activity is unknown. This is a reported gap, not a finding of calm."
+                .into(),
+        };
+    };
+    let latest = obs
+        .bis_latest_date
+        .as_deref()
+        .unwrap_or("no dated rule in the window");
+
+    // Coarse regimes. 2/year was the measured pace; a shift to 6+ would be a real
+    // change in policy tempo.
+    let (verdict, reading) = if count >= 6 {
+        (
+            Verdict::ConsistentWithBubble,
+            format!("{count} BIS rules in twelve months ({latest}) — an active rule-making period"),
+        )
+    } else if count <= 2 {
+        (
+            Verdict::CounterEvidence,
+            format!("{count} BIS rules in twelve months ({latest}) — a QUIET policy period"),
+        )
+    } else {
+        (
+            Verdict::Uninformative,
+            format!("{count} BIS rules in twelve months ({latest}) — neither active nor quiet"),
+        )
+    };
+
+    Falsifier {
+        id: ID.into(),
+        question: QUESTION.into(),
+        reading,
+        verdict,
+        detail: format!(
+            "Counted via the Federal Register API (keyless), BIS documents matching              \"advanced computing\" published in the trailing twelve months. A LOW count is              COUNTER-EVIDENCE here, which is the opposite of every other test in this panel: if              export controls were the binding constraint on AI revenue, the rule-making pace              would be high and tightening. It is not. WHAT THIS CANNOT SEE: (1) rule COUNT is not              rule SEVERITY — one sweeping rule can bind far more than six narrow ones, and this              test does not read the text; (2) enforcement and licensing practice can tighten              without any new rule, which is invisible here; (3) controls also constrain              COMPETITORS, which can help a US vendor's revenue rather than hurt it, so the              direction is not even unambiguous. Thresholds are coarse by design — this catches a              regime change, not month-to-month noise."
+        ),
+    }
 }
 
 #[cfg(test)]
@@ -568,7 +640,11 @@ mod tests {
         // to "everything is fine". Uninformative is its own answer.
         let o = Observations::default();
         let f = build(&o);
-        assert_eq!(f.len(), 3);
+        assert_eq!(
+            f.len(),
+            4,
+            "F4 (export controls) was added to widen the falsification side"
+        );
         for x in &f {
             assert_eq!(
                 x.verdict,
@@ -588,5 +664,86 @@ mod tests {
             assert!(!f.reading.is_empty(), "{} has no reading", f.id);
             assert!(!f.detail.is_empty(), "{} has no detail", f.id);
         }
+    }
+
+    // ---- F4 export controls ------------------------------------------------
+
+    #[test]
+    fn a_quiet_export_control_period_is_counter_evidence() {
+        // The whole point of this falsifier, and it INVERTS the usual reading: a
+        // low rule count argues AGAINST the constraint narrative rather than for
+        // calm.
+        let mut obs = Observations::default();
+        obs.bis_year_count = Some(2);
+        obs.bis_latest_date = Some("2026-07-14".into());
+        let f = f4_export_controls_binding(&obs);
+        assert_eq!(
+            f.verdict,
+            Verdict::CounterEvidence,
+            "2 rules in a year must read as counter-evidence, got {:?}",
+            f.verdict
+        );
+        assert!(f.reading.contains("QUIET"), "got {}", f.reading);
+    }
+
+    #[test]
+    fn an_active_rule_making_period_is_consistent_with_the_thesis() {
+        let mut obs = Observations::default();
+        obs.bis_year_count = Some(9);
+        obs.bis_latest_date = Some("2026-09-01".into());
+        let f = f4_export_controls_binding(&obs);
+        assert_eq!(f.verdict, Verdict::ConsistentWithBubble);
+        assert!(f.reading.contains("active"), "got {}", f.reading);
+    }
+
+    #[test]
+    fn a_middling_count_forces_no_direction() {
+        let mut obs = Observations::default();
+        obs.bis_year_count = Some(4);
+        let f = f4_export_controls_binding(&obs);
+        assert_eq!(
+            f.verdict,
+            Verdict::Uninformative,
+            "4 rules is neither active nor quiet; the test must not invent a direction"
+        );
+    }
+
+    #[test]
+    fn an_unmeasured_count_is_uninformative_not_calm() {
+        // Absence of the data must never be reported as a finding of low activity.
+        let obs = Observations::default();
+        let f = f4_export_controls_binding(&obs);
+        assert_eq!(f.verdict, Verdict::Uninformative);
+        assert!(
+            f.detail.contains("not a finding of calm"),
+            "must distinguish a gap from a reading: {}",
+            f.detail
+        );
+    }
+
+    #[test]
+    fn the_falsifier_states_what_it_cannot_see() {
+        // Rule count is not rule severity; enforcement can tighten without a rule.
+        let mut obs = Observations::default();
+        obs.bis_year_count = Some(2);
+        let f = f4_export_controls_binding(&obs);
+        for needle in ["SEVERITY", "enforcement", "COMPETITORS"] {
+            assert!(
+                f.detail.contains(needle),
+                "the detail must disclose the {:?} limitation: {}",
+                needle,
+                f.detail
+            );
+        }
+    }
+
+    #[test]
+    fn the_panel_now_carries_four_tests() {
+        // F4 was added to widen the falsification side, which the project's own
+        // plan called thin.
+        let obs = Observations::default();
+        let all = build(&obs);
+        assert_eq!(all.len(), 4, "expected four falsifiers, got {}", all.len());
+        assert!(all.iter().any(|f| f.id == "export_controls"));
     }
 }

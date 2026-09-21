@@ -4,6 +4,7 @@ pub mod census;
 pub mod circularity;
 pub mod edgar;
 pub mod eia;
+pub mod federalregister;
 pub mod fred;
 pub mod fulltext;
 pub mod nport;
@@ -296,6 +297,35 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         Err(e) => obs.failures.push(SourceFailure {
             source: "openrouter".into(),
             endpoint: openrouter::RANKINGS_CHART.into(),
+            reason: e,
+        }),
+    }
+
+    // US export-control activity. This feeds a FALSIFIER, not the composite:
+    // two BIS rule documents in twelve months is a QUIET policy period, and the
+    // most recent rule EASES access for one jurisdiction. Counting that as stress
+    // would be counting a non-event.
+    match federalregister::bis_rule_count(f) {
+        Ok((count, latest)) => {
+            obs.bis_year_count = Some(count);
+            match latest {
+                Some(d) => {
+                    obs.bis_latest_date = Some(d.clone());
+                    obs.bis_provenance = Some(crate::model::Provenance {
+                        source: "federalregister".into(),
+                        endpoint: federalregister::QUERY_URL.into(),
+                        as_of: d,
+                        retrieved_at: obs.retrieved_at.clone(),
+                    });
+                }
+                // A count of zero has no newest date, which is expected rather
+                // than a failure: the count itself is the measurement.
+                None => {}
+            }
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "federalregister".into(),
+            endpoint: federalregister::QUERY_URL.into(),
             reason: e,
         }),
     }
