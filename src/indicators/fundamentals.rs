@@ -2476,8 +2476,17 @@ mod tests {
         // PROSE DRIFT, GUARDED. The anchor_note claimed "60 months — the current
         // reading — sits at 26". The anchors actually map 60 months to 32 and 65
         // months to 26, so the note had been written from a different value and was
-        // simply wrong. The config ships to the reader, so a wrong number there
-        // contradicts the number printed beside it in the same report.
+        // simply wrong.
+        //
+        // SCOPE, CORRECTED: when I fixed this I wrote in the commit message that the
+        // note "ships to the reader, contradicting the number printed beside it".
+        // That was WRONG. `anchor_note` is not a field on IndicatorCfg — nothing
+        // deserializes it, nothing renders it, and grepping the built report for
+        // either the stale or the corrected text returns zero matches. It is dead
+        // config text, so the harm was to the config's credibility as a reference,
+        // NOT to a reader of the report. Overstating a defect is the same class of
+        // error as understating one, so the correction is recorded rather than the
+        // commit quietly left standing.
         //
         // The claims in the note are DERIVABLE, so they can be checked rather than
         // remembered. If the anchors are retuned, this fails and forces the note to
