@@ -7,6 +7,7 @@ pub mod eia;
 pub mod fred;
 pub mod fulltext;
 pub mod nport;
+pub mod openrouter;
 pub mod yahoo;
 pub mod z1;
 
