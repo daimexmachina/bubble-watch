@@ -2046,6 +2046,40 @@ impl Indicator for EnergisationDelay {
             };
         };
 
+        // STALENESS GUARD. The source URL pins a DATED release directory
+        // (`.../2026-05/...thru2025.xlsx`), so the file never changes and the
+        // indicator would keep reporting the same 2025 cohort forever while the
+        // report showed today's retrieval time. That is the
+        // stale-presented-as-current failure the honesty contract forbids, and it
+        // is invisible to a reader.
+        //
+        // The cohort year is the meaningful age: a queue dataset covering service
+        // through 2025 says nothing about 2027, however recently it was downloaded.
+        // The ceiling is deliberately generous because LBNL publishes roughly
+        // annually and queue data lags service by construction — but past it, the
+        // reading becomes a REPORTED GAP naming the vintage rather than a number
+        // that looks current.
+        const MAX_COHORT_AGE_MONTHS: i32 = 30;
+        let run_date = crate::history::date_of(&ctx.obs.retrieved_at);
+        let run_year: i32 = run_date
+            .split('-')
+            .next()
+            .and_then(|y| y.parse().ok())
+            .unwrap_or(last_y);
+        let cohort_age_months = (run_year - last_y) * 12;
+        if cohort_age_months > MAX_COHORT_AGE_MONTHS {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the LBNL queue data is STALE: its latest in-service cohort is {last_y}, which is \
+                     about {} months behind this run ({run_date}). The workbook URL pins a dated \
+                     release, so the file does not update itself — check whether LBNL has published a \
+                     newer release and update the pin. Refusing to score a cohort this old rather \
+                     than presenting it as current.",
+                    cohort_age_months
+                ),
+            };
+        }
+
         // SCORED ON THE LEVEL, via inverted anchors: a longer delay means demand is
         // physically ahead of supply, which reads as LESS bubble stress.
         let stress = crate::score::interpolate(latest.median_months, &ic.anchors);
@@ -2330,5 +2364,108 @@ mod tests {
             age,
             ceiling_days
         );
+    }
+
+    // ---- energisation_delay staleness ---------------------------------------
+
+    fn lbnl_year(y: i32, med: f64, n: u32) -> crate::sources::lbnl::EnergisationYear {
+        crate::sources::lbnl::EnergisationYear {
+            year: y,
+            n,
+            mean_months: med,
+            median_months: med,
+            p75_months: med + 20.0,
+        }
+    }
+
+    #[test]
+    fn a_stale_cohort_becomes_a_gap_not_a_current_reading() {
+        // The URL pins a DATED release, so the file never updates itself. A queue
+        // dataset covering service only through 2020 says nothing about today,
+        // however recently it was downloaded — and the report would otherwise show
+        // today's retrieval time beside a five-year-old cohort.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let mut obs = crate::model::Observations::default();
+        obs.retrieved_at = "2026-09-21T00:00:00Z".into();
+        obs.lbnl_years = Some(vec![lbnl_year(2019, 46.5, 153), lbnl_year(2020, 46.1, 227)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        let r = EnergisationDelay.evaluate(&ctx);
+        match r {
+            Reading::Unavailable { reason } => {
+                assert!(reason.contains("STALE"), "must say it is stale: {}", reason);
+                assert!(
+                    reason.contains("2020"),
+                    "must name the cohort vintage: {}",
+                    reason
+                );
+                assert!(
+                    reason.contains("Refusing to score"),
+                    "must state the refusal: {}",
+                    reason
+                );
+            }
+            other => panic!("a 6-year-old cohort must not be scored, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn a_recent_cohort_is_scored_normally() {
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let mut obs = crate::model::Observations::default();
+        obs.retrieved_at = "2026-09-21T00:00:00Z".into();
+        obs.lbnl_years = Some(vec![lbnl_year(2024, 62.7, 335), lbnl_year(2025, 60.8, 294)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match EnergisationDelay.evaluate(&ctx) {
+            Reading::Scored { value, .. } => {
+                assert!((value - 60.8).abs() < 1e-9, "got {}", value)
+            }
+            other => panic!("a 2025 cohort must score in 2026, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn the_ceiling_is_generous_enough_for_the_real_publication_lag() {
+        // The pinned release is dated 2026-05 and covers cohorts through 2025, so a
+        // ~12-month lag is NORMAL here. A ceiling tight enough to trip on that would
+        // make the indicator permanently a gap.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let mut obs = crate::model::Observations::default();
+        obs.retrieved_at = "2026-09-21T00:00:00Z".into();
+        // A cohort from LAST year must score: that is the observed publication lag.
+        obs.lbnl_years = Some(vec![lbnl_year(2024, 62.7, 335), lbnl_year(2025, 60.8, 294)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        assert!(
+            matches!(EnergisationDelay.evaluate(&ctx), Reading::Scored { .. }),
+            "a 12-month publication lag is normal and must not trip the guard"
+        );
+    }
+
+    #[test]
+    fn a_missing_dataset_is_a_gap_naming_the_source() {
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let obs = crate::model::Observations::default();
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match EnergisationDelay.evaluate(&ctx) {
+            Reading::Unavailable { reason } => {
+                assert!(reason.contains("LBNL"), "must name the source: {}", reason)
+            }
+            other => panic!("missing data must not score, got {:?}", other),
+        }
     }
 }
