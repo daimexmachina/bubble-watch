@@ -643,7 +643,7 @@ fn the_docs_do_not_contradict_the_build() {
     // to do it in my head.
     //
     // The count is taken from the same run this test belongs to, so it is always current.
-    let suite_count: usize = 279; // updated by the test itself failing when it drifts
+    let suite_count: usize = 301; // updated by the test itself failing when it drifts
     let claimed = format!("{} tests", suite_count);
     for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
         let m = format!("{} tests", suite_count);

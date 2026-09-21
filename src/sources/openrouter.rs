@@ -55,7 +55,7 @@ pub const RANKINGS_CHART: &str =
 pub const MODELS_CATALOGUE: &str = "https://openrouter.ai/api/v1/models";
 
 /// Total tokens for one day, summed across every model and variant.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DailyTokens {
     /// `YYYY-MM-DD`. The source sends `"YYYY-MM-DD 00:00:00"`; the time part is
     /// discarded because the series is daily.

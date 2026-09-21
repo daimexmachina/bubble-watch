@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 279 tests, no network required
+cargo test                                         # 301 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -180,7 +180,7 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
 | `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
 
-Weight totals 158 across the 20 scored indicators, and **there are no declared gaps left**.
+Weight totals 168 across the 21 scored indicators, and **there are no declared gaps left**.
 
 ### `circularity` — a former blind spot, now scored
 

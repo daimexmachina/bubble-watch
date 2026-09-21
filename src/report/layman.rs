@@ -46,6 +46,7 @@ fn plain_name(id: &str) -> &'static str {
         "credit_hy" => "what weaker companies pay to borrow money",
         "credit_ig" => "what strong companies pay to borrow money",
         "capex_vs_cashflow" => "how much AI companies spend building data centres compared with the cash their business brings in",
+        "inference_demand" => "whether the AI compute that has been built is actually being used, and whether that use is still growing",
         "funding_gap" => "how much AI companies spend compared with what they sell",
         "leverage" => "how much debt these companies are carrying",
         "foreign_interest" => "how much foreign money owns US shares",

@@ -364,6 +364,38 @@ pub struct Observations {
     /// cannot silently reformat it.
     #[serde(default)]
     pub eia_ratio: Option<String>,
+    /// OpenRouter daily token volume: the most recent COMPLETE day only, plus the
+    /// number of rows behind it. Stored as the parsed record (not a formatted
+    /// string) so the indicator cannot silently reinterpret it, and deliberately
+    /// NOT the whole back-fill, which is mostly stub days.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub openrouter_latest_day: Option<crate::sources::openrouter::DailyTokens>,
+    /// OpenRouter weekly history, oldest first, with any partial trailing week
+    /// already removed by the source layer.
+    #[serde(default)]
+    pub openrouter_weeks: Vec<crate::sources::openrouter::DailyTokens>,
+    /// When the OpenRouter data was retrieved, for provenance.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub openrouter_provenance: Option<Provenance>,
+    /// Taiwan export orders (MOEA), oldest first, in US$ million.
+    #[serde(default)]
+    pub taiwan_export_orders: Vec<Point>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub taiwan_provenance: Option<Provenance>,
+    /// LBNL interconnection queue: median months from request to commercial
+    /// operation, most recent in-service year.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lbnl_median_months: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lbnl_provenance: Option<Provenance>,
+    /// Federal Register BIS document count over the trailing year, for the
+    /// export-control falsifier.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bis_year_count: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bis_latest_date: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bis_provenance: Option<Provenance>,
     pub failures: Vec<SourceFailure>,
     pub retrieved_at: String,
 }

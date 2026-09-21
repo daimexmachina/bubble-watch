@@ -249,6 +249,57 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         obs.edgar.insert(ticker.to_string(), cf);
     }
 
+    // ---- demand-side sources (added 2026-09-20) --------------------------
+    //
+    // These are the model's first measurements of whether AI compute is USED,
+    // where the demand sits, and what constrains it. Each degrades to a gap.
+
+    match openrouter::fetch_daily(f) {
+        Ok(days) => {
+            // Keep ONLY the most recent COMPLETE day. The feed back-fills
+            // incompletely: on 2026-09-20 six of seven dates carried 1-10 rows
+            // against 544 for the one complete day, so storing the newest date
+            // unconditionally would read a stub as a demand collapse.
+            let floor = days.iter().map(|d| d.model_count).max().unwrap_or(0) / 2;
+            if let Some(latest) = openrouter::latest_complete_day(&days, floor.max(1)) {
+                obs.openrouter_latest_day = Some(latest.clone());
+                obs.openrouter_provenance = Some(crate::model::Provenance {
+                    source: "openrouter".into(),
+                    endpoint: openrouter::RANKINGS_MODELS.to_string(),
+                    as_of: latest.date.clone(),
+                    retrieved_at: obs.retrieved_at.clone(),
+                });
+            } else {
+                obs.failures.push(SourceFailure {
+                    source: "openrouter".into(),
+                    endpoint: openrouter::RANKINGS_MODELS.into(),
+                    reason: "no COMPLETE day in the rankings window — every date had fewer \
+                             than half the maximum row count, so none is safe to read"
+                        .into(),
+                });
+            }
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "openrouter".into(),
+            endpoint: openrouter::RANKINGS_MODELS.into(),
+            reason: e,
+        }),
+    }
+
+    match openrouter::fetch_weekly(f) {
+        Ok(weeks) => {
+            // The newest week is routinely PARTIAL (measured 5.8e10 against
+            // 1.29e14, a ~2,200x artefact). Without this the growth calculation
+            // reported 0.0x over a year in which usage grew ~24x.
+            obs.openrouter_weeks = openrouter::drop_partial_trailing_week(&weeks, 10.0);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "openrouter".into(),
+            endpoint: openrouter::RANKINGS_CHART.into(),
+            reason: e,
+        }),
+    }
+
     let _ = offline;
     obs
 }

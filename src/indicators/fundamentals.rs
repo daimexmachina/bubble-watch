@@ -1785,6 +1785,191 @@ impl Indicator for FrontierPremium {
     }
 }
 
+/// Measured AI inference demand, from public token volume.
+///
+/// ## What this measures that nothing else in the model does
+///
+/// Every other indicator is cost, financing, price/froth or physical delivery.
+/// None answers "is the compute being USED". `capex_vs_cashflow` can see that
+/// spending outruns revenue but cannot distinguish two opposite worlds:
+/// **demand failing** (spending was speculative) from **demand outrunning supply**
+/// (spending is justified and the constraint is capacity). This separates them.
+///
+/// ## The signal is the RATE, and it is INVERTED
+///
+/// A level cannot show deceleration, and deceleration is the early warning. So the
+/// scored quantity is the year-over-year change in weekly token volume.
+///
+/// **The anchors invert**, which is unusual here: every other indicator treats a
+/// higher value as more stress. Rising usage is evidence the buildout is being
+/// consumed, so it reads as LESS bubble stress. That inversion is deliberate and is
+/// stated in the config rationale too, because an indicator that reads against the
+/// thesis must be visible as such rather than quietly doing so.
+///
+/// ## Bounds, stated rather than hidden
+///
+/// OpenRouter is ONE aggregator, so this is a **lower bound** on total AI usage and
+/// its bias is toward calm. The report carries that caveat on the row.
+pub struct InferenceDemand;
+
+impl Indicator for InferenceDemand {
+    fn id(&self) -> &'static str {
+        "inference_demand"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight <= 0.0 {
+            return Reading::Unavailable {
+                reason: "inference_demand is configured at weight 0".into(),
+            };
+        }
+        let weeks = &ctx.obs.openrouter_weeks;
+        if weeks.len() < MIN_WEEKS_FOR_GROWTH {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the OpenRouter weekly series holds {} point(s); at least {} are needed to                      measure a rate of change rather than a single level",
+                    weeks.len(),
+                    MIN_WEEKS_FOR_GROWTH
+                ),
+            };
+        }
+        let growth = match yoy_growth_pct(weeks) {
+            Some(g) => g,
+            None => {
+                return Reading::Unavailable {
+                    reason: "no comparable week one year back in the OpenRouter history, so \
+                             year-over-year demand growth cannot be computed"
+                        .into(),
+                }
+            }
+        };
+        let last = weeks.last().expect("non-empty checked above");
+        let stress = crate::score::interpolate(growth.pct, &ic.anchors);
+
+        // The interval: the latest complete day's open-weight share, reported as a
+        // range because 1.38% of tokens in the live payload could not be classified.
+        let share_txt = match ctx.obs.openrouter_latest_day.as_ref() {
+            Some(d) => match (d.open_weight_share(), d.open_weight_share_upper()) {
+                (Some(lo), Some(hi)) => format!(
+                    "open-weight share {:.0}-{:.0}% of the latest complete day ({:.2}% of tokens \
+                     could not be classified)",
+                    lo * 100.0,
+                    hi * 100.0,
+                    d.unclassified_share().unwrap_or(0.0) * 100.0
+                ),
+                _ => "open-weight share unavailable for the latest complete day".to_string(),
+            },
+            None => "no complete day available for an open-weight share".to_string(),
+        };
+
+        Reading::Scored {
+            stress,
+            value: growth.pct,
+            unit: format!(
+                "pct change in weekly tokens over {} weeks (the calibrated lag)",
+                growth.lag_weeks
+            ),
+            detail: format!(
+                "Weekly AI token volume is {:+.1}% over the last {} weeks (latest week {}, \
+                 {:.3e} tokens). {} A LEVEL cannot show deceleration; this is a RATE, and deceleration \
+                 with the level still high is the warning this indicator exists to surface. \
+                 LIMIT: OpenRouter is ONE aggregator, not the market, so the level is a LOWER \
+                 BOUND on total AI usage and its bias is toward CALM. The anchors INVERT relative \
+                 to every other indicator here — rising usage means the buildout is being \
+                 consumed, which is LESS bubble stress, not more.",
+                growth.pct,
+                growth.lag_weeks,
+                last.date,
+                last.total_tokens as f64,
+                share_txt
+            ),
+            provenance: ctx
+                .obs
+                .openrouter_provenance
+                .clone()
+                .unwrap_or(crate::model::Provenance {
+                    source: "openrouter".into(),
+                    endpoint: crate::sources::openrouter::RANKINGS_CHART.into(),
+                    as_of: last.date.clone(),
+                    retrieved_at: ctx.obs.retrieved_at.clone(),
+                }),
+        }
+    }
+}
+
+/// The lag, in weeks, at which the indicator is CALIBRATED.
+///
+/// ## Why a quarter and not a year
+///
+/// Two points define a line but not a trend, and a scale needs a DISTRIBUTION to
+/// be calibrated against. Measured on the live chart (52 usable weeks):
+///
+/// | lag | observations | range | current |
+/// |---|---|---|---|
+/// | 13 weeks | **39** | +3.5% … +385.1% | +176.3% |
+/// | 26 weeks | 26 | +318.2% … +739.3% | +535.0% |
+/// | 51 weeks | **1** | +2,351.4% | +2,351.4% |
+///
+/// A year-long lag has exactly ONE observation in the available history, so any
+/// anchor set built from it is a scale of a single point — and the reading clamps
+/// to the top of it. That is what happened on the first live run: +2,351% over a
+/// 51-week lag against anchors derived from the 13-week distribution, giving a
+/// saturated score that could not distinguish anything from anything.
+///
+/// A quarter has 39 observations, so its anchors describe a real distribution and
+/// the current reading sits INSIDE it. The trade is explicit: a quarter detects
+/// deceleration later than a year would, and it is the longest lag this series can
+/// actually support a calibration for.
+pub const CALIBRATION_LAG_WEEKS: usize = 13;
+
+/// Fewest weekly points before a growth rate is worth computing at all.
+pub const MIN_WEEKS_FOR_GROWTH: usize = CALIBRATION_LAG_WEEKS + 1;
+
+/// The lag actually used, and the growth over it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DemandGrowth {
+    /// How many weeks back the comparison reached.
+    pub lag_weeks: usize,
+    /// Percentage change over that lag. Positive means usage grew.
+    pub pct: f64,
+}
+
+/// Growth in weekly token volume over the LONGEST lag the series supports.
+///
+/// Measured reality: the chart yields 52 usable weeks after the partial trailing
+/// week is dropped. A 52-week year-over-year comparison therefore needs 53 points
+/// and is not available; the longest achievable lag is 51, and this returns that
+/// rather than refusing. Pretending a 51-week comparison is 12 months, or
+/// refusing outright when a 51-week comparison is perfectly sound, would both be
+/// worse than reporting the lag honestly.
+///
+/// Returns `None` rather than 0.0 when no comparison is possible: 0.0 would read
+/// as "demand is flat", which is a different claim from "not measurable".
+pub fn yoy_growth_pct(weeks: &[crate::sources::openrouter::DailyTokens]) -> Option<DemandGrowth> {
+    if weeks.len() < MIN_WEEKS_FOR_GROWTH {
+        return None;
+    }
+    let last = weeks.last()?;
+    // The CALIBRATION lag, not the longest available: see CALIBRATION_LAG_WEEKS.
+    let lag = CALIBRATION_LAG_WEEKS.min(weeks.len() - 1);
+    let base = weeks.get(weeks.len() - 1 - lag)?;
+    if base.total_tokens == 0 {
+        return None;
+    }
+    Some(DemandGrowth {
+        lag_weeks: lag,
+        pct: (last.total_tokens as f64 / base.total_tokens as f64 - 1.0) * 100.0,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1902,5 +2087,86 @@ mod tests {
             Reading::Unavailable { reason } => assert!(reason.contains("cohort")),
             _ => panic!("expected Unavailable"),
         }
+    }
+
+    // ---- inference_demand ------------------------------------------------
+
+    fn wk(date: &str, tokens: u64) -> crate::sources::openrouter::DailyTokens {
+        crate::sources::openrouter::DailyTokens {
+            date: date.into(),
+            total_tokens: tokens,
+            open_weight_tokens: 0,
+            unclassified_tokens: 0,
+            model_count: 10,
+        }
+    }
+
+    #[test]
+    fn growth_is_measured_at_the_calibrated_lag_not_the_longest_available() {
+        // THE SATURATION BUG. A 51-week lag has exactly ONE observation in the
+        // live history, so anchors calibrated on the 13-week distribution clamp
+        // the reading to the top of the scale and it distinguishes nothing.
+        let mut w: Vec<_> = (0..52).map(|i| wk("2025-01-01", 100 + i)).collect();
+        // Make the last point 3x the 13-back point.
+        let n = w.len();
+        w[n - 1] = wk("2026-01-01", w[n - 14].total_tokens * 4);
+        let g = yoy_growth_pct(&w).expect("growth");
+        assert_eq!(
+            g.lag_weeks, CALIBRATION_LAG_WEEKS,
+            "must use the calibrated lag, not the longest available"
+        );
+    }
+
+    #[test]
+    fn a_series_shorter_than_the_calibration_lag_is_unavailable_not_guessed() {
+        let w: Vec<_> = (0..5).map(|i| wk("2025-01-01", 100 + i)).collect();
+        assert!(
+            yoy_growth_pct(&w).is_none(),
+            "must refuse rather than compute a rate from too few points"
+        );
+    }
+
+    #[test]
+    fn the_growth_reports_the_lag_it_used() {
+        let w: Vec<_> = (0..20).map(|i| wk("2025-01-01", 100)).collect();
+        let g = yoy_growth_pct(&w).expect("growth");
+        assert_eq!(g.lag_weeks, CALIBRATION_LAG_WEEKS);
+        assert!(g.pct.abs() < 1e-9, "a flat series grows 0%");
+    }
+
+    #[test]
+    fn a_flat_series_reads_high_stress_because_flat_usage_against_growing_capex_is_the_failure() {
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let ic = cfg.indicator("inference_demand").expect("configured");
+        let flat = crate::score::interpolate(0.0, &ic.anchors);
+        let strong = crate::score::interpolate(250.0, &ic.anchors);
+        assert!(
+            flat > strong,
+            "the anchors must INVERT: flat usage ({flat:.1}) must score HIGHER stress than \
+             strong growth ({strong:.1})"
+        );
+        assert!(
+            flat >= 70.0,
+            "flat usage should sit high on the scale, got {flat:.1}"
+        );
+        assert!(
+            strong <= 30.0,
+            "strong growth should sit low, got {strong:.1}"
+        );
+    }
+
+    #[test]
+    fn the_current_measured_reading_is_inside_the_calibrated_range_not_clamped() {
+        // Guards the specific failure: the live reading sat at the top anchor.
+        // Measured 13-week growth has median +150.7%, p90 +247.5%, max +385.1%.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("config loads");
+        let ic = cfg.indicator("inference_demand").expect("configured");
+        let s = crate::score::interpolate(176.3, &ic.anchors);
+        assert!(
+            (4.0..60.0).contains(&s),
+            "a typical measured reading must land mid-scale, not at an extreme: {s:.1}"
+        );
     }
 }

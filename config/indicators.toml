@@ -93,11 +93,20 @@
 # new indicator is low, it is that it is EVIDENCE-CAPPED — it can only score structures that
 # were read in a filing and classified, so it rises only when someone does the reading, and
 # it has already come back lower once (the Oracle refutation).
+# METHODOLOGY CHANGED 2026-09-20 — schema_version 2.2 -> 2.3.
+#
+# `inference_demand` added at weight 10.0: the first DEMAND-side indicator in the
+# model. Total weight 158 -> 168, so runs archived under 2.2 are non-comparable and
+# the trend code refuses across the boundary automatically.
+#
+# IT READS AGAINST THE THESIS WHEN DEMAND GROWS, which is the point. See its
+# rationale: the anchors invert because rising usage means the capex is being
+# consumed rather than sitting idle.
 # METHODOLOGY CHANGED 2026-09-20 — schema_version 2.1 -> 2.2.
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "2.2"
+schema_version = "2.3"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -822,3 +831,44 @@ unit = "mean severity pct — average points per read edge against the maximum a
 rationale = "SCORED FROM A RUBRIC, NOT A RATIO, AND THAT IS STATED RATHER THAN HIDDEN. Every other indicator here is a number retrieved from a source: a spread, a percentage, a ratio. Circular financing is not available as a number, because no free source publishes 'share of counterparty revenue funded by the investor's own capital'. The honest options were to leave it at weight 0 as a gap, or to state the scoring rule explicitly, apply it only to edges whose filing text was actually READ, and let a reader disagree with the weights. This does the second. THE RUBRIC, and it is arguable: a supplier guaranteeing AND investing in its customer's infrastructure = 45; equity issued to a customer as consideration for its purchases = 40; a parent absorbing its AI unit's debt onto its own balance sheet = 30; disclosed related-party revenue alongside an equity stake = 25; a related-party supply deal under common control = 10; a mention that was read and REFUTED = 0. WHAT MAKES IT FALSIFIABLE RATHER THAN ASTROLOGY: every scored element is a specific structure in a specific filing, with a citation, a magnitude, and a written falsifier, so each edge can be shown wrong. One ALREADY WAS — Oracle's two OpenAI hits are a model-integration list, not a contract, and score ZERO. An unfalsifiable indicator could not produce that outcome; this one did on its first real test, and the refutation is retained in the set deliberately because it is the evidence that the rubric can come back LOWER. WHAT IS SCORED: only edges whose text was read. The scan finds 47 real ecosystem edges and twenty-three have been read, so the great majority contribute NOTHING, and an unread edge scores zero rather than partially. The reading is therefore a LOWER BOUND and its direction of bias is toward CALM — the opposite of alarm. Treat a low number as 'little has been verified yet', never as 'little is there'. WHAT IS DELIBERATELY NOT SCORED: hit counts. A raw count would let 'NVDA names NVIDIA 136 times' and 'CRWV names CoreWeave 145 times' — companies naming THEMSELVES — dominate the reading. The rubric consumes only classified structures. ALSO NOT SCORED: NPORT-P fund holdings, which give the investor side with real dollar values (Anthropic $56.5M, OpenAI $49.3M) but cannot distinguish a circular arrangement from an ordinary portfolio position. NOT USED AS A PROXY: us-gaap:EquitySecuritiesFvNiUnrealizedGainLoss, which is mark-to-market P&L on stakes held rather than the amount invested or the revenue flowing back. See [L1] and [L3]."
 anchor_note = "SCORED ON THE MEAN SEVERITY PER READ EDGE, AS A PERCENTAGE OF WHAT ONE EDGE CAN EXPRESS. The rubric TOTAL rises every time an edge is read, so scoring it directly would let READING EFFORT raise the reading and conflate 'more verified' with 'worse'. The scored quantity is the mean per edge, and the ceiling is the maximum a SINGLE edge can express — not a multiple of the read count (which would make the reading rise from effort) and not a multiple of the scanned count (which measures COVERAGE, a confidence question, and buried a genuine 65% reading to 12%). The mean is stable under that pressure and moves the right way: a refutation contributes zero points while still counting as an edge, so it DILUTES the mean and LOWERS the score. The anchors below are therefore on 0-100 PERCENT, not on points. 0% = nothing verified; 100% = every verified edge is the strongest possible structure."
 anchors = [[0.0, 5.0], [25.0, 25.0], [45.0, 45.0], [60.0, 60.0], [80.0, 80.0], [95.0, 95.0]]
+
+# ---------------------------------------------------------------------------
+# DEMAND SIDE — added 2026-09-20, schema_version 2.2 -> 2.3.
+#
+# This is the model's FIRST demand-side indicator. Before it, every one of the 20
+# measured cost (capex, funding gap, depreciation), financing (spreads, issuance,
+# leverage, private credit, circularity), price/froth (valuation, volatility,
+# concentration, breadth, primary-market supply) or physical delivery
+# (construction, grid). NONE measured whether the compute is actually used.
+#
+# WHY THAT MATTERS. `capex_vs_cashflow` detects that spending outruns revenue. It
+# cannot distinguish the two worlds that produce that signature:
+#   * demand FAILING   — the spend was speculative; and
+#   * demand OUTRUNNING SUPPLY — the spend is justified and the constraint is
+#     capacity.
+# Those are opposite readings of the same ratio. This indicator separates them.
+#
+# THE ANCHORS INVERT, AND THAT IS DELIBERATE. Every other indicator treats a
+# higher value as more stress. Rising token volume means the buildout is being
+# CONSUMED, which is LESS bubble stress. An indicator that reads against the
+# thesis must be visible as doing so rather than quietly doing so.
+#
+# ANCHORS DERIVED FROM THE MEASURED SERIES, not chosen. Over the available history
+# the 13-week growth rate ranged +3.5% to +385.1%, median +150.7%, p10 +49.7%,
+# p90 +247.5%. The anchors below sit inside that measured range so the mid-scale
+# is occupied by real observations rather than by invention. A STAGNATION (0%) and
+# a DECLINE are placed far up the stress scale, because flat usage against
+# still-growing capex is the failure mode this exists to catch.
+#
+# LIMIT, stated on every reading: OpenRouter is ONE aggregator, not the market.
+# The level is a LOWER BOUND on total AI usage and its bias is toward CALM.
+[[indicator]]
+id = "inference_demand"
+label = "Measured AI inference demand (public token volume)"
+weight = 10.0
+unit = "pct change in weekly tokens over the longest available lag"
+source = "openrouter"
+# DESCENDING in raw value: more growth = LESS stress. See the note above.
+anchors = [[-50.0, 96.0], [-10.0, 88.0], [0.0, 78.0], [25.0, 62.0], [75.0, 45.0], [150.0, 30.0], [250.0, 18.0], [400.0, 8.0]]
+rationale = "SCORED ON THE RATE OF CHANGE, NOT THE LEVEL, AND THE ANCHORS INVERT. Measured from OpenRouter's public token-volume endpoints (keyless): weekly volume across the top-10 models ran 5.26e12 tokens/week on 2025-09-22 to 1.29e14 on 2026-09-14, about 24x in a year. The scored quantity is the percentage change over a 13-WEEK lag (the calibrated lag), because a LEVEL cannot show deceleration and deceleration with the level still high is the warning this indicator exists to surface. WHY IT INVERTS: every other indicator in this model reads a higher value as more stress. Rising token volume means the compute that was built is being USED, which is evidence against the bubble thesis rather than for it. It is stated here rather than left implicit because an indicator that reads against the thesis must be visible as doing so. WHAT IT CLOSES: `capex_vs_cashflow` and `funding_gap` can both detect that spending outruns revenue, but neither can distinguish demand FAILING (the spend was speculative) from demand OUTRUNNING SUPPLY (the spend is justified and capacity is the constraint) — opposite readings of the same ratio. This separates them. MEASURED LIMITS, each of which biases toward calm: (1) OpenRouter is ONE aggregator, not the market, so the level is a LOWER BOUND on total AI usage; (2) the weekly chart lists only the TOP TEN models per week, so a long tail of smaller models is invisible; (3) token COUNT is not revenue — 9% of measured tokens flowed through free-tier variants that monetise nothing, so this measures usage, never money; (4) falling per-token prices make a flat token count ambiguous between 'demand stalled' and 'demand grew but got cheaper', which only realised revenue per token could resolve and no free source publishes it. THE SERIES ITSELF HAS TWO MEASURED TRAPS, both guarded in code: the daily feed back-fills incompletely (six of seven dates carried 1-10 rows against 544 for the single complete day, so only the most recent COMPLETE day is used), and the newest week is routinely PARTIAL (measured 5.8e10 against 1.29e14, a ~2,200x artefact that made an unguarded growth calculation report 0.0x over a year of 24x growth). THE LAG IS 13 WEEKS, AND THAT IS A CALIBRATION DECISION WORTH STATING. Measured on the live chart: a 13-week lag has 39 observations (range +3.5% to +385.1%), a 26-week lag has 26, and a 51-week lag has exactly ONE. An anchor set built on a single-observation lag is a scale with one point on it, and the first live run proved it: +2,351% over 51 weeks clamped to the top anchor and the reading could distinguish nothing from anything. A quarter has a real distribution to calibrate against, and the current measurement (+176%) sits inside it. The trade is explicit: a quarter detects deceleration LATER than a year would, and it is the longest lag this series can support a calibration for."
+anchor_note = "SCORED ON PERCENTAGE CHANGE OVER THE LONGEST AVAILABLE LAG, WITH THE ANCHORS INVERTED. These anchors are on the measured distribution of 13-week growth in the real series (+3.5% to +385.1%, median +150.7%, p10 +49.7%, p90 +247.5%), so mid-scale is occupied by observations rather than by choice. 0% (flat usage) scores 78: flat usage against still-growing capex is the specific failure this catches. A decline scores above 88."

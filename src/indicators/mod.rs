@@ -92,6 +92,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "issuance" => Some(Box::new(fundamentals::Issuance)),
         "primary_market_supply" => Some(Box::new(fundamentals::PrimaryMarketSupply)),
         "backlog_quality" => Some(Box::new(fundamentals::BacklogQuality)),
+        "inference_demand" => Some(Box::new(fundamentals::InferenceDemand)),
         _ => None,
     }
 }
