@@ -207,7 +207,13 @@ pub fn planned_vs_cancelled(f: &crate::http::Fetcher) -> Result<(Series, Series,
 }
 
 /// Sheet names, in workbook order.
-fn sheet_names(bytes: &[u8]) -> Result<Vec<String>, String> {
+/// Sheet names in workbook order.
+///
+/// Made public (2026-09-20) so the LBNL interconnection-queue source can reuse it
+/// rather than duplicating workbook navigation. The LBNL file has 43 sheets and the
+/// one that matters ("37. IR to COD - all") is #40, so the sheet cannot be found by
+/// position on sheet1 alone.
+pub fn sheet_names(bytes: &[u8]) -> Result<Vec<String>, String> {
     let mut ar = zip::ZipArchive::new(std::io::Cursor::new(bytes))
         .map_err(|e| format!("not a readable xlsx: {}", e))?;
     let mut e = ar
@@ -238,7 +244,10 @@ fn sheet_names(bytes: &[u8]) -> Result<Vec<String>, String> {
 /// EIA-860M and the Census workbook differ here: Census puts its only sheet at
 /// `sheet1.xml`, while EIA has seven sheets at `sheetN.xml`. The index is 1-based in
 /// the filename, so the caller passes a 0-based index and this adds one.
-fn sheet_xml(bytes: &[u8], idx0: usize) -> Result<(String, Vec<String>), String> {
+/// A worksheet's `<sheetData>` XML by zero-based sheet INDEX, plus its strings.
+///
+/// Public for the same reason as `sheet_names`.
+pub fn sheet_xml(bytes: &[u8], idx0: usize) -> Result<(String, Vec<String>), String> {
     let mut ar = zip::ZipArchive::new(std::io::Cursor::new(bytes))
         .map_err(|e| format!("not a readable xlsx: {}", e))?;
     let name = format!("xl/worksheets/sheet{}.xml", idx0 + 1);

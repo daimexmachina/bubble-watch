@@ -7,6 +7,7 @@ pub mod eia;
 pub mod federalregister;
 pub mod fred;
 pub mod fulltext;
+pub mod lbnl;
 pub mod nport;
 pub mod openrouter;
 pub mod yahoo;
@@ -326,6 +327,26 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         Err(e) => obs.failures.push(SourceFailure {
             source: "federalregister".into(),
             endpoint: federalregister::QUERY_URL.into(),
+            reason: e,
+        }),
+    }
+
+    // LBNL interconnection queue. NOTE: this host REQUIRES a browser User-Agent;
+    // without one the 15.5MB workbook returns 403, which makes the source look
+    // dead. The landing page is Cloudflare-blocked regardless.
+    match lbnl::fetch(f) {
+        Ok(years) => {
+            obs.lbnl_provenance = Some(crate::model::Provenance {
+                source: "lbnl".into(),
+                endpoint: lbnl::URL.into(),
+                as_of: years.last().map(|y| y.year.to_string()).unwrap_or_default(),
+                retrieved_at: obs.retrieved_at.clone(),
+            });
+            obs.lbnl_years = Some(years);
+        }
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "lbnl".into(),
+            endpoint: lbnl::URL.into(),
             reason: e,
         }),
     }

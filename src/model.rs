@@ -382,10 +382,9 @@ pub struct Observations {
     pub taiwan_export_orders: Vec<Point>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub taiwan_provenance: Option<Provenance>,
-    /// LBNL interconnection queue: median months from request to commercial
-    /// operation, most recent in-service year.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub lbnl_median_months: Option<f64>,
+    /// LBNL interconnection queue: per-year time-to-energise, oldest first.
+    #[serde(default)]
+    pub lbnl_years: Option<Vec<crate::sources::lbnl::EnergisationYear>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lbnl_provenance: Option<Provenance>,
     /// Federal Register BIS document count over the trailing year, for the

@@ -1970,6 +1970,127 @@ pub fn yoy_growth_pct(weeks: &[crate::sources::openrouter::DailyTokens]) -> Opti
     })
 }
 
+/// How long it takes to energise a proposed project — the physical constraint.
+///
+/// ## What it measures
+///
+/// Median months from interconnection request to commercial operation, from
+/// LBNL's queue dataset. Measured 2005: **17.7 months**; 2025: **60.8**.
+///
+/// ## Direction: it reads AGAINST the thesis, and the ambiguity is stated
+///
+/// A long queue is physical evidence that demand for power is real and ahead of
+/// supply — projects are WAITING, not being abandoned. That counter-evidence to a
+/// demand-failure story, which is why it belongs beside the composite as much as
+/// in it. The honest complication: a queue that never clears can also mean
+/// announced capacity will not arrive, which is a different kind of bubble risk.
+/// Both readings are real, so the detail says so rather than picking one.
+///
+/// ## What the 2026-09-20 measurement actually showed
+///
+/// The MEDIAN flattened while the TAIL worsened:
+///
+/// | year | median | p75 |
+/// |---|---|---|
+/// | 2023 | 55.75 | 73.00 |
+/// | 2024 | 62.71 | 80.26 |
+/// | 2025 | **60.82** | **86.07** |
+///
+/// A median alone would report "the queue stopped getting worse". The p75 says the
+/// slowest quarter is still deteriorating, so both are reported.
+pub struct EnergisationDelay;
+
+impl Indicator for EnergisationDelay {
+    fn id(&self) -> &'static str {
+        "energisation_delay"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight <= 0.0 {
+            return Reading::Unavailable {
+                reason: "energisation_delay is configured at weight 0".into(),
+            };
+        }
+        let Some(years) = ctx.obs.lbnl_years.as_ref() else {
+            return Reading::Unavailable {
+                reason: "the LBNL interconnection-queue workbook was not retrieved, so the \
+                         time-to-energise is unknown"
+                    .into(),
+            };
+        };
+        // Cohort floor: a median from a handful of projects is noise. 100 is well
+        // below the recent cohorts (294-335) and well above the historical ones.
+        const MIN_COHORT: u32 = 100;
+        let Some((prev_y, prev_med, last_y, last_med)) =
+            crate::sources::lbnl::recent_change(years, MIN_COHORT)
+        else {
+            return Reading::Unavailable {
+                reason: format!(
+                    "no two years in the LBNL queue data have a cohort of at least {} projects, so \
+                     a recent trend cannot be taken from it",
+                    MIN_COHORT
+                ),
+            };
+        };
+        let Some(latest) = years.iter().find(|y| y.year == last_y) else {
+            return Reading::Unavailable {
+                reason: "internal: latest year vanished".into(),
+            };
+        };
+
+        // SCORED ON THE LEVEL, via inverted anchors: a longer delay means demand is
+        // physically ahead of supply, which reads as LESS bubble stress.
+        let stress = crate::score::interpolate(latest.median_months, &ic.anchors);
+        let change = last_med - prev_med;
+
+        Reading::Scored {
+            stress,
+            value: latest.median_months,
+            unit: "median months from interconnection request to commercial operation".into(),
+            detail: format!(
+                "Projects entering service in {last_y} waited a median of {last_med:.1} months \
+                 from interconnection request to operation (n={n}), against {prev_med:.1} in \
+                 {prev_y} ({change:+.1}). The slowest quarter took {p75:.1} months. HISTORY: this \
+                 median was 17.7 months in 2005, so the queue is roughly 3.4x slower than it was. \
+                 DIRECTION, STATED PLAINLY BECAUSE IT IS AMBIGUOUS: a long queue is physical \
+                 evidence that demand for power is REAL and ahead of supply — projects are \
+                 waiting, not being abandoned — which argues AGAINST a demand-failure reading. \
+                 But a queue that never clears also means announced capacity may not arrive, \
+                 which is a bubble risk of a different kind. Both are true and neither is \
+                 asserted here. NOTE THE DIVERGENCE: the median flattened while the 75th \
+                 percentile kept rising, so 'the queue stopped getting worse' would be a \
+                 misreading of the median alone. LIMIT: this is the whole queue, not AI data \
+                 centres specifically; data centres are a subset the dataset does not isolate.",
+                last_y = last_y,
+                last_med = last_med,
+                n = latest.n,
+                prev_med = prev_med,
+                prev_y = prev_y,
+                change = change,
+                p75 = latest.p75_months
+            ),
+            provenance: ctx
+                .obs
+                .lbnl_provenance
+                .clone()
+                .unwrap_or(crate::model::Provenance {
+                    source: "lbnl".into(),
+                    endpoint: crate::sources::lbnl::URL.into(),
+                    as_of: format!("{last_y}"),
+                    retrieved_at: ctx.obs.retrieved_at.clone(),
+                }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

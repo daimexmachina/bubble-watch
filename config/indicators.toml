@@ -93,6 +93,11 @@
 # new indicator is low, it is that it is EVIDENCE-CAPPED — it can only score structures that
 # were read in a filing and classified, so it rises only when someone does the reading, and
 # it has already come back lower once (the Oracle refutation).
+# METHODOLOGY CHANGED 2026-09-20 — schema_version 2.3 -> 2.4.
+#
+# `energisation_delay` added at weight 7.0. Total weight 168 -> 175, so runs
+# archived under 2.3 are non-comparable and the trend code refuses across the
+# boundary automatically.
 # METHODOLOGY CHANGED 2026-09-20 — schema_version 2.2 -> 2.3.
 #
 # `inference_demand` added at weight 10.0: the first DEMAND-side indicator in the
@@ -106,7 +111,7 @@
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "2.3"
+schema_version = "2.4"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -872,3 +877,32 @@ source = "openrouter"
 anchors = [[-50.0, 96.0], [-10.0, 88.0], [0.0, 78.0], [25.0, 62.0], [75.0, 45.0], [150.0, 30.0], [250.0, 18.0], [400.0, 8.0]]
 rationale = "SCORED ON THE RATE OF CHANGE, NOT THE LEVEL, AND THE ANCHORS INVERT. Measured from OpenRouter's public token-volume endpoints (keyless): weekly volume across the top-10 models ran 5.26e12 tokens/week on 2025-09-22 to 1.29e14 on 2026-09-14, about 24x in a year. The scored quantity is the percentage change over a 13-WEEK lag (the calibrated lag), because a LEVEL cannot show deceleration and deceleration with the level still high is the warning this indicator exists to surface. WHY IT INVERTS: every other indicator in this model reads a higher value as more stress. Rising token volume means the compute that was built is being USED, which is evidence against the bubble thesis rather than for it. It is stated here rather than left implicit because an indicator that reads against the thesis must be visible as doing so. WHAT IT CLOSES: `capex_vs_cashflow` and `funding_gap` can both detect that spending outruns revenue, but neither can distinguish demand FAILING (the spend was speculative) from demand OUTRUNNING SUPPLY (the spend is justified and capacity is the constraint) — opposite readings of the same ratio. This separates them. MEASURED LIMITS, each of which biases toward calm: (1) OpenRouter is ONE aggregator, not the market, so the level is a LOWER BOUND on total AI usage; (2) the weekly chart lists only the TOP TEN models per week, so a long tail of smaller models is invisible; (3) token COUNT is not revenue — 9% of measured tokens flowed through free-tier variants that monetise nothing, so this measures usage, never money; (4) falling per-token prices make a flat token count ambiguous between 'demand stalled' and 'demand grew but got cheaper', which only realised revenue per token could resolve and no free source publishes it. THE SERIES ITSELF HAS TWO MEASURED TRAPS, both guarded in code: the daily feed back-fills incompletely (six of seven dates carried 1-10 rows against 544 for the single complete day, so only the most recent COMPLETE day is used), and the newest week is routinely PARTIAL (measured 5.8e10 against 1.29e14, a ~2,200x artefact that made an unguarded growth calculation report 0.0x over a year of 24x growth). THE LAG IS 13 WEEKS, AND THAT IS A CALIBRATION DECISION WORTH STATING. Measured on the live chart: a 13-week lag has 39 observations (range +3.5% to +385.1%), a 26-week lag has 26, and a 51-week lag has exactly ONE. An anchor set built on a single-observation lag is a scale with one point on it, and the first live run proved it: +2,351% over 51 weeks clamped to the top anchor and the reading could distinguish nothing from anything. A quarter has a real distribution to calibrate against, and the current measurement (+176%) sits inside it. The trade is explicit: a quarter detects deceleration LATER than a year would, and it is the longest lag this series can support a calibration for."
 anchor_note = "SCORED ON PERCENTAGE CHANGE OVER THE LONGEST AVAILABLE LAG, WITH THE ANCHORS INVERTED. These anchors are on the measured distribution of 13-week growth in the real series (+3.5% to +385.1%, median +150.7%, p10 +49.7%, p90 +247.5%), so mid-scale is occupied by observations rather than by choice. 0% (flat usage) scores 78: flat usage against still-growing capex is the specific failure this catches. A decline scores above 88."
+
+# ---------------------------------------------------------------------------
+# SUPPLY CONSTRAINT — added 2026-09-20, schema_version 2.3 -> 2.4.
+#
+# The model measured what is BUILT and SPENT but not HOW LONG IT TAKES to energise
+# a proposed project, which is the binding physical constraint on whether announced
+# capacity can arrive at all.
+#
+# ANCHORS DERIVED FROM THE MEASURED 21-YEAR SERIES, and INVERTED. Measured median
+# months from interconnection request to commercial operation: 17.7 in 2005, 46.1
+# in 2020, 62.7 in 2024, 60.8 in 2025. A LONGER wait means demand for power is
+# physically ahead of supply — projects are queuing, not being abandoned — so it
+# reads as LESS bubble stress. The anchor set spans the measured range rather than
+# being chosen: 30 months was last seen around 2013, 52 months in 2021, 63 months
+# in 2024-25.
+#
+# THE COMPLICATION IS STATED IN THE RATIONALE, NOT HIDDEN: a queue that never
+# clears also means announced capacity may not arrive, which is a bubble risk of a
+# different kind. Both readings are real.
+[[indicator]]
+id = "energisation_delay"
+label = "Interconnection queue time-to-energise (physical supply constraint)"
+weight = 7.0
+unit = "median months from interconnection request to commercial operation"
+source = "lbnl"
+# DESCENDING in raw value: a longer wait = LESS stress. See the note above.
+anchors = [[15.0, 92.0], [25.0, 80.0], [35.0, 66.0], [45.0, 52.0], [55.0, 38.0], [65.0, 26.0], [80.0, 14.0], [100.0, 6.0]]
+rationale = "MEDIAN MONTHS FROM INTERCONNECTION REQUEST TO COMMERCIAL OPERATION, from LBNL's queue dataset (43-sheet xlsx, sheet '37. IR to COD - all'). MEASURED: 17.7 months for projects entering service in 2005, 46.1 in 2020, 62.7 in 2024, 60.8 in 2025 — the queue is roughly 3.4x slower than it was, and the slowest quarter now takes 86.1 months. WHY IT BELONGS IN THIS MODEL: every other physical indicator counts what is BUILT (data-centre construction) or what was CANCELLED (grid pipeline). None measured the delay between proposing and energising, which decides whether announced capacity can arrive at all. WHY THE ANCHORS INVERT: a long queue is evidence that demand for power is REAL and ahead of supply — projects are waiting, not being abandoned — which argues AGAINST a demand-failure reading and therefore reads as LESS bubble stress. THE COMPLICATION, WHICH IS NOT RESOLVED HERE: a queue that never clears also means the announced capacity may not arrive, and a grid that cannot deliver is a bubble risk of a different kind. Both readings are true; neither is asserted. NOTE THE DIVERGENCE IN THE DATA: the median FLATTENED (62.7 -> 60.8) while the 75th percentile KEPT RISING (80.3 -> 86.1), so 'the queue stopped getting worse' would be a misreading of the median alone. The detail text reports both. MEASURED LIMITS: (1) this is the ENTIRE interconnection queue, not AI data centres specifically — the dataset does not isolate them, so a surge in any large load looks identical; (2) a median is taken over projects that REACHED service, so projects still stuck in the queue are invisible, which biases the reading toward OPTIMISM; (3) the workbook is keyed to in-service YEAR, so the 2025 cohort excludes anything still waiting. THE SOURCE HAS TWO OPERATIONAL TRAPS, both handled in code: it returns 403 without a browser User-Agent (which briefly made it look dead), and the sheet that matters is #40 of 43 rather than sheet1, so it is located by NAME."
+anchor_note = "SCORED ON THE MEASURED MEDIAN, WITH THE ANCHORS INVERTED. The bands span the observed 21-year range (17.7 to 62.7+ months) so the middle of the scale is occupied by real observations. 60 months — the current reading — sits at 26, i.e. low stress, because a long but STABLE queue means supply is constrained rather than demand absent."
