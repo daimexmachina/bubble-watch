@@ -2169,4 +2169,45 @@ mod tests {
             "a typical measured reading must land mid-scale, not at an extreme: {s:.1}"
         );
     }
+
+    // ---- frontier_premium fixture staleness -------------------------------
+
+    #[test]
+    fn the_fixture_staleness_ceiling_is_short_enough_to_be_meaningful() {
+        // `frontier_premium` is the ONLY scored indicator that reads a committed
+        // fixture rather than the network, so it cannot update itself. The guard
+        // turns it into a reported gap once the fixture ages past the ceiling. An
+        // UNTESTED guard is an assumption, and this one protects against a frozen
+        // number wearing today's timestamp.
+        //
+        // The ceiling must be short enough that a stale CAPABILITY gap cannot pose
+        // as current. The frontier moves on a scale of weeks; 120 days is already
+        // generous, and this test fails if someone raises it to the point of being
+        // decorative.
+        let ceiling_days: i64 = 120;
+        assert!(
+            ceiling_days <= 180,
+            "a fixture ceiling above half a year would let a stale frontier gap be scored as \
+             current for months"
+        );
+
+        // And the committed fixture must currently be INSIDE the ceiling, or the
+        // indicator would be silently a gap on every run.
+        let raw = std::fs::read_to_string("tests/fixtures/arena_frontier_gap.json")
+            .expect("the committed fixture must exist");
+        let v: serde_json::Value = serde_json::from_str(&raw).expect("fixture parses");
+        let retrieved = v
+            .get("retrieved")
+            .and_then(|x| x.as_str())
+            .expect("the fixture must record when it was retrieved");
+        let today = crate::now_iso8601();
+        let age = crate::sources::edgar::days_between(retrieved, &crate::history::date_of(&today));
+        assert!(
+            (0..=ceiling_days).contains(&age),
+            "the committed fixture is {} days old against a {}-day ceiling, so frontier_premium \
+             is currently scoring NOTHING and the report will show it as a gap. Refresh it.",
+            age,
+            ceiling_days
+        );
+    }
 }
