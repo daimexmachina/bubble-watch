@@ -642,15 +642,66 @@ fn the_docs_do_not_contradict_the_build() {
     // the right place for this precisely because it is mechanical and I clearly cannot be trusted
     // to do it in my head.
     //
-    // The count is taken from the same run this test belongs to, so it is always current.
-    let suite_count: usize = 329; // updated by the test itself failing when it drifts
+    // THE COUNT IS DERIVED, NOT MAINTAINED BY HAND.
+    //
+    // This was a hardcoded literal, and the comment beside it claimed "the count is
+    // taken from the same run this test belongs to, so it is always current" — which
+    // was false. It drifted to 329 while the suite ran 333, so the guard spent that
+    // whole time enforcing "docs match 329", passing while the documentation was
+    // wrong. A guard whose reference value is itself hand-maintained inherits the
+    // exact failure it exists to catch.
+    //
+    // Counting test attributes across src/ and tests/ reproduces the pass count
+    // exactly (313 + 20 = 333, verified), with no ignores and no feature-gated
+    // tests to make the two diverge. If either is ever introduced this will need
+    // revisiting, which is why the assertion below states the derivation.
+    //
+    // NOTE: this comment deliberately does NOT spell the attribute out. The first
+    // version of it did, twice, and the counter counted ITS OWN PROSE — reporting
+    // 335 instead of 333. A self-counting scanner has to avoid containing the
+    // token it scans for.
+    fn counted_tests() -> usize {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut n = 0usize;
+        let mut stack = vec![root.join("src"), root.join("tests")];
+        while let Some(dir) = stack.pop() {
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
+            for e in entries.flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    stack.push(p);
+                } else if p.extension().is_some_and(|x| x == "rs") {
+                    if let Ok(body) = std::fs::read_to_string(&p) {
+                        // Count only real ATTRIBUTES: the token at the start of a
+                        // line (after indentation). A plain substring count is
+                        // wrong because this scanner's own source contains the
+                        // token inside a string literal, so it counted ITSELF and
+                        // reported one more than reality.
+                        n += body
+                            .lines()
+                            .filter(|l| l.trim_start().starts_with("#[test]"))
+                            .count();
+                    }
+                }
+            }
+        }
+        n
+    }
+    let suite_count = counted_tests();
+    assert!(
+        suite_count > 0,
+        "the derived test count came back zero, so the derivation is broken — this guard \
+         would otherwise pass vacuously while checking nothing"
+    );
     let claimed = format!("{} tests", suite_count);
     for (name, doc) in [("README.md", &readme), ("SPEC.md", &spec)] {
         let m = format!("{} tests", suite_count);
         assert!(
             doc.contains(&m),
-            "{} does not state the current test count ({}). If you added tests, update the docs; \
-             if you CHANGED the count, update `suite_count` in this test too.",
+            "{} does not state the current test count ({}). The count is DERIVED from the \
+             source, so this is a real drift: update the doc rather than the number here.",
             name,
             claimed
         );
