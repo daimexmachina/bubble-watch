@@ -290,10 +290,16 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
 
     match openrouter::fetch_weekly(f) {
         Ok(weeks) => {
-            // The newest week is routinely PARTIAL (measured 5.8e10 against
-            // 1.29e14, a ~2,200x artefact). Without this the growth calculation
-            // reported 0.0x over a year in which usage grew ~24x.
-            obs.openrouter_weeks = openrouter::drop_partial_trailing_week(&weeks, 10.0);
+            // The newest week is routinely PARTIAL. This is decided by the
+            // CALENDAR (how much of the week has happened), not by magnitude: a
+            // magnitude threshold of 10.0 could only fire with fewer than 0.7 of 7
+            // days elapsed, so it let a 2-day-old week through and reported -17%
+            // deceleration where growth was +176%.
+            obs.openrouter_weeks = openrouter::drop_partial_trailing_week(
+                &weeks,
+                &crate::now_date(),
+                openrouter::WEEK_COMPLETE_DAYS,
+            );
         }
         Err(e) => obs.failures.push(SourceFailure {
             source: "openrouter".into(),

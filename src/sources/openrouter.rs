@@ -354,25 +354,62 @@ pub fn latest_complete_day(days: &[DailyTokens], min_models: usize) -> Option<&D
 
 /// Drop a trailing week that is implausibly small against its predecessor.
 ///
-/// The live chart's newest week is routinely partial, and a partial week is not a
-/// fall in usage — it is an unfinished week. The test is deliberately crude
-/// (`ratio`) because the artefact is huge: measured 5.8e10 vs 1.29e14, a factor of
-/// ~2,200, while genuine week-to-week movement in the series is well under 2x.
+/// The live chart's newest week is routinely PARTIAL, and a partial week is not a
+/// fall in usage — it is an unfinished week.
 ///
-/// Returns the series with the trailing partial week removed, or the series
-/// unchanged when the last week is credible.
-pub fn drop_partial_trailing_week(weeks: &[DailyTokens], ratio: f64) -> Vec<DailyTokens> {
+/// ## Why this is decided by the CALENDAR, not by magnitude
+///
+/// The first version of this guard compared the newest week's token count to the
+/// previous week's and dropped it only when the ratio exceeded a threshold (10.0 at
+/// the call site). That looked reasonable against the artefact it was built for — a
+/// 5.8e10 week against 1.29e14, a factor of ~2,200 — but it **could not fire for a
+/// week that was merely young**, which is the common case. Measured 2026-09-22: the
+/// trailing week held 3.88e13 against 1.29e14, a ratio of only 3.32x, so the guard
+/// passed it through. The arithmetic shows why the threshold was unworkable: firing
+/// at ratio > 10 requires fewer than 0.7 of 7 days to have elapsed, so it was
+/// effectively dead code.
+///
+/// The consequence was not cosmetic. Scoring a 2-day-old week as if it were a
+/// finished week turned a genuine +176% 13-week growth into -17%, which moved this
+/// indicator from 26.8 to 89.4 stress — a **62.6-point error** on a 10-weight
+/// indicator, and it read as demand COLLAPSE when demand had grown.
+///
+/// So the test is now what it always should have been: how much of the week has
+/// actually happened. A trailing week whose label is less than `min_elapsed_days`
+/// before `today` is in progress and is dropped. Week labels are the week's START
+/// date (confirmed: the 2026-09-21 row held ~28.6% of a full week's tokens on
+/// 2026-09-22, i.e. 2 of 7 days).
+///
+/// Returns the series with the trailing in-progress week removed, or the series
+/// unchanged when the last week is complete.
+pub fn drop_partial_trailing_week(weeks: &[DailyTokens], today: &str, min_elapsed_days: i64) -> Vec<DailyTokens> {
     if weeks.len() < 2 {
         return weeks.to_vec();
     }
-    let last = weeks[weeks.len() - 1].total_tokens as f64;
-    let prev = weeks[weeks.len() - 2].total_tokens as f64;
-    if prev > 0.0 && last > 0.0 && (prev / last) > ratio {
+    let Some(last_label) = chrono::NaiveDate::parse_from_str(&weeks[weeks.len() - 1].date, "%Y-%m-%d").ok()
+    else {
+        // An unparseable label is not evidence of completeness. Keep the series
+        // whole rather than silently discarding a week on a parse failure.
+        return weeks.to_vec();
+    };
+    let Some(today) = chrono::NaiveDate::parse_from_str(today, "%Y-%m-%d").ok() else {
+        return weeks.to_vec();
+    };
+    let elapsed_days = (today - last_label).num_days();
+    if elapsed_days < min_elapsed_days {
         weeks[..weeks.len() - 1].to_vec()
     } else {
         weeks.to_vec()
     }
 }
+
+/// Days a week must have been running before its row counts as complete.
+///
+/// A labelled week START needs 7 days to finish, so anything under 7 is in
+/// progress. The threshold is 7 rather than 6 because a week is complete only once
+/// its seventh day has elapsed; a run landing on the boundary should drop the week
+/// rather than half-count it.
+pub const WEEK_COMPLETE_DAYS: i64 = 7;
 
 /// Fetch and parse the daily token volume plus the open-weight classification.
 pub fn fetch_daily(f: &Fetcher) -> Result<Vec<DailyTokens>, String> {
@@ -614,21 +651,55 @@ mod tests {
             "the partial week is present in the parse"
         );
 
-        let trimmed = drop_partial_trailing_week(&v, 100.0);
+        // Today is 2026-09-23: the 2026-09-21 week has run 2 of its 7 days.
+        let trimmed = drop_partial_trailing_week(&v, "2026-09-23", WEEK_COMPLETE_DAYS);
         assert_eq!(trimmed.len(), 2, "the partial week must be dropped");
         assert_eq!(trimmed[1].date, "2026-09-14");
     }
 
     #[test]
-    fn a_credible_trailing_week_is_kept() {
-        // The guard must not silently discard real data: normal week-to-week
-        // movement is well under the ratio threshold.
+    fn a_COMPLETE_trailing_week_is_kept() {
+        // The guard must not discard real data. 2026-09-14 has run its full 7 days
+        // by 2026-09-21, so the week is finished and kept.
         let body = r#"{"data":{"data":[
           {"x":"2026-09-07","ys":{"a":100}},
           {"x":"2026-09-14","ys":{"a":120}}
         ]}}"#;
         let v = parse_weekly_chart(body).unwrap();
-        assert_eq!(drop_partial_trailing_week(&v, 100.0).len(), 2);
+        assert_eq!(
+            drop_partial_trailing_week(&v, "2026-09-21", WEEK_COMPLETE_DAYS).len(),
+            2,
+            "a week whose 7 days have elapsed is complete and must be kept"
+        );
+    }
+
+    #[test]
+    fn a_MERELY_YOUNG_week_is_dropped_even_though_it_is_not_small() {
+        // THE BUG THIS REPLACES. The magnitude guard required the trailing week to
+        // be >10x smaller than the previous one, which can only happen with fewer
+        // than 0.7 of 7 days elapsed — so a week that was merely 2 days old sailed
+        // through. Measured live 2026-09-22: 3.88e13 against 1.29e14, a ratio of
+        // only 3.32x. Reading that as a finished week reported -17% deceleration
+        // when 13-week growth was +176%, moving the indicator 62.6 stress points.
+        let body = r#"{"data":{"data":[
+          {"x":"2026-09-07","ys":{"a":500}},
+          {"x":"2026-09-14","ys":{"a":1290}},
+          {"x":"2026-09-21","ys":{"a":388}}
+        ]}}"#;
+        let v = parse_weekly_chart(body).unwrap();
+        // 3.32x smaller — well inside the old ratio threshold of 10.0, so the old
+        // guard KEPT this. It is 2 days old, so it must be dropped.
+        assert!(
+            1290.0 / 388.0 < 10.0,
+            "precondition: this week is too big for the OLD magnitude guard to catch"
+        );
+        let trimmed = drop_partial_trailing_week(&v, "2026-09-23", WEEK_COMPLETE_DAYS);
+        assert_eq!(
+            trimmed.len(),
+            2,
+            "a 2-day-old week must be dropped however large it looks"
+        );
+        assert_eq!(trimmed[1].date, "2026-09-14");
     }
 
     #[test]
@@ -637,7 +708,10 @@ mod tests {
         // not delete it — the caller decides what a lone point means.
         let body = r#"{"data":{"data":[{"x":"2026-09-14","ys":{"a":100}}]}}"#;
         let v = parse_weekly_chart(body).unwrap();
-        assert_eq!(drop_partial_trailing_week(&v, 100.0).len(), 1);
+        assert_eq!(
+            drop_partial_trailing_week(&v, "2026-09-23", WEEK_COMPLETE_DAYS).len(),
+            1
+        );
     }
 
     #[test]

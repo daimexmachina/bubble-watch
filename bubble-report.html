@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bubble-watch — 2026-09-22T08:02:09Z</title>
+<style>
+
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin:0; padding:28px; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#fafafa; color:#1a1a1a; max-width:1240px; }
+@media (prefers-color-scheme: dark) { body { background:#121212; color:#e8e8e8; }
+  table { border-color:#333 !important; } th { background:#1e1e1e !important; }
+  td, th { border-color:#2a2a2a !important; } .card { background:#1a1a1a !important; border-color:#2e2e2e !important; } }
+h1 { font-size:20px; margin:0 0 2px; }
+.sub { color:#6b6b6b; font-size:12px; margin-bottom:20px; }
+.card { background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:18px; margin-bottom:18px; }
+.score { font-size:54px; font-weight:700; line-height:1; letter-spacing:-1px; }
+.score small { font-size:16px; font-weight:400; color:#6b6b6b; }
+.phase { display:inline-block; padding:3px 10px; border-radius:999px; color:#fff; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+/* FIXED LAYOUT, SCOPED TO THE INDICATOR TABLE ONLY. Applied globally it would squash the
+   sources and run-history tables, which have their own column counts. This table has six
+   columns and a prose column that was pushing the page to 1,718px. */
+table.ind { table-layout:fixed; }
+table.ind th:nth-child(1) { width:17%; } table.ind th:nth-child(2) { width:7%; }
+table.ind th:nth-child(3) { width:7%; }  table.ind th:nth-child(4) { width:10%; }
+table.ind th:nth-child(5) { width:19%; } table.ind th:nth-child(6) { width:40%; }
+th { text-align:left; background:#f2f2f2; padding:8px; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#555; }
+td { padding:8px; border-bottom:1px solid #eee; vertical-align:top; }
+td.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+td.id { font-weight:600; }          /* was nowrap: a long indicator id forced the table past the page width */
+td .lbl { font-weight:400; color:#6b6b6b; font-size:11px; white-space:normal; }
+td.stress { font-weight:700; }
+/* The VALUE column was `nowrap` and its unit text ran to 859px, which pushed the whole table to
+   1,718px inside a 1,385px viewport and made the page scroll sideways on every screen. It wraps
+   now; the number itself stays unbroken via the <b>. */
+td.val { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; overflow-wrap:anywhere; }
+td.val .unit { font-family:inherit; font-size:11px; color:#6b6b6b; }
+td.rd { font-size:12.5px; color:#333; overflow-wrap:anywhere; }
+td.rd .more { color:#6b6b6b; font-weight:600; }
+td.dt { color:#555; font-size:12px; overflow-wrap:anywhere; }
+.prov { color:#6b6b6b; font-size:11px; overflow-wrap:anywhere; }
+tr.gap { background:rgba(198,40,40,.06); }
+tr.gap td.stress { color:#b3261e; }
+tr.warn td:nth-child(2) { color:#a84800; font-weight:600; }
+tr.ok td:nth-child(2) { color:#2e7d32; }
+ul { margin:6px 0 0; padding-left:20px; }
+li { margin-bottom:4px; font-size:13px; }
+.note { background:#fff8e1; border-left:3px solid #f9a825; padding:10px 14px; border-radius:4px; font-size:13px; }
+.card.lm { border-left:4px solid #1a73e8; }
+/* The blind-spot card is deliberately visually distinct: it is not data quality,
+   it is a permanent limit on what the score can mean. */
+.card.blind { border-left:4px solid #b3261e; background:#fdf5f4; }
+@media (prefers-color-scheme: dark) { .card.blind { background:#241a1a !important; border-color:#7f3b36 !important; } }
+.lm-intro { font-size:14px; margin:0 0 14px; color:#333; }
+.lm-grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+.lm-block { background:#f5f8fd; border-radius:6px; padding:11px 13px; }
+.lm-h { font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#1557b0; margin-bottom:4px; }
+.lm-b { font-size:13.5px; line-height:1.55; color:#222; }
+.lm-bottom { margin-top:14px; padding:11px 13px; background:#eef3fb; border-radius:6px; font-size:13.5px; line-height:1.55; }
+@media (prefers-color-scheme: dark) {
+  .lm-intro { color:#ddd; }
+  .lm-block { background:#1e2733; }
+  .lm-b { color:#e8e8e8; }
+  .lm-bottom { background:#1e2733; }
+}
+.disc { color:#6b6b6b; font-size:12px; border-top:1px solid #e2e2e2; padding-top:12px; }
+/* Falsification panel. Colour-coded by verdict so the AGAINST rows are
+   impossible to miss, since they are the ones a reader most needs to see. */
+.card.fals { border-left:4px solid #2e7d32; }
+table.ftab { margin:0; }
+table.ftab td { border-bottom:1px solid #eee; padding:9px 8px; vertical-align:top; }
+td.f-mark { font-weight:700; font-size:10.5px; letter-spacing:.5px; white-space:nowrap; width:74px; }
+tr.f-counter td.f-mark { color:#2e7d32; }
+tr.f-forb td.f-mark { color:#a84800; }
+tr.f-uninf td.f-mark { color:#888888; }
+tr.f-counter { background:rgba(46,125,50,.05); }
+.f-q { font-weight:600; font-size:13px; }
+.f-r { font-size:12.5px; color:#333; margin-top:2px; }
+.f-d { font-size:11.5px; color:#6b6b6b; margin-top:4px; line-height:1.5; }
+.card.expl { border-left:4px solid #1a73e8; }
+details.tech { margin-top:10px; font-size:12px; }
+details.tech summary { cursor:pointer; color:#5f5f5f; }
+details.tech .f-d { margin-top:6px; padding:8px 10px; background:#f7f7f7; border-radius:4px; }
+@media (prefers-color-scheme: dark) { details.tech .f-d { background:#1e1e1e; } }
+.expl-stat { font-size:36px; font-weight:700; line-height:1; letter-spacing:-1px; margin-bottom:4px; }
+.card.exp { border-left:4px solid #6a1b9a; }
+.card.judg { border-left:4px solid #5f6368; }
+table.jtab td { border-bottom:1px solid #eee; padding:10px 8px; vertical-align:top; }
+.j-claim { font-weight:600; font-size:13px; }
+.j-meta { font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:#5f5f5f; margin:2px 0 5px; }
+.j-ev, .j-fal { font-size:12px; color:#444; margin-top:4px; line-height:1.5; }
+.j-fal { color:#7a3e12; }
+tr.j-sup { background:rgba(239,108,0,.05); }
+tr.j-aga { background:rgba(46,125,50,.06); }
+@media (prefers-color-scheme: dark) {
+  table.jtab td { border-color:#2a2a2a; }
+  .j-ev { color:#ccc; } .j-fal { color:#e0a878; }
+}
+.nd { color:#b3261e; font-size:11px; font-style:italic; }
+/* FONT-SCALE INVERSION, MEASURED. The caveat container was 11.5px (inheriting the
+   report's smallest muted size) while its own <li> bullets inherited 13px from the
+   global `li` rule — so a sub-heading rendered SMALLER than the list it headed, and
+   the label read as the least important text in the block. Both are 12.5px now;
+   hierarchy comes from weight and colour, not from an inverted size. */
+.exp-note { font-size:12.5px; color:#555; }
+.exp-nr td { padding-top:0; border-bottom:1px solid #eee; }
+.exp-nh { font-weight:600; font-size:12.5px; color:#333; }
+tr.exp-nr { background:rgba(179,38,30,.03); }
+.exp-note ul { margin:3px 0 8px; padding-left:18px; }
+.exp-note li { margin-bottom:3px; line-height:1.45; }
+
+/* THE EXPOSURE TABLE OVERFLOWED EVERY NARROW VIEWPORT. It has seven columns and no
+   constraint, so below a 600px viewport it stopped shrinking at 588px and ran past
+   its card, giving the whole page a horizontal scrollbar (measured: doc scrollWidth
+   638 inside a 485px client width). It gets the same treatment as the indicator
+   table — explicit column widths — and a scroll container so that a genuinely
+   un-shrinkable row scrolls INSIDE the card instead of moving the page. */
+.scrollx { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+/* NO min-width. A floor here looked correct at full width but at a 429px card it forced the
+   table to 520px, and because the caveat rows span the table they were clipped by the
+   scroll container -- the notes became the one part you had to scroll sideways to read,
+   which is backwards. Letting the columns shrink and the values wrap keeps the caveats
+   fully readable; table-layout:fixed stops a long value from re-widening the sheet. */
+table.exp { table-layout:fixed; }
+table.exp th:nth-child(1) { width:6%; }
+table.exp th:nth-child(2) { width:13%; }
+table.exp th:nth-child(3) { width:13%; }
+table.exp th:nth-child(4) { width:15%; }
+table.exp th:nth-child(5) { width:13%; }
+table.exp th:nth-child(6) { width:22%; }
+table.exp th:nth-child(7) { width:18%; }
+/* Header labels were wrapping to TWO lines each at 11px, which is what made the header
+   block look oddly sized. One line each, with letter-spacing trimmed a little at narrow
+   widths so adjacent labels do not run together (measured: "DEBT/CFODUE <1Y/CFO"). */
+table.exp th { white-space:nowrap; letter-spacing:.3px; padding-left:6px; padding-right:6px; }
+@media (prefers-color-scheme: dark) {
+  table.ftab td { border-color:#2a2a2a; }
+  .f-r { color:#ddd; }
+  tr.f-counter { background:rgba(46,125,50,.12); }
+}
+.spark-empty { font-size:12.5px; color:#6b6b6b; background:#f7f7f7; border-radius:4px; padding:9px 11px; margin:0; }
+/* INLINE `style='color:…'` CANNOT BE OVERRIDDEN BY A MEDIA QUERY, so these were
+   moved out of the markup into classes. An inline declaration wins on specificity,
+   which meant the dark-mode block could not reach them at all. */
+.mut { color:#6b6b6b; }
+.mut2 { color:#555; }
+.warnnote { color:#8a5a00; }
+/* The drift-attribution callout. Its colours were INLINE, which a media query
+   cannot override — that is why its dark-mode text sat at 1.18:1 on a light box. */
+.driftnote { margin-top:14px; padding:10px 12px; border-left:3px solid #b8860b;
+  background:#fffbf0; font-size:12.5px; line-height:1.5; }
+
+/* ===========================================================================
+   DARK MODE — CONSOLIDATED AND MEASURED.
+
+   The report sets `color-scheme: light dark`, so with a dark OS preference the
+   page background went dark while most components kept their light-mode values.
+   MEASURED on the live DOM with a dark preference: 23 elements below the 4.5:1
+   floor, including two at ~1.15:1 (light text on a cream box) and one at 1.38:1
+   (dark text on a dark card) — effectively unreadable.
+
+   The previous overrides were scattered per-component and covered only four of
+   the affected rules. These are consolidated into one block, and every value
+   below was contrast-checked against the darkest background it can land on.
+   =========================================================================== */
+@media (prefers-color-scheme: dark) {
+  /* Muted greys. In light mode #6b6b6b/#5f5f5f sit on white; on #121212 or the
+     #1a1a1a card they are near-invisible, which was most of the 23 failures. */
+  .sub, .disc, .f-d, .exp-note, td.dt, td.rd, .prov, .dt,
+  .lbl, td .lbl, .j-meta, .j-fal, .exp-nh, .spark-empty, .chart-empty,
+  details.tech summary, .exp-nr td, .nd, li {
+    color:#b0b0b0;
+  }
+  .prov { color:#a8a8a8; }
+  .f-d { color:#b8b8b8; }
+
+  /* Table headers and the header strip. */
+  th { background:#1e1e1e; color:#d0d0d0; border-color:#333; }
+  td { border-color:#2a2a2a; }
+
+  /* The cream "note" box (phase detail). Its BACKGROUND is light in light mode,
+     so with dark text inherited it rendered light-on-light at 1.15:1. */
+  .note { background:#2a2418; border-left-color:#8a6d1f; color:#f0e6d2; }
+
+  /* Plain-English blocks: heading blue #1557b0 on #1e2733 was 2.17:1
+     (I darkened it for light mode and never re-checked it for dark). */
+  .lm-h { color:#8ab4f8; }
+  .lm-block, .lm-bottom { background:#1e2733; }
+  .lm-intro, .lm-b { color:#e8e8e8; }
+
+  /* Verdict / status colours: the light-mode green, orange and red are too dark
+     against a dark background. */
+  tr.f-counter td.f-mark, tr.ok td:nth-child(2) { color:#81c784; }
+  tr.f-forb td.f-mark, tr.warn td:nth-child(2) { color:#ffb74d; }
+  tr.f-uninf td.f-mark { color:#b0b0b0; }
+  tr.gap td.stress, .nd { color:#ef9a9a; }
+  a { color:#8ab4f8; }
+
+  /* Tints keep a hint of hue but darker, so the f-mark colours above land on a
+     background they were measured against. */
+  tr.j-sup { background:rgba(239,108,0,.10); }
+  tr.j-aga { background:rgba(46,125,50,.12); }
+  tr.gap { background:rgba(198,40,40,.14); }
+  tr.exp-nr { background:rgba(179,38,30,.14); }
+
+  /* Inline greys written into the markup rather than the class rules. */
+  h3, h1, h2 { color:#e8e8e8; }
+  .mut, .mut2 { color:#b0b0b0; }
+  .warnnote { color:#ffb74d; }
+  /* Measured leftovers on the dark cards: the score's "/100 stress" suffix and
+     the value column's unit text kept their light-mode grey (3.27:1). */
+  .score small { color:#b0b0b0; }
+  td.val .unit { color:#b0b0b0; }
+  /* The drift callout, now class-based so it can be reached. */
+  .driftnote { background:#2a2418; border-left-color:#8a6d1f; color:#f0e6d2; }
+}
+
+</style></head><body>
+
+<h1>AI Bubble Watch</h1>
+<div class="sub">generated 2026-09-22T08:02:09Z · bubble-watch 0.1.0 · coverage 95% · confidence high</div>
+
+<div class="card lm">
+  <h3 style="margin-top:0;font-size:15px">Plain-English summary</h3>
+  <p class="lm-intro">This report tries to answer one question: how much does the AI boom look like a bubble right now? It scores a set of measurements from 0 to 100. A higher score means more of the warning signs are showing.</p>
+  <div class="lm-grid">
+    <div class='lm-block'><div class='lm-h'>What is stretched</div><div class='lm-b'>These measurements are the ones showing strain: whether the AI compute that has been built is actually being used, and whether that use is still growing (96 out of 100), how much foreign money owns US shares (92 out of 100), whether the big orders companies have booked are turning into money actually collected (89 out of 100), and how much AI companies spend compared with what they sell (68 out of 100). Read those as the places where the boom is genuinely stretched, rather than the whole picture being stretched.</div></div><div class='lm-block'><div class='lm-h'>What is calm</div><div class='lm-b'>These measurements look calm: what strong companies pay to borrow money (10 out of 100), what weaker companies pay to borrow money (16 out of 100), how jumpy the market is (18 out of 100), and how expensive stocks are compared with their own long-run trend (24 out of 100). The important thing here is what that means for the market's MOOD versus the money being SPENT. Prices are not behaving like a classic bubble even where spending is stretched.</div></div><div class='lm-block'><div class='lm-h'>Getting better or worse</div><div class='lm-b'>This report cannot yet say whether things are getting better or worse — there is no earlier reading it is willing to compare against. It will not compare two readings taken under different conditions, because the difference would then reflect the conditions rather than the market. Rather than show you a number that means nothing, it says nothing and tells you why; the exact reason is in the collapsed note below and in the caveats at the foot of this page. Run it again on another day and a comparison will appear.</div></div><div class='lm-block'><div class='lm-h'>What this cannot see at all</div><div class='lm-b'>This report measures a fixed list of things and claims nothing beyond it.</div></div><div class='lm-block'><div class='lm-h'>What this could not check today</div><div class='lm-b'>There are things this report could not check today: how many companies are filing to sell shares for the first time. They are left blank rather than guessed at, and the score is adjusted to account for their absence.</div></div><div class='lm-block'><div class='lm-h'>About timing</div><div class='lm-b'>This report cannot tell you when a bubble might burst. Nobody can. The historical comparison puts setups like today's roughly 15 to 42 months before a peak in the two past episodes it is based on. That is a description of what similar situations have looked like. It is not a forecast, and it is built on only two examples, so treat it as a rough yardstick at best. Bubbles can also run for years longer than anyone expects.</div></div>
+  </div>
+  <div class="lm-bottom"><b>Bottom line.</b> In one line: the money being spent looks at an extreme (whether the AI compute that has been built is actually being used, and whether that use is still growing), while the market's mood looks calmer than that would suggest. A stretch between spending and pricing like this can go on for a long time, and it can also end suddenly. Nothing here tells you which.</div>
+</div>
+
+<div class="card blind">
+  <h3 style="margin-top:0;font-size:15px">What this report cannot see</h3>
+  <p style="margin:0;font-size:13.5px;line-height:1.6">This report measures a fixed list of things and claims nothing beyond it.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">The score</h3>
+  <div class="score">45.2<small>/100 stress</small></div>
+  <div style="margin:10px 0 4px"><span class="phase" style="background:#f9a825;color:#3a2100">mid</span></div>
+  <p class="lm-b" style="margin:12px 0 0">The score today is 45 out of 100, which puts it in the middle range. For scale: a score above 55 would look more like the late stage of a bubble, and only true extremes have pushed past 75. It is built from 21 different measurements. That is not a huge number, and it is why this report tells you what it cannot check as well as what it can.</p>
+  <div class="note">Several indicators show speculative excess while others remain unremarkable. Capital Economics places volatility and leverage in roughly this category today.</div>
+  <div style="margin-top:16px"><svg viewBox="-2 -2 904 74" width="100%" height="78" role="img" aria-label="composite score gauge">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2e7d32"/><stop offset="35%" stop-color="#f9a825"/>
+      <stop offset="55%" stop-color="#ef6c00"/><stop offset="75%" stop-color="#c62828"/>
+      <stop offset="100%" stop-color="#4a0000"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="10" width="900" height="26" fill="url(#g)" rx="3"/>
+  <line x1='315.0' y1='0' x2='315.0' y2='46' stroke='#ffffff' stroke-width='2' stroke-dasharray='4 3'/><text class='ax' x='315.0' y='60' font-size='10' text-anchor='middle'>early|mid</text><line x1='495.0' y1='0' x2='495.0' y2='46' stroke='#ffffff' stroke-width='2' stroke-dasharray='4 3'/><text class='ax' x='495.0' y='60' font-size='10' text-anchor='middle'>mid|late</text><line x1='675.0' y1='0' x2='675.0' y2='46' stroke='#ffffff' stroke-width='2' stroke-dasharray='4 3'/><text class='ax' x='675.0' y='60' font-size='10' text-anchor='middle'>late|critical</text>
+  <polygon points="407.1,44 400.1,4 414.1,4" fill="#111111" stroke="#ffffff" stroke-width="1.5"/>
+</svg></div>
+  <div style="margin-top:6px;font-size:13px">Band <b>mid</b> — historically <b>15–42 months</b> to a peak in the reference analogs. <b>This is not a probability and not a prediction:</b> it is a comparison against 2 prior episodes, and state extremity is not timing.</div>
+  <div class="mut" style="margin-top:10px;font-size:12px">State extremity is not timing. A high composite means the present configuration resembles late-stage historical episodes; it says nothing certain about if or when a reversal occurs. Bubbles can persist for years, and this model has no basis for a point forecast.</div>
+</div>
+
+<div class='card judg'><h3 style='margin-top:0;font-size:15px'>Declared judgment and unscored evidence</h3><p style='margin:0 0 10px;font-size:13.5px'>6 entries: <b>1</b> bear against the bubble thesis, <b>2</b> are interpretation with no measured number behind them. Every entry states how it could be shown wrong &mdash; an entry that could not be falsified would make any outcome confirm it, which is the reasoning this report exists to refuse.</p><table class='jtab'><tbody><tr class='j-sup'><td><div class='j-claim'>Participants manage disclosure to their advantage, and the material assumptions are where that shows, not the disclosure count.</div><div class='j-meta'>supports &middot; measured &middot; high confidence</div><div class='j-ev'><b>Evidence:</b> Tested rather than assumed. Disclosure DENSITY is rising, not falling (MSFT 248 -&gt; 266 distinct XBRL concepts a year; ORCL 283 -&gt; 310), so 'they are hiding more' fails on the count. What IS measurable sits in the assumptions: ORCL extended its implied useful life 11.1 -&gt; 16.1 years while gross PP&amp;E grew 3.5x; MSFT tags no purchase-obligation concept at all; AMZN's gross PP&amp;E changes definition mid-series (a 1,827-day gap bridged by a finance-lease-inclusive tag). Three of nine filers have an unusable gross-PP&amp;E series, which is itself the finding.</div><div class='j-fal'><b>How this could be wrong:</b> Shown wrong if the material-assumption measures come back clean across the cohort — that is, if no filer extends a depreciation schedule while its asset base grows, and the previously-absent disclosures appear. The depreciation detector currently flags ORCL ONLY, and returns a clean result for MSFT, NVDA, TSLA, AAPL and AVGO, so it is not a everything-is-rotten test.</div></td></tr><tr class='j-aga'><td><div class='j-claim'>The reported NUMBERS do not show the fingerprint of estimation or fabrication.</div><div class='j-meta'>against &middot; measured &middot; medium confidence</div><div class='j-ev'><b>Evidence:</b> Two forensic tests, both of which can clear a company. Scale-normalised round-number clustering is the meaningful one: after dividing out each filer's reporting scale, values ending in exact thousands run ~0.1% against ~0.1% expected for genuinely measured data, so all six cohort filers come back CLEAN. Benford's law was attempted and REJECTED as a test here — at n=16,000-30,000 observations it is so over-powered that it rejected all six companies on deviations of a single percentage point, which is a property of the sample size, not of the filings.</div><div class='j-fal'><b>How this could be wrong:</b> Shown wrong if the digit distribution shifts, or if a rounding signal appears at a different reporting scale. This test covers the INCOME STATEMENT and BALANCE SHEET line items only; it says nothing about the footnote disclosures, which is where the assumption-level manipulation actually lives.</div></td></tr><tr class='j-sup'><td><div class='j-claim'>Public tone on AI is deteriorating at a measurable rate.</div><div class='j-meta'>supports &middot; measured, not automated &middot; low confidence</div><div class='j-ev'><b>Evidence:</b> GDELT's tone series for articles mentioning &quot;artificial intelligence&quot; over 25 months: monthly mean tone fell from +0.819 to +0.057, a linear slope of -0.032 tone points per month (-0.38 per year) with r = -0.886 against time. This is CONTEXT, not a warning: sentiment is known to FOLLOW price rather than lead it, which is exactly why it is reported here and not scored.</div><div class='j-fal'><b>How this could be wrong:</b> Shown irrelevant as a predictor if tone turns out to move AFTER price rather than before it, which is the expected direction and would make this a coincident indicator with no forward value. Should only be trusted if a lead relationship is ever demonstrated against forward returns on a sample large enough to test.</div></td></tr><tr class='j-amb'><td><div class='j-claim'>The frontier-model premium over open-weight models is the moat that justifies the capex, and it is measurable as a price ratio.</div><div class='j-meta'>ambiguous &middot; measured, not automated &middot; low confidence</div><div class='j-ev'><b>Evidence:</b> From OpenRouter's public model catalogue (417 priced models): the median input price of open-weight models is $0.200 per million tokens against $1.250 for closed models, so closed models hold a 6.3x premium. The full spread runs from $0.017/M to $150/M, a factor of 8,824x. This is a market estimate of how much better the frontier is assumed to be. A compressing ratio would mean the moat is closing, which is a leading indicator for the revenue that has to justify the spending.</div><div class='j-fal'><b>How this could be wrong:</b> Shown wrong if the ratio is stable or widening, which would mean open models are NOT converging on the frontier and the premium is real. Also weak because price reflects served cost and positioning as well as capability — a cheap model may simply be a small one, not an equal one. The correct companion is a capability score, which this tool does not yet fetch.</div></td></tr><tr class='j-sup'><td><div class='j-claim'>Circular financing is real, is disclosed as a first-order concern by central banks, and remains this model's largest blind spot.</div><div class='j-meta'>supports &middot; judgment &middot; medium confidence</div><div class='j-ev'><b>Evidence:</b> Named by BIS Working Paper 1367 and by the IMF's April 2026 GFSR, which carries a figure captioned 'Artificial Intelligence Circularity' and states that firms have 'increasingly relied on circular financing'. Partially visible in this tool through backlog_quality, which scores 89.1: ORCL's backlog exploded 137.8B -&gt; 455.3B in a single quarter while deferred revenue — cash actually billed — went 10.7B -&gt; 13.4B.</div><div class='j-fal'><b>How this could be wrong:</b> Shown wrong if the backlog converts. The test is available and is already built: if RPO growth were matched by rising deferred revenue, the commitments would be being billed and paid, and the divergence signal would disappear. It has not disappeared.</div></td></tr><tr class='j-sup'><td><div class='j-claim'>Capital spending is accelerating while the capability curve that is meant to justify it shows signs of plateau.</div><div class='j-meta'>supports &middot; judgment &middot; low confidence</div><div class='j-ev'><b>Evidence:</b> The spending side is measured and extreme: data-centre construction grew 58.5% year over year, and cohort capex/revenue rose from 0.190 to 0.239 in a year. The capability side is NOT measured by this tool, and no free machine-readable capability series is integrated, so the comparison rests on published benchmark reporting rather than on a number this tool fetches. That gap is the reason this entry is a judgment and not a measurement.</div><div class='j-fal'><b>How this could be wrong:</b> Shown wrong if a capability series is integrated and the curve is still rising steeply — spending on a curve that is still climbing is investment, not excess. This entry is the weakest in the panel precisely because half of the comparison is unmeasured, which is stated rather than hidden.</div></td></tr></tbody></table><p class='mut' style='margin:12px 0 0;font-size:12px'>This section is <b>not</b> part of the score. Judgment is declared here rather than hidden inside the indicator anchors, where it would be indistinguishable from arithmetic.</p></div>
+
+<div class='card fals'><h3 style='margin-top:0;font-size:15px'>What would show this is wrong</h3><p style='margin:0 0 10px;font-size:13.5px'><b>1 of 4</b> of the tool's own falsification tests currently read as <b>counter-evidence</b> to the bubble thesis. These are measurements chosen to DISPROVE it, and the answers are reported whichever way they fall.</p><table class='ftab'><tbody><tr class='f-forb'><td class='f-mark'>for</td><td><div class='f-q'>Is the contracted backlog turning into revenue actually billed and paid?</div><div class='f-r'>MSFT: backlog-to-billed-cash ratio 9.0x, +62% over four quarters (34 quarters of paired data; 4 cohort filers disclose both concepts)</div><div class='f-d'>A FALLING ratio would mean the backlog is being recognised and paid for, which is real counter-evidence: it would show the contracts are genuine revenue rather than a promise. A RISING ratio means commitments are outpacing cash collection. This cannot see counterparty credit quality, cancellation terms or termination-for-convenience clauses, so a low ratio would not prove the counterparties are sound.</div></td></tr><tr class='f-counter'><td class='f-mark'>AGAINST</td><td><div class='f-q'>Are credit markets pricing the risk of near-term deterioration?</div><div class='f-r'>credit spread BAA10Y at 1.44%, the 2th percentile of its own history since 1986. Spreads are near the TIGHTEST levels on record</div><div class='f-d'>READ THIS CAREFULLY. Tight spreads are counter-evidence to IMMINENT deterioration — the market most exposed to a default wave is not pricing one — but they are NOT counter-evidence to a bubble EXISTING. Complacency, and lenders competing for volume on thin compensation, are both entirely consistent with a bubble. So a reassuring reading here means 'not yet', never 'not a bubble'. The public spread also cannot see private credit, which the private-credit indicator covers separately.</div></td></tr><tr class='f-forb'><td class='f-mark'>for</td><td><div class='f-q'>Is capital spending growing slower than the revenue it must eventually be paid from?</div><div class='f-r'>cohort capex/revenue 0.239 now vs 0.190 a year ago (+26.2%), across 5 filers</div><div class='f-d'>A FALLING ratio would show capital spending growing more slowly than the business it is meant to serve, which is what a self-correcting boom looks like and would be genuine counter-evidence. A RISING ratio means the buildout is still outrunning monetisation. Caveat: hyperscaler revenue is mostly non-AI cloud and advertising, so this overstates the true AI capex-to-AI-revenue gap.</div></td></tr><tr class='f-uninf'><td class='f-mark'>n/a</td><td><div class='f-q'>Are US export controls tightening enough to bind non-US AI revenue?</div><div class='f-r'>not measured</div><div class='f-d'>The Federal Register API did not return a rule count, so the pace of export-control activity is unknown. This is a reported gap, not a finding of calm.</div></td></tr></tbody></table><p class='mut' style='margin:12px 0 0;font-size:12px'>These are <b>not</b> part of the score. Averaging evidence for and against into one number would merge opposite meanings, so they are reported beside it. &ldquo;n/a&rdquo; means the data cannot support a direction &mdash; stated rather than forced.</p></div>
+
+<div class='card expl'><h3 style='margin-top:0;font-size:15px'>Explosiveness test (GSADF)</h3><div class='expl-stat' style='color:#c62828'>6.02</div><div style='font-size:13.5px;margin-bottom:6px'><b>significant at the 1% level</b> &mdash; simulated 5% critical value 2.08</div><div class='mut2' style='font-size:12.5px'>Window tested: <b>1984-12-01</b> to <b>2026-03-01</b> over 169 monthly observations.</div><p class='mut' style='margin:12px 0 0;font-size:12.5px'>A formal hypothesis test on the price series &mdash; a different KIND of evidence from every indicator in the score above, which is a hand-anchored judgement. <b>It is deliberately not part of the composite.</b> If it disagrees with the score, that disagreement is the point: the two measure different things and neither is a forecast. Critical values are simulated here rather than taken from the published table, so treat them as indicative.</p></div>
+
+<div class='card'><h3 style='margin-top:0;font-size:15px'>Direction of travel</h3><p class='lm-b' style='margin:0 0 10px'>This report cannot yet say whether things are getting better or worse — there is no earlier reading it is willing to compare against. It will not compare two readings taken under different conditions, because the difference would then reflect the conditions rather than the market. Rather than show you a number that means nothing, it says nothing and tells you why; the exact reason is in the collapsed note below and in the caveats at the foot of this page. Run it again on another day and a comparison will appear.</p><details class='tech'><summary>Technical reason (4 ineligible baseline(s) rejected)</summary><div class='f-d'>No eligible baseline run: the baseline is below the 0.9 day minimum elapsed gap — the configured minimum exists so that a re-run minutes or hours later cannot be presented as a trend, and the elapsed period is what makes a change interpretable. Measured from the recorded timestamps, not from the calendar dates, because two runs either side of midnight differ by a calendar day while being minutes apart [1 run(s): 11.5 hour(s) old]; baseline coverage differs by more than the 5.0pp tolerance — the difference would partly reflect WHICH SOURCES answered rather than a change in the market, so the two runs are not on the same scale [2 run(s): 100%]; the baseline was computed under an earlier methodology version — the composite means something different across that change, so the two are not comparable; the difference would be partly a MODEL change rather than a market move [59 run(s): 2.2, 2.1, 2.0, +10 more]. A direction of travel is deliberately NOT reported rather than computed against a run that is not comparable.</div></details><div style='margin-top:14px'><svg viewBox='-2 -2 904 172' width='100%' height='172' role='img' aria-label='composite score over recorded runs'><rect class='band' x='0' y='97.5' width='900.0' height='52.5' fill='#e8f5e9'/><rect class='band' x='0' y='67.5' width='900.0' height='30.0' fill='#fffde7'/><rect class='band' x='0' y='37.5' width='900.0' height='30.0' fill='#fff3e0'/><rect class='band' x='0' y='0.0' width='900.0' height='37.5' fill='#fdecea'/><line x1='0' y1='112.5' x2='842.0' y2='112.5' stroke='#00000012' stroke-width='1'/><text class='ax' x='3' y='110.5' font-size='9'>25</text><line x1='0' y1='75.0' x2='842.0' y2='75.0' stroke='#00000012' stroke-width='1'/><text class='ax' x='3' y='73.0' font-size='9'>50</text><line x1='0' y1='37.5' x2='842.0' y2='37.5' stroke='#00000012' stroke-width='1'/><text class='ax' x='3' y='35.5' font-size='9'>75</text><text class='ax band' x='898.0' y='126.8' text-anchor='end'>early</text><text class='ax band' x='898.0' y='85.5' text-anchor='end'>mid</text><text class='ax band' x='898.0' y='55.5' text-anchor='end'>late</text><text class='ax band' x='898.0' y='21.8' text-anchor='end'>critical</text><text class='ax' x='0.0' y='163.0' font-size='9.5' text-anchor='middle'>09-17</text><text class='ax' x='168.4' y='163.0' font-size='9.5' text-anchor='middle'>09-18</text><text class='ax' x='336.8' y='163.0' font-size='9.5' text-anchor='middle'>09-19</text><text class='ax' x='505.2' y='163.0' font-size='9.5' text-anchor='middle'>09-20</text><text class='ax' x='673.6' y='163.0' font-size='9.5' text-anchor='middle'>09-21</text><text class='ax' x='842.0' y='163.0' font-size='9.5' text-anchor='middle'>09-22</text><polyline fill='none' stroke='#1a73e8' stroke-width='2.2' points='0.0,97.4 168.4,89.5 336.8,88.1 505.2,87.6 673.6,82.9 842.0,82.1'/><circle cx='0.0' cy='97.4' r='2.6' fill='#1a73e8'/><circle cx='168.4' cy='89.5' r='2.6' fill='#1a73e8'/><circle cx='336.8' cy='88.1' r='2.6' fill='#1a73e8'/><circle cx='505.2' cy='87.6' r='2.6' fill='#1a73e8'/><circle cx='673.6' cy='82.9' r='2.6' fill='#1a73e8'/><circle cx='842.0' cy='82.1' r='2.6' fill='#1a73e8'/><circle cx='842.0' cy='82.1' r='5' fill='#1a73e8' stroke='#fff' stroke-width='1.5'/><text x='842.0' y='73.1' font-size='11' fill='#1a73e8' text-anchor='end'>45.2</text><text class='ax' x='-1' y='-6' font-size='10'>0-100 fixed scale · +10.2 over 5 day(s)</text></svg></div><table style='margin-top:12px'><thead><tr><th>Date</th><th>Score</th><th>Coverage</th><th>Phase</th></tr></thead><tbody><tr><td class='num'>2026-09-17</td><td class='num'>35.1</td><td class='num'>100%</td><td>mid</td></tr><tr><td class='num'>2026-09-18</td><td class='num'>40.4</td><td class='num'>100%</td><td>mid</td></tr><tr><td class='num'>2026-09-19</td><td class='num'>41.2</td><td class='num'>100%</td><td>mid</td></tr><tr><td class='num'>2026-09-20</td><td class='num'>41.6</td><td class='num'>100%</td><td>mid</td></tr><tr><td class='num'>2026-09-21</td><td class='num'>44.8</td><td class='num'>100%</td><td>mid</td></tr><tr><td class='num'>2026-09-22</td><td class='num'>45.2</td><td class='num'>95%</td><td>mid</td></tr></tbody></table><div class='driftnote'><b>Most of this history is the MODEL changing, not the market.</b><br>Across 14 methodology version(s), model changes account for <b>+7.4</b> points of movement. Market movement within a single methodology averages <b>0.06</b> points. Model-caused movement is roughly <b>99%</b> of the total.<br><span class='mut2'>A composite from one methodology version and a composite from another are two DIFFERENT INSTRUMENTS, not one instrument at two times. The tool refuses that comparison everywhere else; this table is the one place it was still implied.</span><br><b class='warnnote'>The PHASE LABEL and the TIMING OVERLAY moved with it.</b> The phase crossed 1 time(s) at a methodology boundary ('early' to 'mid'), so the same market was reported as 'early' with one time range and 'mid' with another — 'early' quotes 30-72 months, 'mid' quotes 15-42. <b>The window halved without the market moving.</b> The timing output is already stated to be not-a-probability and fitted on n=2; this is a different caveat: a model edit can move it, so two ranges from different methodology versions are not comparable either.<br><span class='mut2'>BAND MARGIN: this reading sits 9.8 points from the mid/late (55.0) boundary, against 7.4 points of previously demonstrated model drift. The label is not presently at risk from a model edit, though the drift figure is a lower bound on what a future change could do.</span></div><p class='mut' style='margin:10px 0 0;font-size:12px'>The trend is context only. It never enters the score above, because the score is what the trend is measured from.</p></div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">Headline</h3>
+  <p style="margin:0">Composite bubble-stress 45.2/100 (mid phase) on 95% weighted coverage, high confidence. 166 of 175 weight available; 1 indicator(s) unavailable and contributing nothing.</p>
+</div>
+
+<div class='card exp'><h3 style='margin-top:0;font-size:15px'>Who is most exposed</h3><p style='margin:0 0 10px;font-size:13px'>Ratios to operating cash flow, most exposed first. This answers a different question from the score above &mdash; who carries the risk, rather than how bubble-like the configuration is &mdash; so it is <b>never folded into the composite</b>.</p><div class='scrollx'><table class='exp'><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th><th>due&nbsp;&lt;1y/CFO</th><th>leases/CFO</th><th>commitments/CFO</th><th>RPO/revenue</th></tr></thead><tbody><tr><td class='num'>1</td><td class='id'>ORCL</td><td class='num'>2.68</td><td class='num'>0.16</td><td class='num'>0.76</td><td class='num'>0.75</td><td class='num'>9.83</td></tr><tr><td class='num'>2</td><td class='id'>META</td><td class='num'>0.93</td><td class='num'>0.03</td><td class='num'>0.29</td><td class='num'>3.12</td><td class='num'><span class='nd'>not disclosed</span></td></tr><tr class='exp-nr'><td></td><td colspan='6'><div class='exp-note'><span class='exp-nh'>META caveats:</span><ul><li>does not report a remaining-performance-obligation concept</li></ul></div></td></tr><tr><td class='num'>3</td><td class='id'>AMZN</td><td class='num'>0.92</td><td class='num'><span class='nd'>not disclosed</span></td><td class='num'>0.69</td><td class='num'><span class='nd'>not disclosed</span></td><td class='num'><span class='nd'>not disclosed</span></td></tr><tr class='exp-nr'><td></td><td colspan='6'><div class='exp-note'><span class='exp-nh'>AMZN caveats:</span><ul><li>purchase obligations ARE disclosed by this filer but are excluded as not current: latest figure is from 2024-06-30 (814 days old). Not treated as zero.</li><li>near-term maturities unavailable (latest reported value is stale: 2025-12-31 is 265 days before 2026-09-22)</li></ul></div></td></tr><tr><td class='num'>4</td><td class='id'>GOOGL</td><td class='num'>0.73</td><td class='num'><span class='nd'>not disclosed</span></td><td class='num'>0.13</td><td class='num'>0.56</td><td class='num'>1.21</td></tr><tr class='exp-nr'><td></td><td colspan='6'><div class='exp-note'><span class='exp-nh'>GOOGL caveats:</span><ul><li>near-term maturities unavailable (latest reported value is stale: 2025-12-31 is 265 days before 2026-09-22)</li></ul></div></td></tr><tr><td class='num'>5</td><td class='id'>MSFT</td><td class='num'>0.19</td><td class='num'>0.06</td><td class='num'>0.13</td><td class='num'><span class='nd'>not disclosed</span></td><td class='num'>2.19</td></tr><tr class='exp-nr'><td></td><td colspan='6'><div class='exp-note'><span class='exp-nh'>MSFT caveats:</span><ul><li>purchase obligations are not disclosed at all by this filer, so they are shown as absent rather than as zero</li></ul></div></td></tr></tbody></table></div><p class='mut' style='margin:12px 0 0;font-size:12px'>A missing figure is <b>named</b>, never shown as 0.00: an absent disclosure is not a small number. Near-term debt is the &ldquo;who is tested first&rdquo; column, and for this cohort it is small for every company, so a maturity wall is not the mechanism in this cycle &mdash; the unconditional commitments are.</p></div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">Indicators</h3>
+  <table class="ind">
+    <thead><tr><th>Indicator</th><th>Weight</th><th>Stress</th><th>Contribution</th><th>Value</th><th>Reading &amp; provenance</th></tr></thead>
+    <tbody><tr class="ok">
+  <td class="id">valuation_stretch<div class="lbl">Equity valuation stretch</div></td>
+  <td class="num">8%</td>
+  <td class="num stress">23.6</td>
+  <td class="num">1.99</td>
+  <td class="val"><b>3.9760</b> <span class='unit'>pct deviation of S&amp;P 500 from its 5-year log-linear trend</span></td>
+  <td class="rd">S&amp;P 500 is +4.0% versus its 5-year log-linear trend (last 7765). PROXY: measures price stretch, not earnings. <span class='more'>…</span><div class="prov">as of 2026-09-21 &middot; yahoo <span class='prov'>[https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=5y&amp;interval=1mo]</span></div><details class='tech'><summary>Full reading (39 words)</summary><div class='f-d'>Context, not scored: 10-year Treasury yield 4.96% — a rising long yield compresses the equity risk premium without any change in price.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">concentration<div class="lbl">Index concentration (cap vs equal weight)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">29.9</td>
+  <td class="num">1.08</td>
+  <td class="val"><b>3.0323</b> <span class='unit'>percentage-point spread, SPY 12m return minus RSP 12m return</span></td>
+  <td class="rd">Cap-weight SPY +17.2% vs equal-weight RSP +14.2% over 12 months — a +3.0pp gap. PROXY: a large-cap-versus-small-cap regime measure, not a free-float market-cap share. <span class='more'>…</span><div class="prov">as of 2026-09-21 &middot; yahoo <span class='prov'>[https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1y&amp;interval=1d]</span></div><details class='tech'><summary>Full reading (45 words)</summary><div class='f-d'>A NEGATIVE gap means the average constituent is outperforming the index, which is a healthy-breadth reading and scores as low stress.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">breadth<div class="lbl">Market breadth</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">51.9</td>
+  <td class="num">1.56</td>
+  <td class="val"><b>-3.9779</b> <span class='unit'>pct, equal-weight/cap-weight ratio vs its 200-day average</span></td>
+  <td class="rd">RSP/SPY ratio 0.2750 sits -4.0% versus its own 200-day average. PROXY: relative performance, not an advance/decline line or the percentage of stocks above their 200-day. <span class='more'>…</span><div class="prov">as of 2026-09-21 &middot; yahoo <span class='prov'>[https://query1.finance.yahoo.com/v8/finance/chart/RSP?range=1y&amp;interval=1d]</span></div><details class='tech'><summary>Full reading (37 words)</summary><div class='f-d'>Falling below average indicates a narrowing rally; above average indicates broad participation.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">issuance<div class="lbl">Net equity issuance / supply pressure</div></td>
+  <td class="num">6%</td>
+  <td class="num stress">25.3</td>
+  <td class="num">1.53</td>
+  <td class="val"><b>-9.0085</b> <span class='unit'>pct, net equity issuance (cash raised minus cash paid to repurchase stock) divided by TTM operating cash flow</span></td>
+  <td class="rd">Mean net equity issuance across 5 filers: -9.01% of operating cash flow (AMZN +0.0% ($+0.0bn), GOOGL -33.7% ($-45.3bn), META -41.5% ($-37.1bn), MSFT -12.4% ($-20.4bn), ORCL +42.6% ($+19.4bn)). <span class='more'>…</span><div class="prov">as of 2026-08-31 &middot; sec-edgar <span class='prov'>[data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL]</span></div><details class='tech'><summary>Full reading (144 words)</summary><div class='f-d'>Computed from REPORTED CASH FLOWS: proceeds from stock issuance minus cash paid to repurchase stock, divided by operating cash flow, all trailing-twelve-month. A NEGATIVE value means the cohort is retiring stock on net, which is the healthy direction and scores as low stress; positives mean it is raising external equity. Companies issuing on net: ORCL. Excluded, and named rather than zero-filled: AMZN (no equity-issuance concept reported); GOOGL (no equity-issuance concept reported). REMAINING LIMITATION: a five-name mega-cap cohort still cannot see the broad IPO wave that historically marks a peak, so this is the cohort's own behaviour and not the primary market. The direction-of-the-number reading is now real data rather than a proxy, which it was not before.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">volatility<div class="lbl">Volatility regime</div></td>
+  <td class="num">5%</td>
+  <td class="num stress">18.3</td>
+  <td class="num">0.88</td>
+  <td class="val"><b>14.8700</b> <span class='unit'>VIX index level</span></td>
+  <td class="rd">VIX at 14.9. Cross-check: 20-day annualized realized volatility of the S&amp;P 500 is 10.7%. <span class='more'>…</span><div class="prov">as of 2026-09-21 &middot; yahoo <span class='prov'>[https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1y&amp;interval=1d]</span></div><details class='tech'><summary>Full reading (45 words)</summary><div class='f-d'>The anchors are deliberately shallow at the low end: a calm market is mildly bubble-like (complacency) rather than strongly so, because sustained HIGH volatility more often marks a peak already passed.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">credit_hy<div class="lbl">US high-yield credit spreads</div></td>
+  <td class="num">7%</td>
+  <td class="num stress">16.1</td>
+  <td class="num">1.16</td>
+  <td class="val"><b>2.6800</b> <span class='unit'>pct, ICE BofA US High Yield option-adjusted spread</span></td>
+  <td class="rd">ICE BofA US High Yield option-adjusted spread 2.68 as of 2026-09-18. Direction: WIDE spread = high stress, tight = low stress (not inverted). <span class='more'>…</span><div class="prov">as of 2026-09-18 &middot; fred <span class='prov'>[https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&amp;file_type=json&amp;api_key=***]</span></div><details class='tech'><summary>Full reading (105 words)</summary><div class='f-d'>A tight spread means credit is currently cheap and the market is charging little for this risk; it is NOT scored as a bubble signal, because HY spreads have a ~3.0% median over the available record and a level-based complacency score would read nearly the whole post-2009 period as a bubble. The informative signal is the DIRECTION OF TRAVEL from a tight base — widening is the early warning. Watch the change, not the level. History: 785 observations spanning 2023-09-22 to 2026-09-18.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">credit_ig<div class="lbl">US investment-grade credit spreads</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">10.0</td>
+  <td class="num">0.36</td>
+  <td class="val"><b>1.4400</b> <span class='unit'>pct, Moody's Baa corporate bond yield less the 10-year Treasury yield</span></td>
+  <td class="rd">Moody's Baa corporate yield less the 10-year Treasury 1.44 as of 2026-09-17. Direction: WIDE spread = high stress, tight = low stress (not inverted). <span class='more'>…</span><div class="prov">as of 2026-09-17 &middot; fred <span class='prov'>[https://api.stlouisfed.org/fred/series/observations?series_id=BAA10Y&amp;file_type=json&amp;api_key=***]</span></div><details class='tech'><summary>Full reading (148 words)</summary><div class='f-d'>A tight spread means credit is currently cheap and the market is charging little for this risk; it is NOT scored as a bubble signal, because HY spreads have a ~3.0% median over the available record and a level-based complacency score would read nearly the whole post-2009 period as a bubble. The informative signal is the DIRECTION OF TRAVEL from a tight base — widening is the early warning. Watch the change, not the level. History: 10178 observations spanning 1986-01-02 to 2026-09-17. NOT INDEPENDENT: the falsification test for credit conditions reads the same BAA10Y series, so this indicator and that test are the same measurement read two ways (a level here, a historical percentile there). Do not treat them as two pieces of evidence.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">capex_vs_cashflow<div class="lbl">Hyperscaler capex vs operating cash flow</div></td>
+  <td class="num">8%</td>
+  <td class="num stress">41.9</td>
+  <td class="num">3.54</td>
+  <td class="val"><b>0.7316</b> <span class='unit'>ratio, TTM capex divided by TTM operating cash flow, five-hyperscaler cohort</span></td>
+  <td class="rd">Cohort TTM capex $419.5B / TTM operating cash flow $573.4B = 0.73x across 5 filers (TTM from four quarters). Per-company: AMZN: 1.19x, GOOGL: 0.53x, META: 0.50x, MSFT: 0.59x, ORCL: 0.89x. <span class='more'>…</span><div class="prov">as of 2026-08-31 &middot; sec-edgar <span class='prov'>[data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL]</span></div><details class='tech'><summary>Full reading (78 words)</summary><div class='f-d'>Approaching or exceeding 1.0x means the buildout is no longer self-funding and must be financed externally — the regime that turns an earnings disappointment into a refinancing problem. Reported debt and cash flow exclude the large off-balance-sheet lease and purchase commitments, so this UNDERSTATES the true commitment burden.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">funding_gap<div class="lbl">Infrastructure spend vs revenue</div></td>
+  <td class="num">5%</td>
+  <td class="num stress">67.8</td>
+  <td class="num">3.27</td>
+  <td class="val"><b>0.2392</b> <span class='unit'>ratio, TTM capex divided by TTM revenue, five-hyperscaler cohort</span></td>
+  <td class="rd">Cohort TTM capex $419.5B against TTM revenue $1753.7B = 23.9% of revenue. <span class='more'>…</span><div class="prov">as of 2026-08-31 &middot; sec-edgar <span class='prov'>[data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL]</span></div><details class='tech'><summary>Full reading (64 words)</summary><div class='f-d'>LIMITATION, stated plainly: hyperscaler revenue is mostly non-AI cloud and advertising, so this is NOT the widely-quoted ~$600B AI capex-versus-AI-revenue gap, which requires segment data unavailable in XBRL. Read it as the direction and scale of the buildout relative to the businesses funding it. Filers above one third of revenue: ORCL 60%.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">leverage<div class="lbl">Cohort leverage (debt + leases vs cash generation)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">34.1</td>
+  <td class="num">1.23</td>
+  <td class="val"><b>1.1532</b> <span class='unit'>ratio, (total long-term debt + operating leases) divided by TTM operating cash flow</span></td>
+  <td class="rd">Cohort long-term debt plus operating leases $661.3B against TTM operating cash flow $573.4B = 1.15x (5 filers). <span class='more'>…</span><div class="prov">as of 2026-08-31 &middot; sec-edgar <span class='prov'>[data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL]</span></div><details class='tech'><summary>Full reading (194 words)</summary><div class='f-d'>Per-company, debt+leases+purchases over cash flow: AMZN: 1.61x (+ commitments not disclosed), GOOGL: 1.43x, META: 4.35x, MSFT: 0.32x (+ commitments not disclosed), ORCL: 4.19x. INCLUDES operating leases, which the previous version excluded and which the old rationale admitted understated true leverage; it also fixes a bug that reported ORCL as carrying no long-term debt at all. STILL EXCLUDES off-balance- sheet vehicles (SPVs, joint ventures, sale-leasebacks) that finance a growing share of data-centre construction, so true leverage remains higher than this ratio. Additionally, $388.7B of unconditional purchase obligations are disclosed and excluded from the ratio above (they are not debt, and not universally reported): folding a partial total into the headline would make the ratio mean different things for different filers.  Purchase obligations are NOT DISCLOSED AT ALL by MSFT — reported as not disclosed, never as zero. Purchase obligations are disclosed by AMZN (latest reported value is stale: 2024-06-30 is 730 days before 2026-06-30) but the latest reported figure is too old to describe the present, so it is excluded rather than treated as current or as zero.</div></details></td>
+</tr><tr class="gap">
+  <td class="id">primary_market_supply<div class="lbl">Primary-market supply (SEC registration statements)</div></td>
+  <td class="num">5%</td>
+  <td class="num stress">&mdash;</td>
+  <td class="num">&mdash;</td>
+  <td class="val">&mdash;</td>
+  <td class="rd">SEC full-text search returned no S-1 registration count for the trailing year, so primary-market supply could not be measured<div class="prov"></div></td>
+</tr><tr class="ok">
+  <td class="id">backlog_quality<div class="lbl">Backlog vs billed cash (RPO / deferred revenue)</div></td>
+  <td class="num">4%</td>
+  <td class="num stress">89.1</td>
+  <td class="num">3.76</td>
+  <td class="val"><b>51.4356</b> <span class='unit'>ratio, remaining performance obligation divided by contract liability (deferred revenue)</span></td>
+  <td class="rd">Contracted backlog relative to cash actually billed. Highest cohort ratio is GOOGL at 51.4x (RPO $519.5B against deferred revenue). <span class='more'>…</span><div class="prov">as of 2026-06-30 &middot; sec-edgar <span class='prov'>[data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL]</span></div><details class='tech'><summary>Full reading (136 words)</summary><div class='f-d'>All filers: GOOGL: RPO $519.5B vs deferred revenue $10.1B = 51.4x, MSFT: RPO $684.0B vs deferred revenue $75.7B = 9.0x. WHY THIS IS A DIVERGENCE MEASURE AND NOT A BUBBLE VERDICT: an RPO/REVENUE ratio rises for every long-contract business and cannot distinguish a healthy backlog from a vendor financing its customers, so it is not scored here. What is scored is whether the backlog is being BILLED: when RPO grows while deferred revenue stays flat, the commitments are not converting to cash. It still cannot see counterparty credit quality, cancellation terms or termination clauses — $520B of RPO and $520B of cash are not the same asset. NOT REPORTED AT ALL (a gap, never a decline): META.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">private_credit_growth<div class="lbl">Private-credit lending growth (whole-economy channel)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">44.7</td>
+  <td class="num">1.62</td>
+  <td class="val"><b>13.6525</b> <span class='unit'>pct, year-over-year growth in private-credit loans outstanding</span></td>
+  <td class="rd">Private-credit lending grew 13.7% year over year. Level: $1.54tn at 2026-06-30, against $1.35tn a year earlier.. <span class='more'>…</span><div class="prov">as of 2026-06-30 &middot; fed-z1 <span class='prov'>[https://www.federalreserve.gov/releases/z1/current/z1_csv_files.zip :: csv/F4_4_s.csv :: FL893167205.Q]</span></div><details class='tech'><summary>Full reading (157 words)</summary><div class='f-d'>This is the channel BIS Bulletin 120 identifies as taking a rapidly increasing role in financing the buildout, and it appears in NEITHER of the public credit-spread indicators above because private credit is not traded and so has no index spread. CRITICAL LIMITATION, please do not over-read this number: Z.1 reports private credit as a TOTAL FOR THE WHOLE ECONOMY. It is not AI-specific, and nothing in the free data attributes an individual private loan to a data-centre or GPU borrower. This measures the size and growth of the financing CHANNEL, not the amount of it reaching AI. Growth in the channel is consistent with the BIS thesis and does not establish it. Scored on growth rather than level: the outstanding stock of private credit is not itself a bubble signal, whereas rapid expansion is what the BIS claim actually asserts.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">datacenter_construction<div class="lbl">Data-center construction spending (physical)</div></td>
+  <td class="num">4%</td>
+  <td class="num stress">66.7</td>
+  <td class="num">2.81</td>
+  <td class="val"><b>58.5047</b> <span class='unit'>pct, year-over-year growth in US data-center construction spending</span></td>
+  <td class="rd">Data-center construction spending grew 58.5% year over year (latest month 2026-07-01 at $6551M). <span class='more'>…</span><div class="prov">as of Jul-26p &middot; census-c30 <span class='prov'>[https://www.census.gov/construction/c30/xlsx/privtime.xlsx :: sheet Priv NSA :: column 'Data center']</span></div><details class='tech'><summary>Full reading (181 words)</summary><div class='f-d'>This is the only PHYSICAL series in the model — dollars actually spent on buildings, from the Census Bureau's construction survey — so unlike every price and credit measure here it cannot be moved by sentiment. READ IT AS DOUBLE-EDGED: rapid growth is evidence the boom is real and large, which is precisely what makes an eventual bust costly, so a high reading is consistent with both a bubble thesis and a durable buildout. This tool does not claim to resolve that. LIMITATIONS: it measures buildings and not the IT hardware inside them; the dollars are NOMINAL and not deflated, so input-cost inflation inflates this line without any new capacity; Census added the line item only in the May 2024 release with estimates from January 2014, so no data-center series covers 2000 or 2008 and the scale describes this boom's range rather than a full cycle. The latest month is PRELIMINARY and will be revised for up to two years, so the newest point is the least reliable.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">grid_cancellations<div class="lbl">Abandoned generating capacity (grid pipeline)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">58.1</td>
+  <td class="num">2.10</td>
+  <td class="val"><b>38.7000</b> <span class='unit'>pct, cancelled or postponed capacity as a share of announced plus cancelled capacity</span></td>
+  <td class="rd">38.7% of announced generating capacity has been cancelled or postponed ($184141 MW abandoned against 291138 MW still planned). <span class='more'>…</span><div class="prov">as of July 2026 &middot; eia-860m <span class='prov'>[https://www.eia.gov/electricity/data/eia860m/xls/july_generator2026.xlsx :: sheet 'Canceled or Postponed' :: 184141.39999999912 MW]</span></div><details class='tech'><summary>Full reading (95 words)</summary><div class='f-d'>The grid is the binding physical constraint on this buildout, so abandoned generation is intent that did not survive contact with reality. INTERPRET CAREFULLY: the EIA sheets are cumulative INVENTORIES, not flows, so this is a LEVEL of abandoned intent over the whole accumulation window — it is NOT a rate of change and does NOT show whether cancellations are rising now. Catching the direction of travel would require comparing successive monthly releases, which is not implemented.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">narrative_saturation<div class="lbl">AI narrative saturation (SEC filing census)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">52.6</td>
+  <td class="num">1.59</td>
+  <td class="val"><b>53.3093</b> <span class='unit'>pct, annualised year-over-year change in 10-K filings mentioning artificial intelligence</span></td>
+  <td class="rd">3822 10-K filings mentioned &quot;artificial intelligence&quot; in 2026, against 3324 in 2025 — a 53% change. <span class='more'>…</span><div class="prov">as of 2026-09-22 &middot; sec-edgar-fulltext <span class='prov'>[efts.sec.gov/LATEST/search-index forms=10-K phrase=&quot;artificial intelligence&quot;]</span></div><details class='tech'><summary>Full reading (160 words)</summary><div class='f-d'>This is a CENSUS, not a sample: every filing of that form type in the period is indexed, so unlike news volume or search interest there is no sampling error and the phrase is pinned exactly. WHAT IT MEASURES: how many companies discuss AI in a regulatory filing, which is narrative SATURATION — how far a theme has spread from specialists into general disclosure. IT IS NOT A VALUATION OR A RISK MEASURE: a mention may come from a chip designer or from a bakery noting a supply-chain risk, and the count cannot distinguish enthusiasm from caution. Scored on year-over-year change, since the count is bounded by the number of filers and must saturate. 2026 is a PARTIAL year: 3822 filings so far, annualised to 5096 using 9 elapsed months, so every run before December would otherwise look like a collapse in AI mentions.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">foreign_interest<div class="lbl">Foreign ownership of US equities</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">92.0</td>
+  <td class="num">2.77</td>
+  <td class="val"><b>99.6721</b> <span class='unit'>percentile of rest-of-world US corporate equity holdings within the series' own history</span></td>
+  <td class="rd">Rest-of-world holdings of US corporate equities: $22.21tn at 2026-06-30, the 100th percentile of this series' own history (which begins 1945-12-31). Up 25.7% year over year. Retrieved 2026-09-22. <span class='more'>…</span><div class="prov">as of 2026-06-30 &middot; fed-z1 <span class='prov'>[https://www.federalreserve.gov/releases/z1/current/z1_csv_files.zip :: csv/M3s_Q.csv :: FL263064105.Q]</span></div><details class='tech'><summary>Full reading (143 words)</summary><div class='f-d'>SCORED ON THE PERCENTILE, NOT THE DOLLAR LEVEL: the absolute stock grows with the market itself, so a raw level would rise in every bull market whether or not foreign participation actually increased. A percentile against the full history is the only version of this number that is interpretable. DIRECTION: a higher percentile reads as more stress, following Capital Economics, which flags record foreign ownership as a LATE-STAGE marker — a market increasingly held by investors whose willingness to hold depends on returns continuing is more fragile. This indicator was a declared weight-0 blind spot until 2026-09-17, on the stated grounds that no free machine-readable series existed; that was wrong, and the gap is now closed.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">depreciation_subsidy<div class="lbl">Depreciation schedule extension (capital subsidy)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">38.7</td>
+  <td class="num">1.40</td>
+  <td class="val"><b>2.5942</b> <span class='unit'>percentage points the annual depreciation rate fell while the asset base grew</span></td>
+  <td class="rd">FLAGGED: ORCL (-2.59pt, PP&amp;E 4.28x) — extended their depreciation schedule while the asset base grew, which flatters reported earnings without any change in the underlying business.. <span class='more'>…</span><div class="prov">as of 2026-06-30 &middot; sec-edgar <span class='prov'>[data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL]</span></div><details class='tech'><summary>Full reading (239 words)</summary><div class='f-d'>Measured across 6 filers over the trailing four annual periods: MSFT +1.23pt with PP&amp;E 2.63x; ORCL -2.59pt with PP&amp;E 4.28x; AAPL -1.24pt with PP&amp;E 1.10x; AVGO -1.35pt with PP&amp;E 1.27x; NVDA +1.16pt with PP&amp;E 2.61x; TSLA +1.19pt with PP&amp;E 1.79x. THE GUARD MATTERS MORE THAN THE NUMBER: a naive rate test flags six of nine companies including AAPL and AVGO, which show the same drift with no AI capex story at all because a mechanical ratio drifts as older fully-depreciated assets age into the denominator. Two stages are required — the gross-PP&amp;E series must first pass a health check, then the rate test is ANDed with an asset-growth condition. With both, exactly one of nine flags. Rejected series: AMZN (gross PP&amp;E: GAP: 1827 days between 2019-12-31 and 2024-12-31, beyond the 400 day limit); GOOGL (gross PP&amp;E: STALE: latest observation 2025-03-31 is 540 days before 2026-09-22, beyond the 460 day limit); META (gross PP&amp;E: STALE: latest observation 2020-09-30 is 2183 days before 2026-09-22, beyond the 460 day limit). LIMITATIONS: this detects a CHANGE in a filer's depreciation convention, not an initially aggressive one, so a company that always depreciated over six years never flags; and gross PP&amp;E aggregates buildings and hardware, so it cannot say which of the two the useful life refers to.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">frontier_premium<div class="lbl">Open-versus-closed capability premium (the moat)</div></td>
+  <td class="num">3%</td>
+  <td class="num stress">59.5</td>
+  <td class="num">2.15</td>
+  <td class="val"><b>32.5000</b> <span class='unit'>Elo points by which the best closed model leads the best open one (LOW = high stress)</span></td>
+  <td class="rd">The best closed model (claude-fable-5.1-max) leads the best open one (glm-5.3-max) by 32.5 Elo points, against a peak lead of 135.0 in 2024-02-02 — a compression of 76%. <span class='more'>…</span><div class="prov">as of 2026-09-13 &middot; lmarena <span class='prov'>[huggingface.co/datasets/lmarena-ai/leaderboard-dataset :: text/full parquet :: category=overall :: best-proprietary minus best-open]</span></div><details class='tech'><summary>Full reading (280 words)</summary><div class='f-d'>DIRECTION IS INVERTED HERE: a NARROW gap scores as HIGH stress, because the capital spending assumes a wide moat and a narrow one means the premium is not durable. A wide gap would mean the premium is earned. GENUINELY TWO-SIDED: a closing gap is bad for the incumbents financing the buildout and good for AI adoption generally, and this tool does not pretend the number has one meaning. LIMITATIONS: arena ratings measure human PREFERENCE on voted prompts, not the enterprise workloads that generate the revenue; a 'Proprietary' licence is not literally 'weights unreleased'; and the gap is between the single best model on each side, so one release moves it sharply. The series also went NEGATIVE for five weeks in early 2025 (2025-01-24 to 2025-02-27, floor -9.1), when deepseek-r1 genuinely outranked o1 and gemini-2.0-flash against a field of 45 to 55 closed and 114 to 115 open models — that episode is a real measurement, unlike the deeper negative stretch at the start of the record, which is excluded. EXCLUDED: 9 of 243 snapshots are dropped because the leaderboard ranked fewer than 5 proprietary models, so their difference measures leaderboard composition rather than capability (in 2023-05 to 2023-11 exactly ONE closed model was ranked against up to 30 open ones, which is why the raw series appears to reach -102 there; it is not a capability reading). READ FROM A COMMITTED FIXTURE (2026-09-13 vintage), so it does not update itself: the staleness guard converts it to a reported gap past 120 days.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">circularity<div class="lbl">Circular financing in the AI buildout (verified structures only)</div></td>
+  <td class="num">7%</td>
+  <td class="num stress">46.5</td>
+  <td class="num">3.36</td>
+  <td class="val"><b>46.4768</b> <span class='unit'>mean severity pct — average points per read edge against the maximum a single edge can express</span></td>
+  <td class="rd">MEAN SEVERITY 46% — the average points per read edge against the maximum a single edge can express, and this is the SCORED quantity. Cumulative rubric total 620 across 23 entries. <span class='more'>…</span><div class="prov">as of 2026-09-22 &middot; sec-edgar (read filings) <span class='prov'>[sec.gov Archives: AMD 8-K 2025-10-06; SPCX 10-Q 2026-08-04; MSFT 10-K 2026-07-29; ORCL 8-K 2025-09-09]</span></div><details class='tech'><summary>Full reading (1548 words)</summary><div class='f-d'>Reported per edge rather than as a share of a running total, because the total grows with the number of edges READ and would otherwise make the score rise from reading effort rather than from the market. Structures verified by reading primary filings: vendor investing in, contracting with, and lending to the same counterparty x4; supplier holding its customer's tradable equity x1; vendor sublicensing a long-term lease while remaining liable for it x1; datacentre buildout financed on a speculative-grade tenant's credit x1; vendor organising third-party capital to fund demand for its own product x1; upstream supply commitments scaled to demand the vendor itself finances x1; supplier guaranteeing and investing in its customer's infrastructure x1; equity issued as consideration for purchases x1; parent absorbing its AI unit's debt x1; related-party revenue with an equity stake x1; related-party supply under common control x1; read and REFUTED — not a financing relationship x8; real and material supply relationship with NO financing element x1. 14 of 23 edges disclose a magnitude that can be scaled; the rest are marked UNQUANTIFIED rather than assumed mild. Of 23 edges, 15 are real structures and 8 was READ AND REFUTED — Oracle names OpenAI only as a model-provider list, so its RPO growth of 359% to $455B is not attributable to a named counterparty. That refutation is retained deliberately: it is the evidence that this rubric can come back LOWER, which is what separates it from a tally of mentions. THE RUBRIC IS THE JUDGMENT AND IT IS ARGUABLE: an equity warrant issued as consideration for purchases scores 40; a parent absorbing an AI unit's debt scores 30; disclosed related-party revenue with an equity stake scores 25; a related-party supply deal scores 10; a refutation scores 0. Each edge also carries a BOUNDED scale term (0/2/5/8 points, by the disclosed exposure against the filer's market cap), capped BELOW the weakest structure so the rubric cannot become a size contest. WHY THE MEAN AND NOT THE TOTAL IS SCORED, for the reason above. A refutation adds zero points while still counting as an edge, so it LOWERS the mean — which is what makes this a measurement rather than an alarm.  THE VERIFIED ENTRIES, each read in a filing: [CRWV x OpenAI — vendor investing in, contracting with, and lending to the same counterparty (56); $6.5 BILLION committed through 2031 PLUS $11.9 BILLION committed through 2030 = $18.4 BILLION of OpenAI commitments to CoreWeave, against a company whose revenue is 67% from Microsoft and 77% from its top two customers.] [CRWV x MSFT — vendor investing in, contracting with, and lending to the same counterparty (56); 67% of CoreWeave's FY2025 revenue is MICROSOFT — a single customer. CoreWeave's total revenue is roughly $5B scale, so this is a concentrated, single-counterparty business.] [AMZN x Anthropic — vendor investing in, contracting with, and lending to the same counterparty (56); $8.0B invested in Anthropic convertible notes (Q3 2023-Q4 2025), converted in part to nonvoting preferred stock; MORE THAN $100 BILLION of AWS cloud commitment over 10 years; PLUS a financing facility of up to $20.0 BILLION, drawable only as compute delivery milestones are reached, expiring 30 months after an Anthropic liquidity event such as an IPO.] [AMZN x OpenAI — vendor investing in, contracting with, and lending to the same counterparty (56); an existing $38.0 BILLION AWS commitment expanded BY $100.0 BILLION over 8 years; $15.0B invested in OpenAI Series C plus a $35.0B equity commitment letter, of which $13.7B was drawn in Q2 2026, for a $28.7 BILLION carrying value on the balance sheet at 2026-06-30.] [NVDA x CoreWeave — supplier holding its customer's tradable equity (30); the position is not separately quantified in the excerpt read, and NVIDIA states that &quot;net unrealized gains on investments in publicly-held equity securities held at period end were not significant&quot;. The RELATIONSHIP is the substance: NVIDIA sells GPUs to CoreWeave while holding CoreWeave's listed shares, and CoreWeave is a company whose revenue is 67% Microsoft and which has committed $18.4B to OpenAI.] [SMCI x Lambda — vendor sublicensing a long-term lease while remaining liable for it (43); a $600.0 MILLION aggregate obligation over 10 years for 21 MW, sublicensed in full to Lambda, a PRIVATE company. SMCI has a right of reimbursement, not a release from the obligation.] [APLD x CoreWeave — datacentre buildout financed on a speculative-grade tenant's credit (43); 250 MW of datacentre capacity (100 MW + 150 MW) leased to CoreWeave, against which the LANDLORD borrowed on the strength of its own 9.250% notes due 2030. CoreWeave Parent's own credit rating is BB (speculative grade); the $50M letter of credit and two springing guaranties exist to bridge that gap.] [NVDA x (capital providers) — vendor organising third-party capital to fund demand for its own product (50); OVER $500 BILLION of third-party capital, from SIX NAMED institutions (Apollo, BlackRock, Blackstone, Brookfield, Goldman Sachs, KKR). This is the largest single figure anywhere in this research — larger than NVIDIA's own $279B supply commitments and its $105B guarantee combined.] [NVDA x (upstream supply chain) — upstream supply commitments scaled to demand the vendor itself finances (58); $279 BILLION of supply and capacity commitments as of 2026-07-26, up from $119 billion the prior quarter — an increase of $160 BILLION (+134%) in a single quarter. This is the largest single figure in the model and it EXCEEDS the $105B guarantee. The capital-provider MOUs are NOT quantified, and NVIDIA states they 'may not lead to definitive agreements.'] [NVDA x OpenAI — supplier guaranteeing and investing in its customer's infrastructure (53); $105 BILLION maximum aggregate guarantee over 20-year OpenAI leases at PORTS-Pike (4.25 IT-GW of ~8 IT-GW), on top of a $1.5B equity investment in SB Energy. Present notional booked: $3,529M of land/power/shell guarantees, $4,800M warrants, $1,000M equity forward. $712M sits in escrow to mitigate exposure. THIS IS THE LARGEST SINGLE CIRCULAR EXPOSURE FOUND IN THE MODEL and, because the guarantees only become effective when leases commence from FY2029, almost none of it is on the balance sheet today.] [AMD x OpenAI — equity issued as consideration for purchases (45); 160,000,000 shares = 9.8% of AMD's 1,632,475,042 shares outstanding (EDGAR dei:EntityCommonStockSharesOutstanding, 2026-07-29). AMD's CFO: the partnership is 'expected to deliver tens of billions of dollars in revenue'.] [SPCX x xAI — parent absorbing its AI unit's debt (35); xAI acquired at a $250B valuation; related-party interest expense of $327M in Q2 2026 and $513M in H1 2026; $37,474M of preferred converted in the merger.] [MSFT x OpenAI — related-party revenue with an equity stake (27); revenue from OpenAI $24.1B (FY2026), receivable $6.0B, total funding commitments $13.0B, stake gain $6.5B; equity-method investments doubled from $6.0B to $12.0B over the year.] [SPCX x Tesla — related-party supply under common control (12); $329M of Megapack purchases in H1 2026; $637M cumulative with the 2025 figures.] [ORCL x (backlog counterparty — not named) — read and REFUTED — not a financing relationship (0); $638 BILLION of RPO, up from $138 billion — a 362% increase in one year — with no counterparty attributed. This is the largest single financial figure encountered anywhere in this research and the model CANNOT attribute it.] [NVDA x Tesla — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — the mentions are a competitor list.] [AMZN x Lambda — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — this is a product-name collision.] [META x Anthropic — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — this is a litigation caption.] [NVDA x Anthropic — real and material supply relationship with NO financing element (0); 1 GIGAWATT of compute capacity — a material, named commitment. No dollar figure is stated, and the ABSENCE of a financing element is the finding.] [CRWV x Lambda — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — the mentions are a competitor list.] [CRWV x Crusoe — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — the mentions are a competitor list.] [AMZN x Databricks — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — the relationship is a commercial collaboration with no financing element disclosed. Contrast the AMZN entries that DO score: the same issuer discloses an $8B Anthropic stake, a $20B financing facility and a $100B cloud commitment for OpenAI, all with financing terms. The absence of those terms here is the distinguishing fact.] [ORCL x OpenAI — read and REFUTED — not a financing relationship (0); none attributable to a circular structure — the mention is a model list, not a contract.] Only 23 edge(s) have been READ and classified; the scan finds 47 real ecosystem edges, so the great majority contribute nothing. An unread edge scores ZERO rather than partially, so this reading UNDERSTATES circular financing and biases the composite toward CALM. Treat it as a lower bound: a low number means 'little has been verified', never 'little is there'.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">inference_demand<div class="lbl">Measured AI inference demand (public token volume)</div></td>
+  <td class="num">6%</td>
+  <td class="num stress">96.0</td>
+  <td class="num">5.78</td>
+  <td class="val"><b>-62.0632</b> <span class='unit'>pct change in weekly tokens over 13 weeks (the calibrated lag)</span></td>
+  <td class="rd">Weekly AI token volume is -62.1% over the last 13 weeks (latest week 2026-09-21, 1.772e13 tokens). <span class='more'>…</span><div class="prov">as of 2026-09-20 &middot; openrouter <span class='prov'>[https://openrouter.ai/api/frontend/v1/rankings/models]</span></div><details class='tech'><summary>Full reading (105 words)</summary><div class='f-d'>open-weight share 76-76% of the latest complete day (0.80% of tokens could not be classified) A LEVEL cannot show deceleration; this is a RATE, and deceleration with the level still high is the warning this indicator exists to surface. LIMIT: OpenRouter is ONE aggregator, not the market, so the level is a LOWER BOUND on total AI usage and its bias is toward CALM. The anchors INVERT relative to every other indicator here — rising usage means the buildout is being consumed, which is LESS bubble stress, not more.</div></details></td>
+</tr><tr class="ok">
+  <td class="id">energisation_delay<div class="lbl">Interconnection queue time-to-energise (physical supply constraint)</div></td>
+  <td class="num">4%</td>
+  <td class="num stress">31.0</td>
+  <td class="num">1.31</td>
+  <td class="val"><b>60.8246</b> <span class='unit'>median months from interconnection request to commercial operation</span></td>
+  <td class="rd">Projects entering service in 2025 waited a median of 60.8 months from interconnection request to operation (n=294), against 62.7 in 2024 (-1.9). The slowest quarter took 86.1 months. <span class='more'>…</span><div class="prov">as of 2025 &middot; lbnl <span class='prov'>[https://emp.lbl.gov/sites/default/files/2026-05/LBNL_Ix_Queue_Data_File_thru2025.xlsx]</span></div><details class='tech'><summary>Full reading (160 words)</summary><div class='f-d'>HISTORY: this median was 17.7 months in 2005, so the queue is roughly 3.4x slower than it was. DIRECTION, STATED PLAINLY BECAUSE IT IS AMBIGUOUS: a long queue is physical evidence that demand for power is REAL and ahead of supply — projects are waiting, not being abandoned — which argues AGAINST a demand-failure reading. But a queue that never clears also means announced capacity may not arrive, which is a bubble risk of a different kind. Both are true and neither is asserted here. NOTE THE DIVERGENCE: the median flattened while the 75th percentile kept rising, so 'the queue stopped getting worse' would be a misreading of the median alone. LIMIT: this is the whole queue, not AI data centres specifically; data centres are a subset the dataset does not isolate.</div></details></td>
+</tr></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">Data quality — coverage 95%</h3>
+  <p style="margin:0 0 6px;font-size:13px">Unavailable indicators contribute <b>nothing</b>: they are never imputed or defaulted. The composite is renormalized over the 166 of 175 weight that is actually available.</p>
+  <ul><li><b>Primary-market supply (SEC registration statements)</b> (9% of intended weight) — SEC full-text search returned no S-1 registration count for the trailing year, so primary-market supply could not be measured</li></ul>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">Sources</h3>
+  <table><thead><tr><th>Source</th><th>Status</th><th>Counts</th><th>Detail</th></tr></thead><tbody><tr class='ok'><td>yahoo</td><td>ok</td><td>7 ok / 0 failed</td><td class='dt'>7 of 7 chart series retrieved</td></tr><tr class='ok'><td>sec-edgar</td><td>ok</td><td>5 ok / 0 failed</td><td class='dt'>5 of 5 filers with usable XBRL facts</td></tr><tr class='ok'><td>fred</td><td>ok</td><td>4 ok / 0 failed</td><td class='dt'>4 of 4 series retrieved via fred-api-v2, fred-api-v2, fred-api-v2, fred-api-v2</td></tr><tr class='ok'><td>fed-z1</td><td>ok</td><td>2 ok / 0 failed</td><td class='dt'>Fed Z.1 F4.4 private-credit lending (8MB archive)</td></tr><tr class='ok'><td>eia-860m</td><td>ok</td><td>2 ok / 0 failed</td><td class='dt'>EIA-860M planned vs cancelled generating capacity (xlsx)</td></tr><tr class='ok'><td>census-c30</td><td>ok</td><td>1 ok / 0 failed</td><td class='dt'>Census C30 data-center construction spending (monthly)</td></tr><tr class='gap'><td>sec-edgar-fulltext</td><td>unavailable</td><td>0 ok / 1 failed</td><td class='dt'>S-1 registration count, trailing 1 year (primary-market supply)</td></tr></tbody></table>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;font-size:15px">Caveats</h3>
+  <ul><li>COMPARABILITY: this run has 95% weighted coverage. Because the composite is renormalized over available weight, a run with different coverage is NOT directly comparable to this one at the decimal level. Compare direction and the per-indicator stresses, or re-run with all sources healthy.</li><li>PROXIES IN USE: valuation is price-stretch versus trend (no free earnings series); concentration and breadth use cap-weight versus equal-weight returns (not a free-float share). Issuance is no longer a proxy: it is computed from reported cash flows (cash raised from stock issuance minus cash paid to repurchase stock, over operating cash flow), which are available for every scored filer except AMZN, whose equity-issuance concept does not exist because it does not issue equity. Each indicator's row names its own limitation.</li><li>NOT INDEPENDENT: `concentration` and `breadth` measure the same underlying quantity — equal-weight versus cap-weight performance — over different windows. Measured correlation is -0.70 at 12 months and -0.93 at 6 months, i.e. up to ~86% shared variance. Their combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count one phenomenon as two pieces of evidence. Do NOT read agreement between the two as corroboration.</li><li>METHODOLOGY VERSION 2.4. The tool records which version of the model produced each run, and refuses to compute a direction of travel across a version change: redefining an indicator changes what the composite MEANS, so a difference across such a change would report an accounting change as a market move. This version replaced the share-count issuance proxy with reported cash flows and added primary-market supply; runs recorded before it are preserved but cannot serve as baselines.</li><li>A CALM READING IS NOT EVIDENCE OF SAFETY. Bubbles are generally identifiable only in hindsight, and cheap credit or healthy breadth are consistent with both 'no bubble' and 'the quiet phase of one'. More generally: this tool reports the STATE of a set of indicators, and state extremity carries no timing information.</li><li>CREDIT IS SCORED AS LEVEL, NOT COMPLACENCY. A wide spread reads as high stress and a tight one as low. Scoring tight spreads as the bubble signal is a defensible alternative (credit tightened into the dot-com peak) but is deliberately not used here: HY OAS has a ~3.0% median over the available record, so a level-based complacency score would read most of the last decade as a bubble — a near-constant with no timing value. The informative credit signal is the DIRECTION OF TRAVEL from a tight base. Measured effect of the alternative reading on this composite: 32.4 -&gt; 44.2, i.e. early -&gt; late.</li><li>DIRECTION OF TRAVEL NOT REPORTED: No eligible baseline run: the baseline is below the 0.9 day minimum elapsed gap — the configured minimum exists so that a re-run minutes or hours later cannot be presented as a trend, and the elapsed period is what makes a change interpretable. Measured from the recorded timestamps, not from the calendar dates, because two runs either side of midnight differ by a calendar day while being minutes apart [1 run(s): 11.5 hour(s) old]; baseline coverage differs by more than the 5.0pp tolerance — the difference would partly reflect WHICH SOURCES answered rather than a change in the market, so the two runs are not on the same scale [2 run(s): 100%]; the baseline was computed under an earlier methodology version — the composite means something different across that change, so the two are not comparable; the difference would be partly a MODEL change rather than a market move [59 run(s): 2.2, 2.1, 2.0, +10 more]. A direction of travel is deliberately NOT reported rather than computed against a run that is not comparable.</li></ul>
+</div>
+
+<p class="disc">This tool is a state descriptor, not a forecast and not investment advice. It measures where a set of published indicators currently sit relative to documented historical reference points, and it says so plainly when it cannot measure something. It has no ability to tell you if or when a market reversal will occur, and it should not be the sole basis for any financial decision.</p>
+</body></html>
