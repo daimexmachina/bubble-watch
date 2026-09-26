@@ -130,6 +130,21 @@ enum Cmd {
         #[arg(long, default_value = "data/history")]
         history_dir: PathBuf,
     },
+    /// Report which recent days have NO archive row.
+    ///
+    /// A daily series with a hole in it is a SILENT failure: nothing errors, the
+    /// trend simply spans a gap as though the missing days never existed. Measured
+    /// 2026-09-24: the host was off across the 13:30 timer slot and `Persistent=true`
+    /// did not fire a catch-up run, so that day is absent with no trace anywhere in
+    /// the output. This makes a missed run a visible gap instead.
+    Doctor {
+        /// Directory holding the run archive.
+        #[arg(long, default_value = "data/history")]
+        history_dir: PathBuf,
+        /// How many days back to check.
+        #[arg(long, default_value_t = 30)]
+        days: i64,
+    },
 }
 
 fn main() {
@@ -526,6 +541,46 @@ fn run(cli: &Cli) -> Result<(), String> {
             print_human(&r);
             finish_code(&r);
             Ok(())
+        }
+        Cmd::Doctor { history_dir, days } => {
+            let (rows, problems) = bubble_watch::history::load(history_dir);
+            for p in &problems {
+                eprintln!("archive problem: {p}");
+            }
+            let today = bubble_watch::now_date();
+            let missing = bubble_watch::history::missing_dates(&rows, &today, *days);
+
+            println!(
+                "archive: {} row(s) across {} distinct date(s), checked {} day(s) to {}",
+                rows.len(),
+                rows.iter()
+                    .map(|r| r.date.as_str())
+                    .collect::<std::collections::HashSet<_>>()
+                    .len(),
+                days,
+                today
+            );
+
+            if missing.is_empty() {
+                println!("no gaps: every day in the window has at least one run recorded");
+                return Ok(());
+            }
+
+            // A gap is reported as a FAILURE, not a note: a daily instrument whose
+            // history has holes silently compares across them, and that is the whole
+            // reason this command exists.
+            println!("\n{} GAP(S) — days with no recorded run:", missing.len());
+            for d in &missing {
+                println!("  {d}");
+            }
+            println!(
+                "\nA gap is not cosmetic: `trend` spans it as though the missing days never \
+                 existed, so direction of travel is computed across an interval nothing was \
+                 measured in. Check whether the host was off across the timer slot (measured \
+                 2026-09-24: the host booted at 13:55, after the 13:30 run, and Persistent=true \
+                 did NOT fire a catch-up)."
+            );
+            std::process::exit(1);
         }
     }
 }

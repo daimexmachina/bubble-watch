@@ -188,6 +188,38 @@ pub fn append(dir: &Path, point: &TrendPoint) -> Result<(), String> {
 /// NOTE: this is a CALENDAR-DATE difference and must not be used to decide whether two
 /// runs are far enough apart to compare. Two runs either side of midnight differ by one
 /// calendar day while being minutes apart. Use `elapsed_days` for that.
+/// Dates in the last `days` days (inclusive of today) that have NO archive row.
+///
+/// ## Why this exists
+///
+/// A daily series with a hole in it fails SILENTLY. Nothing errors, no test breaks,
+/// and the trend simply spans the gap as though the missing days never happened. On
+/// 2026-09-24 this host was off across the 13:30 timer slot and `Persistent=true` did
+/// not fire a catch-up run, so that day is absent from the archive with no trace
+/// anywhere in the output — the gap was only found by reading the archive by hand.
+///
+/// Returns `(missing, present_out_of_window)` — the second element is dates present
+/// in the archive that fall OUTSIDE the window, which is deliberately not an error
+/// but is reported so a caller can tell "no rows at all" from "window mis-set".
+///
+/// The `today` argument is passed in rather than read from the clock, so this is
+/// deterministic and testable.
+pub fn missing_dates(rows: &[TrendPoint], today: &str, days: i64) -> Vec<String> {
+    let Some(end) = parse_date(today) else {
+        return Vec::new();
+    };
+    let have: std::collections::HashSet<&str> = rows.iter().map(|r| r.date.as_str()).collect();
+    let mut missing = Vec::new();
+    for back in 0..days {
+        let d = end - chrono::Duration::days(back);
+        let key = d.format("%Y-%m-%d").to_string();
+        if !have.contains(key.as_str()) {
+            missing.push(key);
+        }
+    }
+    missing
+}
+
 pub fn days_between(from: &str, to: &str) -> Option<f64> {
     let f = parse_date(from)?;
     let t = parse_date(to)?;
@@ -1260,5 +1292,84 @@ mod tests {
         assert!((days_between("2026-09-10", "2026-09-17").unwrap() - 7.0).abs() < 1e-9);
         assert!((days_between("2026-09-17", "2026-09-10").unwrap() + 7.0).abs() < 1e-9);
         assert!(days_between("not-a-date", "2026-09-17").is_none());
+    }
+    // ---- doctor: missing-day detection ----------------------------------
+
+    fn doc_row(date: &str) -> TrendPoint {
+        TrendPoint {
+            date: date.into(),
+            generated_at: format!("{date}T20:33:00Z"),
+            composite: 40.0,
+            coverage: 1.0,
+            phase: "mid".into(),
+            methodology_version: "2.5".into(),
+            stresses: Default::default(),
+        }
+    }
+
+    #[test]
+    fn doctor_reports_the_exact_missing_day() {
+        // The MEASURED case: 2026-09-24 has no row because the host was off across
+        // the timer slot.
+        let rows = vec![
+            doc_row("2026-09-23"),
+            doc_row("2026-09-25"),
+            doc_row("2026-09-26"),
+        ];
+        let missing = missing_dates(&rows, "2026-09-26", 4);
+        assert_eq!(
+            missing,
+            vec!["2026-09-24"],
+            "must name the exact missing day"
+        );
+    }
+
+    #[test]
+    fn doctor_does_not_report_a_present_today_as_missing() {
+        // A TWO-day window covers 09-26 and 09-25 only. (The first version of this
+        // test asked for 3 days having supplied only two rows, and correctly failed:
+        // 09-24 really was missing. The code was right and my expectation was wrong
+        // — the same class of mistake as the leap-day date assertion earlier.)
+        let rows = vec![doc_row("2026-09-25"), doc_row("2026-09-26")];
+        let missing = missing_dates(&rows, "2026-09-26", 2);
+        assert!(
+            missing.is_empty(),
+            "a present day must not be missing: {missing:?}"
+        );
+    }
+
+    #[test]
+    fn doctor_reports_a_full_window_as_complete() {
+        let rows = vec![
+            doc_row("2026-09-24"),
+            doc_row("2026-09-25"),
+            doc_row("2026-09-26"),
+        ];
+        assert!(missing_dates(&rows, "2026-09-26", 3).is_empty());
+    }
+
+    #[test]
+    fn doctor_treats_a_duplicate_date_as_present() {
+        let rows = vec![doc_row("2026-09-26"), doc_row("2026-09-26")];
+        assert!(missing_dates(&rows, "2026-09-26", 1).is_empty());
+    }
+
+    #[test]
+    fn doctor_reports_an_empty_archive_as_everyday_missing_not_as_success() {
+        // The failure this guards: an empty archive reading as "no problems found".
+        let rows: Vec<TrendPoint> = vec![];
+        assert_eq!(missing_dates(&rows, "2026-09-26", 5).len(), 5);
+    }
+
+    #[test]
+    fn doctor_yields_nothing_for_an_unparseable_today() {
+        let rows = vec![doc_row("2026-09-26")];
+        assert!(missing_dates(&rows, "nonsense", 5).is_empty());
+    }
+
+    #[test]
+    fn doctor_spans_a_month_boundary_correctly() {
+        let rows = vec![doc_row("2026-10-01"), doc_row("2026-09-30")];
+        assert_eq!(missing_dates(&rows, "2026-10-01", 3), vec!["2026-09-29"]);
     }
 }
