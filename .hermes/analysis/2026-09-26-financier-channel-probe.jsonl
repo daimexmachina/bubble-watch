@@ -1,0 +1,11 @@
+{"symbol":"OWL","http":"429","bars":0,"from":"?"}
+{"symbol":"DLR","http":"429","bars":0,"from":"?"}
+{"symbol":"EQIX","http":"429","bars":0,"from":"?"}
+{"symbol":"BIZD","http":"429","bars":0,"from":"?"}
+{"symbol":"ARCC","http":"429","bars":0,"from":"?"}
+{"symbol":"SPY","http":"429","bars":0,"from":"?"}
+{"symbol":"QQQ","http":"429","bars":0,"from":"?"}
+{"symbol":"NVDA","http":"429","bars":0,"from":"?"}
+{"symbol":"ORCL","http":"429","bars":0,"from":"?"}
+{"symbol":"MSFT","http":"429","bars":0,"from":"?"}
+{"symbol":"stooq(owl.us)","http":"200","bars":0,"from":"?","note":"JS proof-of-work challenge page, not CSV; endpoint now gated"}

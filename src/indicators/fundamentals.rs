@@ -706,7 +706,28 @@ impl Indicator for BacklogQuality {
                 no_rpo.push(ticker.clone());
                 continue;
             }
-            if let Err(why) = CompanyFacts::series_health(&cf.rpo, &as_of_date, 4, 400, 460, 3.0) {
+            // RPO gets a HIGHER definition-stability ceiling (8.0) than the default 3.0.
+            //
+            // WHY, measured 2026-09-26. The 3.0 limit was calibrated on AMZN's 3.29x jump
+            // on GROSS PP&E, which genuinely was a tag swap (PP&E-only to PP&E-including-
+            // finance-lease-ROU). But RPO is a different quantity with different physics:
+            // a stock of contracted revenue CAN legitimately multiply in one quarter when
+            // a mega-contract is awarded, whereas a gross asset base cannot triple in a
+            // quarter without a redefinition. Oracle's 3.30x (2025-05-31 $137.8B ->
+            // 2025-08-31 $455.3B) is exactly that — the disclosure of a ballooning
+            // contracted backlog — and the inherited 3.0 limit silently DELETED Oracle
+            // from this indicator. The model held the single most material backlog
+            // disclosure in the cohort and discarded it.
+            //
+            // The evidence that it is a disclosure and not a redefinition: after the step
+            // the series rises smoothly (455 -> 523 -> 553 -> 638 -> 664) rather than
+            // resetting or jumping again, and it does not start or stop at zero. A tag
+            // swap shows as a discontinuity or a level reset; this is a business event.
+            //
+            // The ceiling is not removed, only raised: a 10x-plus step is still rejected,
+            // and the `rejected` clause now REPORTS any filer dropped here, so a genuine
+            // mis-scaling stays visible rather than silent.
+            if let Err(why) = CompanyFacts::series_health(&cf.rpo, &as_of_date, 4, 400, 460, 8.0) {
                 rejected.push(format!("{} ({})", ticker, why));
                 continue;
             }
@@ -773,7 +794,7 @@ impl Indicator for BacklogQuality {
                  backlog is being BILLED: when RPO grows while deferred revenue stays flat, the \
                  commitments are not converting to cash. It still cannot see counterparty credit \
                  quality, cancellation terms or termination clauses — ${:.0}B of RPO and ${:.0}B of \
-                 cash are not the same asset.{}",
+                 cash are not the same asset.{}{}",
                 ticker,
                 ratio,
                 rpo_val / 1e9,
@@ -786,6 +807,26 @@ impl Indicator for BacklogQuality {
                     format!(
                         " NOT REPORTED AT ALL (a gap, never a decline): {}.",
                         no_rpo.join(", ")
+                    )
+                },
+                // A filer whose series FAILED a health check is a different case from one
+                // that publishes no such concept, and the difference is material: META
+                // genuinely has no RPO, whereas a rejected series means we HAVE the data
+                // and discarded it. Printing only `no_rpo` let the largest disclosed
+                // backlog in the cohort (ORCL, +230% in one quarter) vanish from the
+                // table with no indication it had ever been examined — a reader saw
+                // "META not reported" and reasonably concluded the rest was complete.
+                // Found 2026-09-26 while tracing a counterparty through the model.
+                if rejected.is_empty() {
+                    String::new()
+                } else {
+                    format!(
+                        " REJECTED BY A HEALTH CHECK, so absent from the rows above rather \
+                         than missing from the data: {}. A rejected series is NOT a decline \
+                         and NOT an absence — the disclosure exists and this indicator chose \
+                         not to use it. Read the reason before comparing this filer against \
+                         the others.",
+                        rejected.join("; ")
                     )
                 }
             ),
@@ -3069,5 +3110,191 @@ mod tests {
             obs: &obs,
             cfg: &cfg,
         });
+    }
+    /// A filer whose RPO series has a genuine mega-contract step must still be READ.
+    ///
+    /// REGRESSION GUARD for a real defect: `backlog_quality` called `series_health` with
+    /// the general 3.0x definition-stability ceiling, which was calibrated on AMZN's
+    /// 3.29x GROSS PP&E tag swap. Oracle's RPO rose 3.30x in one quarter
+    /// ($137.8B -> $455.3B on 2025-08-31) — a real disclosure, not a redefinition — so
+    /// the inherited ceiling silently DELETED the most material backlog in the cohort.
+    /// The model held the data and discarded it, and printed nothing about it.
+    #[test]
+    fn a_genuine_rpo_step_is_read_rather_than_rejected_as_a_tag_swap() {
+        let cfg =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+
+        fn q_at(tag: &str, end: &str, val: f64) -> crate::model::EdgarFact {
+            crate::model::EdgarFact {
+                tag: tag.into(),
+                start: end.into(),
+                end: end.into(),
+                val,
+                form: "10-Q".into(),
+                filed: end.into(),
+                days: 90,
+            }
+        }
+        // Oracle's real shape: a quiet run, then a 3.30x step, then smooth growth.
+        let rpo = vec![
+            q_at("rpo", "2024-11-30", 97.3e9),
+            q_at("rpo", "2025-02-28", 130.2e9),
+            q_at("rpo", "2025-05-31", 137.8e9),
+            q_at("rpo", "2025-08-31", 455.3e9),
+            q_at("rpo", "2025-11-30", 523.3e9),
+            q_at("rpo", "2026-02-28", 552.6e9),
+            q_at("rpo", "2026-05-31", 638.0e9),
+            q_at("rpo", "2026-08-31", 664.0e9),
+        ];
+        let dr = vec![
+            q_at("dr", "2025-08-31", 30.8e9),
+            q_at("dr", "2025-11-30", 30.8e9),
+            q_at("dr", "2026-02-28", 30.8e9),
+            q_at("dr", "2026-08-31", 30.8e9),
+        ];
+
+        // PRECONDITION, asserted so a regression to the 3.0 ceiling fails HERE with the
+        // reason rather than silently returning a smaller cohort: the step really does
+        // exceed the ceiling the guard was previously held to.
+        let step = 455.3 / 137.8;
+        assert!(
+            step > 3.0,
+            "the fixture must contain a step above the old 3.0 ceiling, else this test \
+             proves nothing about the fix (got {step:.2}x)"
+        );
+
+        let mut facts = crate::model::CompanyFacts::default();
+        facts.name = "ORCL".into();
+        facts.rpo = rpo;
+        facts.deferred_revenue = dr;
+
+        let mut obs = crate::model::Observations::default();
+        obs.retrieved_at = "2026-09-26T00:00:00Z".into();
+        obs.edgar.insert("ORCL".to_string(), facts);
+
+        let r = BacklogQuality.evaluate(&Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        });
+        match r {
+            Reading::Scored { detail, .. } => {
+                assert!(
+                    detail.contains("ORCL"),
+                    "a filer with a genuine RPO step was dropped from backlog_quality: {detail}"
+                );
+                assert!(
+                    !detail.contains("REJECTED BY A HEALTH CHECK"),
+                    "ORCL should be READ, not reported as rejected: {detail}"
+                );
+            }
+            other => panic!("expected a scored reading, got {other:?}"),
+        }
+    }
+
+    /// A rejected filer must be NAMED in the output, not silently omitted.
+    ///
+    /// META publishes no RPO concept (a true absence) and ORCL was rejected by a health
+    /// check (data exists, discarded). Only the first was printed, so a reader saw
+    /// "META not reported" and reasonably concluded the rest of the cohort was complete.
+    #[test]
+    fn a_rejected_filer_is_named_in_the_output_rather_than_silently_dropped() {
+        let cfg =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+
+        fn q_at(tag: &str, end: &str, val: f64) -> crate::model::EdgarFact {
+            crate::model::EdgarFact {
+                tag: tag.into(),
+                start: end.into(),
+                end: end.into(),
+                val,
+                form: "10-Q".into(),
+                filed: end.into(),
+                days: 90,
+            }
+        }
+        // A stale RPO series: last observation years before the run, so the recency
+        // check must reject it.
+        let stale_rpo = vec![
+            q_at("rpo", "2019-11-30", 30.0e9),
+            q_at("rpo", "2020-02-29", 31.0e9),
+            q_at("rpo", "2020-05-31", 32.0e9),
+            q_at("rpo", "2020-06-30", 33.0e9),
+        ];
+        let dr = vec![
+            q_at("dr", "2020-06-30", 5.0e9),
+            q_at("dr", "2020-09-30", 5.0e9),
+            q_at("dr", "2020-12-31", 5.0e9),
+            q_at("dr", "2021-03-31", 5.0e9),
+        ];
+        let mut facts = crate::model::CompanyFacts::default();
+        facts.name = "STALE_CO".into();
+        facts.rpo = stale_rpo;
+        facts.deferred_revenue = dr;
+
+        // A SECOND filer with a healthy series, so the indicator takes the Scored path.
+        // Without it the run has no usable filer, reports Unavailable, and the `rejected`
+        // clause in the SCORED branch is never exercised — the first version of this test
+        // made exactly that mistake and the falsification harness caught it by showing the
+        // test still passed with the clause suppressed.
+        let healthy = {
+            let mut f = crate::model::CompanyFacts::default();
+            f.name = "HEALTHY_CO".into();
+            f.rpo = vec![
+                q_at("rpo", "2025-11-30", 100.0e9),
+                q_at("rpo", "2026-02-28", 105.0e9),
+                q_at("rpo", "2026-05-31", 110.0e9),
+                q_at("rpo", "2026-08-31", 115.0e9),
+            ];
+            f.deferred_revenue = vec![
+                q_at("dr", "2025-11-30", 10.0e9),
+                q_at("dr", "2026-02-28", 10.0e9),
+                q_at("dr", "2026-05-31", 10.0e9),
+                q_at("dr", "2026-08-31", 10.0e9),
+            ];
+            f
+        };
+
+        let mut obs = crate::model::Observations::default();
+        obs.retrieved_at = "2026-09-26T00:00:00Z".into();
+        obs.edgar.insert("STALE_CO".to_string(), facts);
+        obs.edgar.insert("HEALTHY_CO".to_string(), healthy);
+
+        let r = BacklogQuality.evaluate(&Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        });
+        match r {
+            Reading::Scored { detail, .. } => {
+                assert!(
+                    detail.contains("REJECTED BY A HEALTH CHECK"),
+                    "a rejected filer must be named, not silently omitted: {detail}"
+                );
+                assert!(
+                    detail.contains("STALE_CO"),
+                    "the rejected filer must be identified by name: {detail}"
+                );
+            }
+            // With NO usable filer the indicator reports Unavailable — and must STILL name
+            // the rejection, because "no data exists" and "we discarded the data" are
+            // different findings and only one of them is worth investigating. The bug this
+            // whole test exists for was exactly that conflation (a dropped filer vanishing
+            // with no trace), so the assertion must not depend on which branch is taken.
+            Reading::Unavailable { reason } => {
+                assert!(
+                    reason.contains("STALE_CO"),
+                    "a rejected filer must be identified by name even when no filer is \\
+                     usable: {reason}"
+                );
+                assert!(
+                    reason.contains("Rejected") || reason.contains("STALE"),
+                    "the rejection reason must be stated, not only the ticker: {reason}"
+                );
+                assert!(
+                    !reason.contains("No RPO concept reported by: STALE_CO"),
+                    "a REJECTED series must not be reported as a filer that publishes no \\
+                     such concept — the distinction is the fix: {reason}"
+                );
+            }
+        }
     }
 }
