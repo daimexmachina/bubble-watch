@@ -382,11 +382,16 @@ pub fn latest_complete_day(days: &[DailyTokens], min_models: usize) -> Option<&D
 ///
 /// Returns the series with the trailing in-progress week removed, or the series
 /// unchanged when the last week is complete.
-pub fn drop_partial_trailing_week(weeks: &[DailyTokens], today: &str, min_elapsed_days: i64) -> Vec<DailyTokens> {
+pub fn drop_partial_trailing_week(
+    weeks: &[DailyTokens],
+    today: &str,
+    min_elapsed_days: i64,
+) -> Vec<DailyTokens> {
     if weeks.len() < 2 {
         return weeks.to_vec();
     }
-    let Some(last_label) = chrono::NaiveDate::parse_from_str(&weeks[weeks.len() - 1].date, "%Y-%m-%d").ok()
+    let Some(last_label) =
+        chrono::NaiveDate::parse_from_str(&weeks[weeks.len() - 1].date, "%Y-%m-%d").ok()
     else {
         // An unparseable label is not evidence of completeness. Keep the series
         // whole rather than silently discarding a week on a parse failure.

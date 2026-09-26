@@ -2,11 +2,13 @@
 
 pub mod census;
 pub mod circularity;
+pub mod courtlistener;
 pub mod edgar;
 pub mod eia;
 pub mod federalregister;
 pub mod fred;
 pub mod fulltext;
+pub mod gdelt;
 pub mod lbnl;
 pub mod nport;
 pub mod openrouter;
@@ -357,7 +359,74 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // ---- opposition and public-attention sources (added 2026-09-26) ------
+    //
+    // The model measures what is BUILT (datacenter_construction) and what was
+    // CANCELLED (grid_cancellations). Neither sees OPPOSITION — the organized
+    // resistance that decides whether announced capacity is ever permitted.
+    // Court dockets are hard events; news volume is the transmission channel.
+    //
+    // GDELT rate-limits at roughly one request per 5s and the limit ESCALATES and
+    // persists once tripped (measured: still refusing after a 45s cooldown). So
+    // these are fetched LAST, spaced, and any refusal degrades to a named gap
+    // rather than reading as an absence of opposition.
+    // `offline` is consumed for its side effect on the fetcher only; naming it here
+    // keeps the signature honest without an unused-variable warning.
     let _ = offline;
+
+    let today = crate::now_date();
+
+    for (label, query) in gdelt::tracked_queries() {
+        // Pace every call to this host. The sleeps are long by design: a 429 here
+        // would turn a busy source into a false "no coverage" reading.
+        std::thread::sleep(std::time::Duration::from_secs(gdelt::MIN_GAP_SECONDS));
+        let mode = if label.contains("tone") {
+            gdelt::Mode::Tone
+        } else {
+            gdelt::Mode::Volume
+        };
+        match gdelt::fetch_timeline(f, query, mode, "12m") {
+            Ok(points) => match mode {
+                gdelt::Mode::Volume => obs.gdelt_volume = Some(points),
+                gdelt::Mode::Tone => obs.gdelt_tone = Some(points),
+            },
+            Err(e) => obs.failures.push(SourceFailure {
+                source: "gdelt".into(),
+                endpoint: format!("{}+{}", gdelt::TIMELINE_URL, query),
+                reason: e,
+            }),
+        }
+    }
+
+    for (label, query) in courtlistener::tracked_queries() {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        match courtlistener::year_over_year_pct(f, query, &today, 365) {
+            Ok(Some((pct, recent, prior))) => {
+                obs.courtlistener.push(courtlistener::DocketChange {
+                    query: label.to_string(),
+                    yoy_pct: pct,
+                    recent_count: recent,
+                    prior_count: prior,
+                });
+            }
+            // A prior window of zero makes the percentage undefined. Reporting it
+            // as a large increase would invent an explosion from a base that never
+            // existed, so it is recorded as a gap instead.
+            Ok(None) => obs.failures.push(SourceFailure {
+                source: "courtlistener".into(),
+                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason: "prior-year docket count was zero, so the year-over-year change is \
+                         undefined and is reported as a gap rather than as growth"
+                    .into(),
+            }),
+            Err(e) => obs.failures.push(SourceFailure {
+                source: "courtlistener".into(),
+                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason: e,
+            }),
+        }
+    }
+
     obs
 }
 

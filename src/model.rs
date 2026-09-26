@@ -395,6 +395,19 @@ pub struct Observations {
     pub bis_latest_date: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bis_provenance: Option<Provenance>,
+    /// GDELT news-coverage VOLUME for the data-centre moratorium query, daily,
+    /// oldest first. This is a SHARE of all coverage, not a count.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gdelt_volume: Option<Vec<crate::sources::gdelt::TimelinePoint>>,
+    /// GDELT news TONE for the "AI bubble" query, daily, oldest first. Negative is
+    /// hostile. Stored and reported, but deliberately NOT scored: whether this
+    /// LEADS a repricing or FOLLOWS it is unresolved, and scoring a lagging series
+    /// would be worse than not scoring it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gdelt_tone: Option<Vec<crate::sources::gdelt::TimelinePoint>>,
+    /// CourtListener docket counts, year over year, one entry per tracked query.
+    #[serde(default)]
+    pub courtlistener: Vec<crate::sources::courtlistener::DocketChange>,
     pub failures: Vec<SourceFailure>,
     pub retrieved_at: String,
 }
