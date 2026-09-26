@@ -1149,6 +1149,44 @@ impl Indicator for GridCancellations {
 /// of filers, so it must saturate eventually; growth is the informative part, and a
 /// slowing count would be genuine evidence of the theme maturing rather than
 /// accelerating.
+/// Format the AI-news TONE series as UNSCORED CONTEXT for `narrative_saturation`.
+///
+/// WHY IT IS HERE AND NOT IN THE COMPOSITE. The v1.4 plan pre-registered a gate: tone
+/// may be scored only if it LEADS price. The lead/lag test (Task 7) came back NULL —
+/// the peak correlation sits at lag **+7** for SPY/^GSPC/^VIX (+8 for RSP), i.e. tone
+/// FOLLOWS price, and the empirical null (2000 shuffles, p90 = 0.264) puts the observed
+/// peak of 0.221 BELOW 90% of chance peaks, p = 0.36. A naive single-lag threshold of
+/// 0.18 would have "passed" it. So tone stays unscored PERMANENTLY, and this is the
+/// reason. See `.hermes/analysis/2026-09-26-sentiment-lead-lag.md`.
+///
+/// The text below is deliberately worded so a reader cannot mistake it for a scored
+/// input, mirroring how `trend` is presented. `tone_never_enters_the_composite` in the
+/// test module asserts the arithmetic claim, so this cannot silently acquire influence.
+fn tone_context(ctx: &Ctx) -> String {
+    let Some(points) = ctx.obs.gdelt_tone.as_ref() else {
+        return " AI-NEWS TONE IS UNSCORED CONTEXT AND UNAVAILABLE THIS RUN: the GDELT tone series was not retrieved, so nothing is claimed about it."
+            .into();
+    };
+    if points.is_empty() {
+        return " AI-NEWS TONE IS UNSCORED CONTEXT AND EMPTY THIS RUN: GDELT returned no tone points, which is a gap rather than a neutral reading."
+            .into();
+    }
+    let latest = points.last().map(|p| p.value).unwrap_or(f64::NAN);
+    let mut vals: Vec<f64> = points.iter().map(|p| p.value).collect();
+    vals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let below = vals.iter().filter(|v| **v < latest).count();
+    let pct = below as f64 / vals.len().max(1) as f64 * 100.0;
+    let prev = if points.len() >= 2 {
+        points[points.len() - 2].value
+    } else {
+        f64::NAN
+    };
+    format!(
+        " AI-NEWS TONE IS UNSCORED CONTEXT AND MUST NOT BE READ AS PART OF THE SCORE. GDELT          average tone of \"AI bubble\" coverage is {:.2} (negative = hostile), the {:.1}th          percentile of the {} points in the window, against {:.2} the period before. WHY IT IS          UNSCORED, stated so this is not re-litigated: the lead/lag test found the peak          correlation at lag +7 — tone FOLLOWS price rather than leading it — and the observed          peak (0.221) sits below the 90th percentile of a 2000-shuffle null (0.264), p = 0.36.          Scoring a series that trails the market would add noise with a narrative attached.          The tone figure is shown because a reader noticing a hostile news cycle deserves to          see what the data says about it, NOT because it moves the composite by any amount.",
+        latest, pct, points.len(), prev
+    )
+}
+
 pub struct NarrativeSaturation;
 
 impl Indicator for NarrativeSaturation {
@@ -1231,8 +1269,14 @@ impl Indicator for NarrativeSaturation {
                  disclosure. IT IS NOT A VALUATION OR A RISK MEASURE: a mention may come from a \
                  chip designer or from a bakery noting a supply-chain risk, and the count cannot \
                  distinguish enthusiasm from caution. Scored on year-over-year change, since the \
-                 count is bounded by the number of filers and must saturate.{}",
-                cur, cur_year, prev, prev_year, growth, partial_note
+                 count is bounded by the number of filers and must saturate.{}{}",
+                cur,
+                cur_year,
+                prev,
+                prev_year,
+                growth,
+                partial_note,
+                tone_context(ctx)
             ),
             provenance: ctx
                 .obs
@@ -2258,6 +2302,7 @@ mod tests {
     use super::*;
     use crate::config::*;
     use crate::model::{EdgarFact, Observations};
+    use crate::sources::gdelt::TimelinePoint;
 
     fn q(tag: &str, start: &str, end: &str, val: f64) -> EdgarFact {
         EdgarFact {
@@ -2700,5 +2745,123 @@ mod tests {
             CALIBRATION_LAG_WEEKS, 13,
             "the constant and the prose drifted apart"
         );
+    }
+    /// A `Ctx` carrying the two years of 10-K AI-mention census `narrative_saturation`
+    /// needs, so the indicator actually scores and the tone context is exercised.
+    fn narrative_obs(tone: Option<Vec<TimelinePoint>>) -> Observations {
+        let mut obs = Observations::default();
+        obs.retrieved_at = "2026-09-26T00:00:00Z".into();
+        obs.ai_census = vec![
+            ("10-K".to_string(), 2024, 500u64),
+            ("10-K".to_string(), 2025, 750u64),
+        ];
+        obs.gdelt_tone = tone;
+        obs
+    }
+
+    fn tp(date: &str, value: f64) -> TimelinePoint {
+        TimelinePoint {
+            date: date.into(),
+            value,
+        }
+    }
+
+    /// The Task 7 gate, enforced as an ARITHMETIC claim rather than a comment: changing
+    /// the tone series must not move the score by any amount.
+    ///
+    /// This is the guard that keeps a LAGGING indicator from silently acquiring
+    /// influence. A comment saying "tone is unscored" cannot fail; this can.
+    #[test]
+    fn tone_never_enters_the_composite() {
+        let cfg =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+
+        // Identical in every respect except the tone series: one hostile, one calm.
+        let hostile = narrative_obs(Some(vec![tp("2026-09-24", -8.0), tp("2026-09-25", -9.0)]));
+        let calm = narrative_obs(Some(vec![tp("2026-09-24", 8.0), tp("2026-09-25", 9.0)]));
+
+        let ca = Ctx {
+            obs: &hostile,
+            cfg: &cfg,
+        };
+        let cb = Ctx {
+            obs: &calm,
+            cfg: &cfg,
+        };
+        let ra = NarrativeSaturation.evaluate(&ca);
+        let rb = NarrativeSaturation.evaluate(&cb);
+
+        // Precondition: the indicator must actually SCORE, or this test proves nothing
+        // about the composite — a gap on both sides would compare equal trivially.
+        assert!(
+            ra.is_available() && rb.is_available(),
+            "narrative_saturation must score for this guard to mean anything; got {ra:?} / {rb:?}"
+        );
+
+        // The SCORED half must be bit-identical: tone is context, not input.
+        assert_eq!(
+            ra.stress(),
+            rb.stress(),
+            "flipping the tone series moved narrative_saturation's stress — tone has \
+             acquired influence it must not have (the lead/lag gate returned NULL)"
+        );
+        assert_eq!(ra.value(), rb.value());
+
+        // But the context text SHOULD differ, otherwise the series is fetched and never
+        // rendered — which is exactly the defect this work fixes (it was write-only).
+        match (&ra, &rb) {
+            (Reading::Scored { detail: da, .. }, Reading::Scored { detail: db, .. }) => {
+                assert_ne!(da, db, "tone context is identical for opposite tone series");
+                assert!(
+                    da.contains("UNSCORED"),
+                    "the tone context must be labelled unscored"
+                );
+                assert!(
+                    da.contains("lag +7"),
+                    "the context must state WHY it is unscored, or a later reader will \
+                     reasonably conclude it was an oversight and score it"
+                );
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    /// An absent or empty tone series must produce a NAMED GAP, never a neutral reading,
+    /// and must not disturb the scored half.
+    #[test]
+    fn a_missing_tone_series_is_a_named_gap_not_a_neutral_reading() {
+        let cfg =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+
+        let scored = narrative_obs(Some(vec![tp("2026-09-25", -3.5)]));
+        let base = NarrativeSaturation.evaluate(&Ctx {
+            obs: &scored,
+            cfg: &cfg,
+        });
+        let baseline = base.stress();
+        assert!(baseline.is_some(), "the fixture must score; got {base:?}");
+
+        for (label, tone) in [("absent", None), ("present but empty", Some(vec![]))] {
+            let obs = narrative_obs(tone);
+            let r = NarrativeSaturation.evaluate(&Ctx {
+                obs: &obs,
+                cfg: &cfg,
+            });
+            assert_eq!(r.stress(), baseline, "{label} tone series moved the score");
+            match r {
+                Reading::Scored { detail, .. } => {
+                    assert!(
+                        detail.contains("UNAVAILABLE") || detail.contains("EMPTY"),
+                        "{label} tone series must be named as a gap, not silently omitted: {detail}"
+                    );
+                    assert!(
+                        detail.contains("rather than a neutral reading")
+                            || detail.contains("nothing is claimed about it"),
+                        "{label} gap must say absence is not neutrality"
+                    );
+                }
+                other => panic!("{label}: expected a scored reading, got {other:?}"),
+            }
+        }
     }
 }
