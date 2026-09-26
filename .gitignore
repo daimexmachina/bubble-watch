@@ -9,3 +9,4 @@
 
 # The generated site is a build artifact.
 /site
+.falsify-manifest
