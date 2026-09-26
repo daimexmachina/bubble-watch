@@ -74,11 +74,20 @@ Two further checks, because a daily test alone would be a thin basis for a perma
 | check | result |
 |---|---|
 | **Weekly** frequency (non-overlapping 5-day returns, k = −8…+8) | peak still **k = 0** for all six pairs (n = 290–388) |
-| **Drawdown levels** (rolling 252-day, not returns) | peak **k = 0**; strongest negative lag is k = −1 and only 1–2 pp weaker |
+| **Drawdown levels** (rolling 252-day, not returns) | peak **k = 0**; k = −1 sits 0.6 pp lower — but see the caveat below |
 
-So the conclusion holds at daily, weekly and drawdown-level frequency: **the counterparty
-complex and the tech complex reprice together.** There is no measurable interval in which the
-financiers move first.
+So the conclusion holds at daily and weekly frequency, and at drawdown level it holds for any
+lead of **more than one day**: **the counterparty complex and the tech complex reprice
+together.**
+
+**One honest qualification on the drawdown leg.** Its k = −1 is only 0.6 pp below its k = 0
+(OWL→SPY: 0.318 vs 0.324), and with n = 1,452 that gap is about **0.26 standard errors** — i.e.
+**indistinguishable from noise**. So the drawdown result cannot separate a same-day move from a
+one-day lead; what it does establish is the absence of a lead *longer* than a day, which is the
+claim that matters here and is consistent with the returns legs. Do not quote the drawdown leg as
+positive evidence of a same-day peak — quote it as the absence of a multi-day lead. This
+correction was made after re-reading the raw output; the earlier text described the 0.6 pp gap as
+merely "1–2 pp weaker", which overstated what that leg shows.
 
 ## Replication: a second, independent implementation agrees
 
