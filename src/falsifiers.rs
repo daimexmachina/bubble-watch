@@ -383,7 +383,105 @@ pub fn build(obs: &Observations) -> Vec<Falsifier> {
         f2_credit_stress(obs),
         f3_self_correcting(obs),
         f4_export_controls_binding(obs),
+        f5_opposition_fading(obs),
     ]
+}
+
+/// F5 — Is organised opposition to the buildout FADING?
+///
+/// ## Why the direction inverts relative to the stress indicator
+///
+/// `opposition_pressure` scores rising filings as HIGHER stress, because a constraint
+/// arriving is bubble-relevant. This asks the opposite question, which is what makes
+/// it a test rather than a restatement: if opposition is *fading*, the constraint the
+/// bubble thesis depends on is clearing, and that argues AGAINST the thesis.
+///
+/// Falling filings are genuinely ambiguous and both readings are coherent: either
+/// (a) resistance is being overcome and projects are proceeding, or (b) the projects
+/// were abandoned before litigation became worth anyone's while — which is also
+/// bearish, for a different reason. This reports the direction and names the
+/// ambiguity rather than resolving it.
+pub fn f5_opposition_fading(obs: &Observations) -> Falsifier {
+    const ID: &str = "opposition";
+    const QUESTION: &str = "Is organised opposition to the buildout fading?";
+
+    if obs.courtlistener.is_empty() {
+        return Falsifier {
+            id: ID.into(),
+            question: QUESTION.into(),
+            reading: "not measured".into(),
+            verdict: Verdict::Uninformative,
+            detail: "The CourtListener docket counts were not retrieved, so whether opposition \
+                     is rising or falling is unknown. This is a reported gap, not a finding of \
+                     calm — and specifically NOT a finding that opposition has disappeared."
+                .into(),
+        };
+    }
+
+    let recent: u64 = obs.courtlistener.iter().map(|c| c.recent_count).sum();
+    let prior: u64 = obs.courtlistener.iter().map(|c| c.prior_count).sum();
+    if prior == 0 {
+        return Falsifier {
+            id: ID.into(),
+            question: QUESTION.into(),
+            reading: "not interpretable".into(),
+            verdict: Verdict::Uninformative,
+            detail: "The prior-year docket total was zero, so a change cannot be taken from it."
+                .into(),
+        };
+    }
+    let change = (recent as f64 - prior as f64) / prior as f64 * 100.0;
+
+    // A MATERIALITY THRESHOLD, because a year-over-year move of a few percent in a
+    // partly volunteer-uploaded corpus is not evidence of a regime change. Below it
+    // the reading supports neither side and says so, rather than manufacturing a
+    // verdict from noise.
+    const MATERIAL_PCT: f64 = 10.0;
+    let (verdict, reading) = if change <= -MATERIAL_PCT {
+        (
+            Verdict::CounterEvidence,
+            format!("filings FELL {change:+.1}% ({recent} vs {prior}) — the constraint is easing"),
+        )
+    } else if change >= MATERIAL_PCT {
+        (
+            Verdict::ConsistentWithBubble,
+            format!(
+                "filings ROSE {change:+.1}% ({recent} vs {prior}) — the constraint is binding harder"
+            ),
+        )
+    } else {
+        (
+            Verdict::Uninformative,
+            format!(
+                "filings moved {change:+.1}% ({recent} vs {prior}) — inside the materiality \
+                 threshold, so this supports neither side"
+            ),
+        )
+    };
+
+    Falsifier {
+        id: ID.into(),
+        question: QUESTION.into(),
+        reading,
+        verdict,
+        detail: format!(
+            "Filed dockets naming data centres, from CourtListener's RECAP search (keyless), \
+             compared across two equal 365-day windows. THE DIRECTION HERE IS THE OPPOSITE OF \
+             THE STRESS INDICATOR, which is what makes this a test rather than a restatement: \
+             falling filings are COUNTER-EVIDENCE because the bubble thesis depends on real \
+             constraints arriving. BUT THE FALLING READING IS GENUINELY AMBIGUOUS: it means \
+             either (a) resistance is being overcome and projects are proceeding, or (b) the \
+             projects were abandoned before litigation became worth anyone's while — which is \
+             bearish for a completely different reason. This test cannot distinguish those two \
+             and does not pretend to. WHAT IT CANNOT SEE: (1) the corpus is US courts, so local \
+             zoning boards and county commissions — where most real resistance is decided — are \
+             ABSENT, so a genuine local wave would be invisible here; (2) a filing count says \
+             nothing about OUTCOMES, so a year of dismissed challenges and a year of successful \
+             injunctions read identically; (3) RECAP depends on volunteer uploads for some \
+             material, so a change in coverage could look like a change in behaviour. The \
+             +/-10% threshold is a materiality floor, not a tuned parameter."
+        ),
+    }
 }
 
 /// How many tests came out against the thesis. The headline number for this
@@ -640,10 +738,13 @@ mod tests {
         // to "everything is fine". Uninformative is its own answer.
         let o = Observations::default();
         let f = build(&o);
-        assert_eq!(
-            f.len(),
-            4,
-            "F4 (export controls) was added to widen the falsification side"
+        // The count is DERIVED, not pinned: this test is about VERDICTS with no
+        // data, and a hardcoded panel size here meant it broke every time the panel
+        // legitimately grew (it did, from 4 to 5, when F5 was added). The size is
+        // asserted once, in the_panel_now_carries_five_tests, and nowhere else.
+        assert!(
+            !f.is_empty(),
+            "the panel must never be empty — an empty panel reads as nothing to disprove"
         );
         for x in &f {
             assert_eq!(
@@ -738,12 +839,123 @@ mod tests {
     }
 
     #[test]
-    fn the_panel_now_carries_four_tests() {
-        // F4 was added to widen the falsification side, which the project's own
-        // plan called thin.
+    fn the_panel_now_carries_five_tests() {
+        // F5 (opposition) was added with methodology 2.5, so the panel can test the
+        // direction of the constraint the bubble thesis depends on.
         let obs = Observations::default();
         let all = build(&obs);
-        assert_eq!(all.len(), 4, "expected four falsifiers, got {}", all.len());
-        assert!(all.iter().any(|f| f.id == "export_controls"));
+        assert_eq!(
+            all.len(),
+            5,
+            "expected five falsifiers, got {} — update this if the panel changes",
+            all.len()
+        );
+        let ids: Vec<&str> = all.iter().map(|f| f.id.as_str()).collect();
+        assert!(ids.contains(&"export_controls"), "ids: {ids:?}");
+        assert!(ids.contains(&"opposition"), "ids: {ids:?}");
+    }
+
+    /// Build a DocketChange with a consistent yoy_pct, so a test cannot accidentally
+    /// assert against a percentage that contradicts its own counts.
+    fn dc(query: &str, recent: u64, prior: u64) -> crate::sources::courtlistener::DocketChange {
+        let yoy_pct = if prior == 0 {
+            0.0
+        } else {
+            (recent as f64 - prior as f64) / prior as f64 * 100.0
+        };
+        crate::sources::courtlistener::DocketChange {
+            query: query.into(),
+            yoy_pct,
+            recent_count: recent,
+            prior_count: prior,
+        }
+    }
+
+    #[test]
+    fn falling_filings_are_counter_evidence_against_the_thesis() {
+        // The MEASURED case: filings fell. For the bubble thesis, which depends on
+        // real constraints arriving, that argues AGAINST it.
+        let mut obs = Observations::default();
+        obs.courtlistener = vec![dc("lawsuit", 256, 313), dc("injunction", 346, 382)];
+        let f = f5_opposition_fading(&obs);
+        assert_eq!(
+            f.verdict,
+            Verdict::CounterEvidence,
+            "a clear fall in filings must argue AGAINST the thesis: {}",
+            f.reading
+        );
+        assert!(f.reading.contains("FELL"), "{}", f.reading);
+    }
+
+    #[test]
+    fn rising_filings_are_consistent_with_the_thesis() {
+        let mut obs = Observations::default();
+        obs.courtlistener = vec![dc("lawsuit", 400, 313), dc("injunction", 500, 382)];
+        let f = f5_opposition_fading(&obs);
+        assert_eq!(f.verdict, Verdict::ConsistentWithBubble, "{}", f.reading);
+        assert!(f.reading.contains("ROSE"), "{}", f.reading);
+    }
+
+    #[test]
+    fn a_move_inside_the_materiality_threshold_supports_neither_side() {
+        // A ~1% move in a partly volunteer-uploaded corpus is noise. It must not be
+        // reported as a finding in either direction.
+        let mut obs = Observations::default();
+        obs.courtlistener = vec![dc("lawsuit", 310, 313), dc("injunction", 380, 382)];
+        let f = f5_opposition_fading(&obs);
+        assert_eq!(
+            f.verdict,
+            Verdict::Uninformative,
+            "a 1% move is noise, not a verdict: {}",
+            f.reading
+        );
+        assert!(f.reading.contains("neither"), "{}", f.reading);
+    }
+
+    #[test]
+    fn no_docket_data_is_uninformative_and_NEVER_a_finding_of_calm() {
+        // The failure this exists to prevent: reporting "no opposition" when the
+        // source merely failed, which would read as the constraint having vanished.
+        let obs = Observations::default();
+        let f = f5_opposition_fading(&obs);
+        assert_eq!(f.verdict, Verdict::Uninformative);
+        assert!(f.reading.contains("not measured"), "{}", f.reading);
+        assert!(
+            f.detail
+                .contains("NOT a finding that opposition has disappeared"),
+            "must explicitly refuse the calm reading: {}",
+            f.detail
+        );
+    }
+
+    #[test]
+    fn a_zero_prior_total_is_uninterpretable_rather_than_growth() {
+        let mut obs = Observations::default();
+        obs.courtlistener = vec![dc("lawsuit", 50, 0)];
+        let f = f5_opposition_fading(&obs);
+        assert_eq!(f.verdict, Verdict::Uninformative);
+        assert!(f.reading.contains("not interpretable"), "{}", f.reading);
+    }
+
+    #[test]
+    fn the_opposition_falsifier_states_what_it_cannot_see() {
+        let mut obs = Observations::default();
+        obs.courtlistener = vec![dc("lawsuit", 256, 313)];
+        let f = f5_opposition_fading(&obs);
+        assert!(
+            f.detail.contains("zoning"),
+            "must admit local zoning is invisible: {}",
+            f.detail
+        );
+        assert!(
+            f.detail.contains("OUTCOMES"),
+            "must admit a filing count is not an outcome: {}",
+            f.detail
+        );
+        assert!(
+            f.detail.contains("AMBIGUOUS"),
+            "must state that both readings are coherent: {}",
+            f.detail
+        );
     }
 }
