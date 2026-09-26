@@ -49,6 +49,7 @@ fn plain_name(id: &str) -> &'static str {
         "inference_demand" => "whether the AI compute that has been built is actually being used, and whether that use is still growing",
         "energisation_delay" => "how long a new power project has to wait in the queue before it can actually be switched on",
         "opposition_pressure" => "how often communities and local groups are going to court to try to stop data centres being built",
+        "public_attention" => "how many people are looking up AI-bubble topics on Wikipedia — reported but deliberately not counted, because people tend to look things up after they are news rather than before",
         "funding_gap" => "how much AI companies spend compared with what they sell",
         "leverage" => "how much debt these companies are carrying",
         "foreign_interest" => "how much foreign money owns US shares",

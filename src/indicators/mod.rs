@@ -95,6 +95,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "inference_demand" => Some(Box::new(fundamentals::InferenceDemand)),
         "energisation_delay" => Some(Box::new(fundamentals::EnergisationDelay)),
         "opposition_pressure" => Some(Box::new(fundamentals::OppositionPressure)),
+        "public_attention" => Some(Box::new(fundamentals::PublicAttention)),
         _ => None,
     }
 }

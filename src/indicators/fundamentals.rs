@@ -1187,6 +1187,120 @@ fn tone_context(ctx: &Ctx) -> String {
     )
 }
 
+/// Public ATTENTION from Wikipedia pageviews. **Weight 0 by design** — it cannot move
+/// the composite or the coverage fraction, and the config supplies no anchors because
+/// none is ever consulted.
+///
+/// WHY IT EXISTS AT ALL. The model answers "is the press hostile" (`gdelt` tone) and
+/// "is organised opposition filing" (`opposition_pressure`), but neither answers
+/// "is the public actually looking". This does, and reports it as observed context.
+///
+/// WHY IT IS NOT SCORED. Pageviews lag — people look a topic up after it is news. The
+/// sibling sentiment channel failed the pre-registered lead/lag gate (peak at lag +7,
+/// empirical null p = 0.36), and attention lags more than tone, so the prior is that it
+/// would fail identically. The gate has NOT been run against attention, so the honest
+/// status is UNPROVEN, not scored. Raising the weight without running that gate is the
+/// financial-astrology failure this project exists to avoid.
+///
+/// It reports `Scored` with stress 0.0 rather than `Unavailable`, because the reading IS
+/// available and the honest statement is "here is the number, weighted zero" — not
+/// "there is no number". Reporting it as a gap would hide it from the reader entirely.
+pub struct PublicAttention;
+
+impl Indicator for PublicAttention {
+    fn id(&self) -> &'static str {
+        "public_attention"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+
+        // A weight-0 entry with anchors would suggest the series is scoreable. Refuse
+        // loudly rather than quietly ignore the scale, because the quiet version is how
+        // a weight-0 series acquires a score by accident.
+        let stress = if ctx.obs.attention.is_empty() {
+            0.0
+        } else {
+            assert!(
+                ic.anchors.is_empty(),
+                "public_attention is weight {} and must carry NO anchors, but the config \
+                 supplies {}. If this series is to be scored, the pre-registered lead/lag \
+                 gate must be run first and the weight raised deliberately — do not attach \
+                 a scale to a weight-0 series.",
+                ic.weight,
+                ic.anchors.len()
+            );
+            0.0
+        };
+
+        if ctx.obs.attention.is_empty() {
+            return Reading::Unavailable {
+                reason: "no Wikipedia pageview series was retrieved for any tracked article, \
+                         so whether public attention is rising is unknown"
+                    .into(),
+            };
+        }
+
+        let parts: Vec<String> = ctx
+            .obs
+            .attention
+            .iter()
+            .map(|a| {
+                format!(
+                    "{} {:.0} views/day vs {:.0} the week before ({:+.1}%)",
+                    a.label, a.recent_mean, a.prior_mean, a.pct
+                )
+            })
+            .collect();
+
+        let combined: f64 =
+            ctx.obs.attention.iter().map(|a| a.pct).sum::<f64>() / ctx.obs.attention.len() as f64;
+
+        Reading::Scored {
+            stress,
+            value: combined,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "PUBLIC ATTENTION, OBSERVED AND NOT SCORED — this indicator carries \
+                 weight {} and therefore CANNOT move the composite or the coverage \
+                 fraction. BY ARTICLE: {}. WHY IT IS NOT SCORED: pageviews lag, because \
+                 people look a topic up after it becomes news. The sibling sentiment \
+                 channel was tested against a pre-registered gate and FAILED it (peak \
+                 correlation at lag +7, i.e. trailing price, with an empirical null p = \
+                 0.36), and attention lags more than tone does — but the gate has NOT been \
+                 run against attention itself, so the honest status is UNPROVEN rather \
+                 than scored. The comparison is a full week against the full week before \
+                 it, which cancels the weekday cycle; a series shorter than 14 days is \
+                 refused rather than partially compared. WHAT IT ADDS: the model already \
+                 answers whether the press is hostile and whether opposition is filing. \
+                 Neither answers whether the PUBLIC is looking, which is a different \
+                 question and the one a reader is most likely to ask.",
+                ic.weight,
+                parts.join("; ")
+            ),
+            provenance: crate::model::Provenance {
+                source: "wikimedia-pageviews".into(),
+                endpoint: crate::sources::wikipedia::PAGEVIEWS_URL.into(),
+                // The window is fixed by the fetch (trailing 34 days), so state it
+                // rather than implying the figure is as of "now".
+                as_of: ctx.obs.retrieved_at.get(0..10).unwrap_or("").to_string(),
+                retrieved_at: if ctx.obs.retrieved_at.is_empty() {
+                    crate::now_iso8601()
+                } else {
+                    ctx.obs.retrieved_at.clone()
+                },
+            },
+        }
+    }
+}
+
 pub struct NarrativeSaturation;
 
 impl Indicator for NarrativeSaturation {
@@ -2863,5 +2977,97 @@ mod tests {
                 other => panic!("{label}: expected a scored reading, got {other:?}"),
             }
         }
+    }
+    /// Weight 0 must be ARITHMETICALLY inert: a huge attention reading cannot move the
+    /// composite or the coverage fraction. This is what makes it safe to ship an
+    /// unscored series — without this, "weight 0" would be a comment rather than a fact.
+    #[test]
+    fn a_weight_zero_attention_series_cannot_move_the_composite() {
+        let cfg =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+
+        let base = narrative_obs(None);
+        let with_attention = {
+            let mut o = narrative_obs(None);
+            o.attention = vec![
+                crate::sources::wikipedia::AttentionChange {
+                    label: "ai_bubble".into(),
+                    recent_mean: 999_999.0,
+                    prior_mean: 1.0,
+                    pct: 99_999_800.0,
+                },
+                crate::sources::wikipedia::AttentionChange {
+                    label: "artificial_intelligence".into(),
+                    recent_mean: 0.0,
+                    prior_mean: 1e9,
+                    pct: -100.0,
+                },
+            ];
+            o
+        };
+
+        let r_base = crate::indicators::evaluate_all(&Ctx {
+            obs: &base,
+            cfg: &cfg,
+        });
+        let r_att = crate::indicators::evaluate_all(&Ctx {
+            obs: &with_attention,
+            cfg: &cfg,
+        });
+
+        let (c_base, cov_base) = crate::score::composite(&r_base);
+        let (c_att, cov_att) = crate::score::composite(&r_att);
+
+        assert_eq!(
+            c_base.map(|x| format!("{x:.10}")),
+            c_att.map(|x| format!("{x:.10}")),
+            "an absurd pageview reading moved the composite; public_attention is not \n             weight-0 inert"
+        );
+        assert_eq!(
+            format!("{cov_base:.10}"),
+            format!("{cov_att:.10}"),
+            "adding the attention series changed coverage"
+        );
+
+        // It must still be reported, though — an inert series that is also invisible is
+        // just a useless fetch.
+        let a = r_att
+            .iter()
+            .find(|r| r.id == "public_attention")
+            .expect("present");
+        assert!(
+            a.reading.is_available(),
+            "attention must render when fetched"
+        );
+    }
+
+    /// A weight-0 entry that carries anchors would invite a later reader to raise the
+    /// weight and score it without ever running the pre-registered gate. The indicator
+    /// must refuse that configuration loudly.
+    #[test]
+    #[should_panic(expected = "must carry NO anchors")]
+    fn scoring_a_weight_zero_attention_series_without_the_gate_is_refused() {
+        let mut cfg =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+        // Simulate someone attaching a scale to the unscored series.
+        for ic in cfg.indicator.iter_mut() {
+            if ic.id == "public_attention" {
+                ic.anchors = vec![[0.0, 0.0], [100.0, 100.0]];
+            }
+        }
+        let obs = {
+            let mut o = narrative_obs(None);
+            o.attention = vec![crate::sources::wikipedia::AttentionChange {
+                label: "ai_bubble".into(),
+                recent_mean: 10.0,
+                prior_mean: 10.0,
+                pct: 0.0,
+            }];
+            o
+        };
+        let _ = PublicAttention.evaluate(&Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        });
     }
 }

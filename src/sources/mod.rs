@@ -12,6 +12,7 @@ pub mod gdelt;
 pub mod lbnl;
 pub mod nport;
 pub mod openrouter;
+pub mod wikipedia;
 pub mod yahoo;
 pub mod z1;
 
@@ -422,6 +423,48 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
             Err(e) => obs.failures.push(SourceFailure {
                 source: "courtlistener".into(),
                 endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason: e,
+            }),
+        }
+    }
+
+    // Public ATTENTION (Wikipedia pageviews). Deliberately weight 0 upstream: the
+    // series is fetched and reported so a reader can see whether the public is
+    // looking, but it never touches the composite. One request per article.
+    for (label, article) in wikipedia::tracked_articles() {
+        // 34 days so two full weeks are available even if the newest days are not yet
+        // published — the API lags real time by roughly a day.
+        let start_dashed = courtlistener::days_before(&today, 34).unwrap_or_else(|| today.clone());
+        let (Ok(start), Ok(end)) = (
+            wikipedia::compact_date(&start_dashed),
+            wikipedia::compact_date(&today),
+        ) else {
+            obs.failures.push(SourceFailure {
+                source: "wikipedia".into(),
+                endpoint: wikipedia::PAGEVIEWS_URL.into(),
+                reason: format!(
+                    "could not form the pageviews window from today={today:?} \
+                     (expected YYYY-MM-DD), so the request was not sent"
+                ),
+            });
+            continue;
+        };
+        match wikipedia::fetch_series(f, article, &start, &end) {
+            Ok(series) => {
+                match wikipedia::attention_change(label, &series) {
+                    Ok(change) => obs.attention.push(change),
+                    // Fewer than 14 days cannot be compared week-against-week, and a
+                    // 7-vs-3 comparison would be dominated by the weekdays present.
+                    Err(e) => obs.failures.push(SourceFailure {
+                        source: "wikipedia".into(),
+                        endpoint: wikipedia::pageviews_url(article, &start, &end),
+                        reason: e,
+                    }),
+                }
+            }
+            Err(e) => obs.failures.push(SourceFailure {
+                source: "wikipedia".into(),
+                endpoint: wikipedia::pageviews_url(article, &start, &today),
                 reason: e,
             }),
         }

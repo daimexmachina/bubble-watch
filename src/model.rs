@@ -405,6 +405,11 @@ pub struct Observations {
     /// would be worse than not scoring it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gdelt_tone: Option<Vec<crate::sources::gdelt::TimelinePoint>>,
+
+    /// Public ATTENTION from Wikipedia pageviews, one entry per tracked article.
+    /// UNSCORED: the indicator reading it carries weight 0, so this can never move
+    /// the composite. It exists so a reader can see whether the public is looking.
+    pub attention: Vec<crate::sources::wikipedia::AttentionChange>,
     /// CourtListener docket counts, year over year, one entry per tracked query.
     #[serde(default)]
     pub courtlistener: Vec<crate::sources::courtlistener::DocketChange>,
