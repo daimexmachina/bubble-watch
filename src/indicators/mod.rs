@@ -94,6 +94,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "backlog_quality" => Some(Box::new(fundamentals::BacklogQuality)),
         "inference_demand" => Some(Box::new(fundamentals::InferenceDemand)),
         "energisation_delay" => Some(Box::new(fundamentals::EnergisationDelay)),
+        "opposition_pressure" => Some(Box::new(fundamentals::OppositionPressure)),
         _ => None,
     }
 }

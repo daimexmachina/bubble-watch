@@ -48,6 +48,7 @@ fn plain_name(id: &str) -> &'static str {
         "capex_vs_cashflow" => "how much AI companies spend building data centres compared with the cash their business brings in",
         "inference_demand" => "whether the AI compute that has been built is actually being used, and whether that use is still growing",
         "energisation_delay" => "how long a new power project has to wait in the queue before it can actually be switched on",
+        "opposition_pressure" => "how often communities and local groups are going to court to try to stop data centres being built",
         "funding_gap" => "how much AI companies spend compared with what they sell",
         "leverage" => "how much debt these companies are carrying",
         "foreign_interest" => "how much foreign money owns US shares",

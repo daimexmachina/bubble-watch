@@ -1996,6 +1996,134 @@ pub fn yoy_growth_pct(weeks: &[crate::sources::openrouter::DailyTokens]) -> Opti
 /// | 2024 | 62.71 | 80.26 |
 /// | 2025 | **60.82** | **86.07** |
 ///
+/// Opposition pressure — filed legal challenges to data-centre construction.
+///
+/// ## Why this is the scored leg and the news series is not
+///
+/// A docket number is a **recorded event**. It cannot be astroturfed, it is not an
+/// opinion, and an injunction is a direct mechanism by which opposition removes
+/// future revenue. News coverage is the transmission channel; this is the thing
+/// itself.
+///
+/// ## Measured 2026-09-26, and the finding is a DIVERGENCE
+///
+/// | query | prior year | trailing year | change |
+/// |---|---|---|---|
+/// | `"data center" moratorium` | 17 | 18 | **+5.9%** |
+/// | `"data center" lawsuit` | 313 | 256 | **-18.2%** |
+/// | `"data center" injunction` | 382 | 346 | **-9.4%** |
+///
+/// Over the SAME window, GDELT news coverage of the data-centre moratorium theme
+/// rose **6.33x**. So the salience of the issue is climbing steeply while the
+/// actual legal activity is flat to falling. That gap is the measurement, and it is
+/// why the anchors are centred on **zero**: there is no evidence yet of a legal
+/// wave, and an indicator built as though there were would be encoding the news
+/// cycle rather than the mechanism.
+///
+/// Note also how thin the moratorium count is — 17 and 18 filings. A single filing
+/// is 6% of the total, so its percentage is noise-dominated and it is reported for
+/// context rather than scored alone. The two high-count queries carry the signal.
+///
+/// ## DIRECTION IS GENUINELY TWO-SIDED, and neither side is asserted
+///
+/// Rising filings are **bubble-consistent** — a real constraint arriving that will
+/// delay or block announced capacity. But they are **also counter-evidence**, because
+/// litigation is what happens to projects valuable enough to fight over; capital that
+/// has quietly stopped does not generate injunctions. Falling filings cut both ways
+/// in mirror image. The panel reports the change and lets the falsifier test it.
+pub struct OppositionPressure;
+
+impl Indicator for OppositionPressure {
+    fn id(&self) -> &'static str {
+        "opposition_pressure"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight <= 0.0 {
+            return Reading::Unavailable {
+                reason: "opposition_pressure is configured at weight 0".into(),
+            };
+        }
+        if ctx.obs.courtlistener.is_empty() {
+            return Reading::Unavailable {
+                reason: "no CourtListener docket counts were retrieved, so whether legal \
+                         opposition is rising is unknown"
+                    .into(),
+            };
+        }
+
+        // Weight the queries by their FILING VOLUME, not equally. A count of 17
+        // against 18 is noise-dominated (one filing moves it 6%), whereas 313
+        // against 256 is a real movement. An unweighted mean would let the thinnest
+        // series dominate the reading, which is the opposite of what its precision
+        // warrants.
+        let total_recent: u64 = ctx.obs.courtlistener.iter().map(|c| c.recent_count).sum();
+        let total_prior: u64 = ctx.obs.courtlistener.iter().map(|c| c.prior_count).sum();
+        if total_prior == 0 {
+            return Reading::Unavailable {
+                reason: "the prior-year docket total was zero, so a change cannot be taken from it"
+                    .into(),
+            };
+        }
+        let change_pct = (total_recent as f64 - total_prior as f64) / total_prior as f64 * 100.0;
+
+        let stress = crate::score::interpolate(change_pct, &ic.anchors);
+
+        let parts: Vec<String> = ctx
+            .obs
+            .courtlistener
+            .iter()
+            .map(|c| {
+                format!(
+                    "{} {:+.*}% ({} vs {})",
+                    c.query, 1, c.yoy_pct, c.recent_count, c.prior_count
+                )
+            })
+            .collect();
+
+        Reading::Scored {
+            stress,
+            value: change_pct,
+            unit: "pct change in filed dockets, trailing 365 days vs the 365 before".into(),
+            detail: format!(
+                "Filed legal challenges to data-centre construction changed {:+.1}% over the \
+                 trailing year ({} filings against {}). BY QUERY: {}. DIRECTION, STATED PLAINLY \
+                 BECAUSE IT IS GENUINELY TWO-SIDED: rising filings are bubble-consistent, because \
+                 an injunction or a moratorium is a real constraint that removes future revenue — \
+                 but they are ALSO counter-evidence, because litigation is what happens to \
+                 projects valuable enough to fight over, and capital that has quietly stopped \
+                 does not generate injunctions. Falling filings cut both ways in mirror image. \
+                 THE MEASURED GAP IS THE POINT: over the same window news coverage of the \
+                 data-centre moratorium theme rose about 6.3x while filings fell, so the SALIENCE \
+                 of this issue is running well ahead of the legal activity itself. LIMIT: this is \
+                 a US court corpus, so local zoning boards, county commissions and city councils \
+                 — where most real-world resistance is actually decided — are ABSENT. Measured \
+                 dead ends for that local layer: Legistar (needs a commercial licence, HTTP 500), \
+                 the Socrata open-data catalog (0 datasets), and FERC eLibrary (no public \
+                 endpoint). This is therefore a LOWER BOUND on opposition.",
+                change_pct,
+                total_recent,
+                total_prior,
+                parts.join("; ")
+            ),
+            provenance: crate::model::Provenance {
+                source: "courtlistener".into(),
+                endpoint: crate::sources::courtlistener::SEARCH_URL.into(),
+                as_of: crate::history::date_of(&ctx.obs.retrieved_at),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 /// A median alone would report "the queue stopped getting worse". The p75 says the
 /// slowest quarter is still deteriorating, so both are reported.
 pub struct EnergisationDelay;

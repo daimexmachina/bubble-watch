@@ -180,7 +180,7 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
 | `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
 
-Weight totals 175 across the 22 scored indicators, and **there are no declared gaps left**.
+Weight totals 183 across the 23 scored indicators, and **there are no declared gaps left**.
 
 ### `circularity` — a former blind spot, now scored
 
