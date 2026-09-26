@@ -1,23 +1,23 @@
 {
   "tool": "bubble-watch",
   "version": "0.1.0",
-  "generated_at": "2026-09-22T08:02:09Z",
-  "composite": 45.23742493802194,
-  "coverage": 0.9485714285714286,
+  "generated_at": "2026-09-26T21:41:49Z",
+  "composite": 40.20150960587262,
+  "coverage": 0.9672131147540983,
   "confidence": "high",
   "phase": "mid",
   "phase_label": "Mid — clear speculative characteristics, well short of prior extremes",
   "phase_detail": "Several indicators show speculative excess while others remain unremarkable. Capital Economics places volatility and leverage in roughly this category today.",
   "layman": {
     "what_this_is": "This report tries to answer one question: how much does the AI boom look like a bubble right now? It scores a set of measurements from 0 to 100. A higher score means more of the warning signs are showing.",
-    "the_score": "The score today is 45 out of 100, which puts it in the middle range. For scale: a score above 55 would look more like the late stage of a bubble, and only true extremes have pushed past 75. It is built from 21 different measurements. That is not a huge number, and it is why this report tells you what it cannot check as well as what it can.",
-    "what_is_stretched": "These measurements are the ones showing strain: whether the AI compute that has been built is actually being used, and whether that use is still growing (96 out of 100), how much foreign money owns US shares (92 out of 100), whether the big orders companies have booked are turning into money actually collected (89 out of 100), and how much AI companies spend compared with what they sell (68 out of 100). Read those as the places where the boom is genuinely stretched, rather than the whole picture being stretched.",
-    "what_is_calm": "These measurements look calm: what strong companies pay to borrow money (10 out of 100), what weaker companies pay to borrow money (16 out of 100), how jumpy the market is (18 out of 100), and how expensive stocks are compared with their own long-run trend (24 out of 100). The important thing here is what that means for the market's MOOD versus the money being SPENT. Prices are not behaving like a classic bubble even where spending is stretched.",
-    "what_we_cannot_measure": "There are things this report could not check today: how many companies are filing to sell shares for the first time. They are left blank rather than guessed at, and the score is adjusted to account for their absence.",
+    "the_score": "The score today is 40 out of 100, which puts it in the middle range. For scale: a score above 55 would look more like the late stage of a bubble, and only true extremes have pushed past 75. It is built from 22 different measurements, plus 1 thing it cannot measure at all. That is not a huge number, and it is why this report tells you what it cannot check as well as what it can.",
+    "what_is_stretched": "These measurements are the ones showing strain: how much foreign money owns US shares (92 out of 100), whether the big orders companies have booked are turning into money actually collected (89 out of 100), how much AI companies spend compared with what they sell (68 out of 100), and how fast data-centre building is growing, as measured by the government (67 out of 100). Read those as the places where the boom is genuinely stretched, rather than the whole picture being stretched.",
+    "what_is_calm": "These measurements look calm: what strong companies pay to borrow money (9 out of 100), what weaker companies pay to borrow money (18 out of 100), how jumpy the market is (18 out of 100), and how expensive stocks are compared with their own long-run trend (23 out of 100). The important thing here is what that means for the market's MOOD versus the money being SPENT. Prices are not behaving like a classic bubble even where spending is stretched.",
+    "what_we_cannot_measure": "There are things this report could not check today: how much announced power-plant capacity has been abandoned. They are left blank rather than guessed at, and the score is adjusted to account for their absence.",
     "about_timing": "This report cannot tell you when a bubble might burst. Nobody can. The historical comparison puts setups like today's roughly 15 to 42 months before a peak in the two past episodes it is based on. That is a description of what similar situations have looked like. It is not a forecast, and it is built on only two examples, so treat it as a rough yardstick at best. Bubbles can also run for years longer than anyone expects.",
     "direction_of_travel": "This report cannot yet say whether things are getting better or worse — there is no earlier reading it is willing to compare against. It will not compare two readings taken under different conditions, because the difference would then reflect the conditions rather than the market. Rather than show you a number that means nothing, it says nothing and tells you why; the exact reason is in the collapsed note below and in the caveats at the foot of this page. Run it again on another day and a comparison will appear.",
     "known_blind_spots": "This report measures a fixed list of things and claims nothing beyond it.",
-    "bottom_line": "In one line: the money being spent looks at an extreme (whether the AI compute that has been built is actually being used, and whether that use is still growing), while the market's mood looks calmer than that would suggest. A stretch between spending and pricing like this can go on for a long time, and it can also end suddenly. Nothing here tells you which."
+    "bottom_line": "In one line: the money being spent looks at an extreme (how much foreign money owns US shares), while the market's mood looks calmer than that would suggest. A stretch between spending and pricing like this can go on for a long time, and it can also end suddenly. Nothing here tells you which."
   },
   "analog": {
     "method": "historical_analog",
@@ -148,18 +148,18 @@
       },
       {
         "date": "2026-09-21",
-        "generated_at": "2026-09-21T20:34:22Z",
-        "composite": 44.76270103780411,
+        "generated_at": "2026-09-21T02:07:59Z",
+        "composite": 40.33220939990027,
         "coverage": 1.0,
         "phase": "mid",
         "methodology_version": "2.4",
         "stresses": {
           "backlog_quality": 89.14851485148515,
-          "breadth": 51.86762834987308,
+          "breadth": 44.043265564551,
           "capex_vs_cashflow": 41.93699100506772,
           "circularity": 46.476761619190405,
-          "concentration": 29.884118124328495,
-          "credit_hy": 16.050000000000004,
+          "concentration": 27.052855829305063,
+          "credit_hy": 16.375000000000007,
           "credit_ig": 9.999999999999996,
           "datacenter_construction": 66.65424631018631,
           "depreciation_subsidy": 38.7146162923554,
@@ -168,51 +168,147 @@
           "frontier_premium": 59.5,
           "funding_gap": 67.80488085809314,
           "grid_cancellations": 58.05,
-          "inference_demand": 96.0,
+          "inference_demand": 26.842177863628393,
           "issuance": 25.32764982190624,
           "leverage": 34.12659870185584,
           "narrative_saturation": 52.647412755716,
-          "primary_market_supply": 36.00666666666667,
+          "primary_market_supply": 35.82,
           "private_credit_growth": 44.71816254187466,
-          "valuation_stretch": 23.56635938976818,
-          "volatility": 18.26249957084656
+          "valuation_stretch": 21.561470561594312,
+          "volatility": 18.037501573562626
         }
       },
       {
         "date": "2026-09-22",
-        "generated_at": "2026-09-22T08:02:09Z",
-        "composite": 45.23742493802194,
-        "coverage": 0.9485714285714286,
+        "generated_at": "2026-09-22T20:50:29Z",
+        "composite": 40.62160650229476,
+        "coverage": 1.0,
         "phase": "mid",
         "methodology_version": "2.4",
         "stresses": {
           "backlog_quality": 89.14851485148515,
-          "breadth": 51.86762916927743,
+          "breadth": 49.26168472394308,
           "capex_vs_cashflow": 41.93699100506772,
           "circularity": 46.476761619190405,
-          "concentration": 29.88409379081188,
+          "concentration": 30.584094573074296,
           "credit_hy": 16.050000000000004,
-          "credit_ig": 9.999999999999996,
+          "credit_ig": 8.999999999999996,
           "datacenter_construction": 66.65424631018631,
           "depreciation_subsidy": 38.7146162923554,
           "energisation_delay": 31.010512483574253,
           "foreign_interest": 92.0,
           "frontier_premium": 59.5,
           "funding_gap": 67.80488085809314,
-          "grid_cancellations": 58.050000000000004,
-          "inference_demand": 96.0,
+          "grid_cancellations": 58.05,
+          "inference_demand": 26.842171776536063,
+          "issuance": 25.32764982190624,
+          "leverage": 34.12659870185584,
+          "narrative_saturation": 52.74368231046932,
+          "primary_market_supply": 36.123333333333335,
+          "private_credit_growth": 44.71816254187466,
+          "valuation_stretch": 23.565305504502017,
+          "volatility": 15.787500143051147
+        }
+      },
+      {
+        "date": "2026-09-23",
+        "generated_at": "2026-09-23T20:33:35Z",
+        "composite": 40.70880114302681,
+        "coverage": 1.0,
+        "phase": "mid",
+        "methodology_version": "2.4",
+        "stresses": {
+          "backlog_quality": 89.14851485148515,
+          "breadth": 49.14551009410126,
+          "capex_vs_cashflow": 41.93699100506772,
+          "circularity": 46.476761619190405,
+          "concentration": 30.7424601095314,
+          "credit_hy": 16.050000000000004,
+          "credit_ig": 9.499999999999996,
+          "datacenter_construction": 66.65424631018631,
+          "depreciation_subsidy": 38.7146162923554,
+          "energisation_delay": 31.010512483574253,
+          "foreign_interest": 92.0,
+          "frontier_premium": 59.5,
+          "funding_gap": 67.80488085809314,
+          "grid_cancellations": 58.05,
+          "inference_demand": 26.842171776536063,
+          "issuance": 25.32764982190624,
+          "leverage": 34.12659870185584,
+          "narrative_saturation": 52.80786201363819,
+          "primary_market_supply": 35.983333333333334,
+          "private_credit_growth": 44.71816254187466,
+          "valuation_stretch": 22.403079471063897,
+          "volatility": 19.425001144409173
+        }
+      },
+      {
+        "date": "2026-09-25",
+        "generated_at": "2026-09-25T20:33:44Z",
+        "composite": 40.36200975133765,
+        "coverage": 0.9657142857142856,
+        "phase": "mid",
+        "methodology_version": "2.4",
+        "stresses": {
+          "backlog_quality": 89.14851485148515,
+          "breadth": 52.22771358128897,
+          "capex_vs_cashflow": 41.93699100506772,
+          "circularity": 46.476761619190405,
+          "concentration": 32.567928641990534,
+          "credit_hy": 18.0,
+          "credit_ig": 8.749999999999996,
+          "datacenter_construction": 66.65424631018631,
+          "depreciation_subsidy": 38.7146162923554,
+          "energisation_delay": 31.010512483574253,
+          "foreign_interest": 92.0,
+          "frontier_premium": 59.5,
+          "funding_gap": 67.80488085809314,
+          "inference_demand": 26.842171776536063,
+          "issuance": 25.32764982190624,
+          "leverage": 34.12659870185584,
+          "narrative_saturation": 53.25711993582029,
+          "primary_market_supply": 35.656666666666666,
+          "private_credit_growth": 44.71816254187466,
+          "valuation_stretch": 23.1294610634403,
+          "volatility": 18.26249957084656
+        }
+      },
+      {
+        "date": "2026-09-26",
+        "generated_at": "2026-09-26T21:41:49Z",
+        "composite": 40.20150960587262,
+        "coverage": 0.9672131147540983,
+        "phase": "mid",
+        "methodology_version": "2.5",
+        "stresses": {
+          "backlog_quality": 89.14851485148515,
+          "breadth": 52.22771174884804,
+          "capex_vs_cashflow": 41.93699100506772,
+          "circularity": 46.476761619190405,
+          "concentration": 32.567952954580186,
+          "credit_hy": 18.0,
+          "credit_ig": 8.749999999999996,
+          "datacenter_construction": 66.65424631018631,
+          "depreciation_subsidy": 38.7146162923554,
+          "energisation_delay": 31.010512483574253,
+          "foreign_interest": 92.0,
+          "frontier_premium": 59.5,
+          "funding_gap": 67.80488085809314,
+          "inference_demand": 26.842171776536066,
           "issuance": 25.327649821906242,
           "leverage": 34.12659870185584,
-          "narrative_saturation": 52.647412755716,
+          "narrative_saturation": 53.28920978740474,
+          "opposition_pressure": 37.05337078651685,
+          "primary_market_supply": 35.42333333333333,
           "private_credit_growth": 44.71816254187466,
-          "valuation_stretch": 23.56635938976818,
+          "valuation_stretch": 23.1294610634403,
           "volatility": 18.262499570846558
         }
       }
     ],
-    "reason": "No eligible baseline run: the baseline is below the 0.9 day minimum elapsed gap — the configured minimum exists so that a re-run minutes or hours later cannot be presented as a trend, and the elapsed period is what makes a change interpretable. Measured from the recorded timestamps, not from the calendar dates, because two runs either side of midnight differ by a calendar day while being minutes apart [1 run(s): 11.5 hour(s) old]; baseline coverage differs by more than the 5.0pp tolerance — the difference would partly reflect WHICH SOURCES answered rather than a change in the market, so the two runs are not on the same scale [2 run(s): 100%]; the baseline was computed under an earlier methodology version — the composite means something different across that change, so the two are not comparable; the difference would be partly a MODEL change rather than a market move [59 run(s): 2.2, 2.1, 2.0, +10 more]. A direction of travel is deliberately NOT reported rather than computed against a run that is not comparable.",
+    "reason": "No eligible baseline run: the most recent archive entry is from today, below the 0.9 day minimum gap — a comparison against today would report 0.0 as though it measured market change, and the archive permits only one point per date [2 run(s): 2026-09-26]; the baseline was computed under an earlier methodology version — the composite means something different across that change, so the two are not comparable; the difference would be partly a MODEL change rather than a market move [64 run(s): 2.4, 2.2, 2.1, +11 more]. A direction of travel is deliberately NOT reported rather than computed against a run that is not comparable.",
     "warnings": [],
-    "recorded": false
+    "recorded": true
   },
   "drift": {
     "epochs": [
@@ -336,25 +432,34 @@
       {
         "methodology": "2.4",
         "first_composite": 40.33220892632038,
-        "last_composite": 44.76270103780411,
+        "last_composite": 40.36200975133765,
         "min_composite": 40.33220892632038,
-        "max_composite": 44.76270103780411,
-        "runs": 3,
+        "max_composite": 40.70880114302681,
+        "runs": 5,
+        "dates": 4
+      },
+      {
+        "methodology": "2.5",
+        "first_composite": 40.19706422154936,
+        "last_composite": 40.2015079058807,
+        "min_composite": 40.19706422154936,
+        "max_composite": 40.2015079058807,
+        "runs": 2,
         "dates": 1
       }
     ],
-    "model_change": 7.377059606340865,
-    "mean_market_range": 0.06436812632737698,
+    "model_change": 7.241914901569849,
+    "mean_market_range": 0.16844282312039618,
     "market_measurable": true,
     "phase_changes_at_model_boundary": 1,
     "phase_first": "early",
     "phase_last": "mid"
   },
   "band_margin": {
-    "margin": 9.762575061978062,
-    "boundary": "mid/late (55.0)",
-    "model_drift": 7.377059606340865,
-    "fragile": false
+    "margin": 5.201509605872623,
+    "boundary": "early/mid (35.0)",
+    "model_drift": 7.241914901569849,
+    "fragile": true
   },
   "exposure": [
     {
@@ -385,8 +490,8 @@
       "commitments_to_cfo": null,
       "rpo_to_revenue": null,
       "notes": [
-        "purchase obligations ARE disclosed by this filer but are excluded as not current: latest figure is from 2024-06-30 (814 days old). Not treated as zero.",
-        "near-term maturities unavailable (latest reported value is stale: 2025-12-31 is 265 days before 2026-09-22)"
+        "purchase obligations ARE disclosed by this filer but are excluded as not current: latest figure is from 2024-06-30 (818 days old). Not treated as zero.",
+        "near-term maturities unavailable (latest reported value is stale: 2025-12-31 is 269 days before 2026-09-26)"
       ]
     },
     {
@@ -397,7 +502,7 @@
       "commitments_to_cfo": 0.5629314132110174,
       "rpo_to_revenue": 1.2124649330401946,
       "notes": [
-        "near-term maturities unavailable (latest reported value is stale: 2025-12-31 is 265 days before 2026-09-22)"
+        "near-term maturities unavailable (latest reported value is stale: 2025-12-31 is 269 days before 2026-09-26)"
       ]
     },
     {
@@ -479,7 +584,7 @@
     {
       "id": "credit_pricing_stress",
       "question": "Are credit markets pricing the risk of near-term deterioration?",
-      "reading": "credit spread BAA10Y at 1.44%, the 2th percentile of its own history since 1986. Spreads are near the TIGHTEST levels on record",
+      "reading": "credit spread BAA10Y at 1.39%, the 1th percentile of its own history since 1986. Spreads are near the TIGHTEST levels on record",
       "verdict": "counter_evidence",
       "detail": "READ THIS CAREFULLY. Tight spreads are counter-evidence to IMMINENT deterioration — the market most exposed to a default wave is not pricing one — but they are NOT counter-evidence to a bubble EXISTING. Complacency, and lenders competing for volume on thin compensation, are both entirely consistent with a bubble. So a reassuring reading here means 'not yet', never 'not a bubble'. The public spread also cannot see private credit, which the private-credit indicator covers separately."
     },
@@ -493,9 +598,16 @@
     {
       "id": "export_controls",
       "question": "Are US export controls tightening enough to bind non-US AI revenue?",
-      "reading": "not measured",
-      "verdict": "uninformative",
-      "detail": "The Federal Register API did not return a rule count, so the pace of export-control activity is unknown. This is a reported gap, not a finding of calm."
+      "reading": "2 BIS rules in twelve months (2026-07-14) — a QUIET policy period",
+      "verdict": "counter_evidence",
+      "detail": "Counted via the Federal Register API (keyless), BIS documents matching              \"advanced computing\" published in the trailing twelve months. A LOW count is              COUNTER-EVIDENCE here, which is the opposite of every other test in this panel: if              export controls were the binding constraint on AI revenue, the rule-making pace              would be high and tightening. It is not. WHAT THIS CANNOT SEE: (1) rule COUNT is not              rule SEVERITY — one sweeping rule can bind far more than six narrow ones, and this              test does not read the text; (2) enforcement and licensing practice can tighten              without any new rule, which is invisible here; (3) controls also constrain              COMPETITORS, which can help a US vendor's revenue rather than hurt it, so the              direction is not even unambiguous. Thresholds are coarse by design — this catches a              regime change, not month-to-month noise."
+    },
+    {
+      "id": "opposition",
+      "question": "Is organised opposition to the buildout fading?",
+      "reading": "filings FELL -12.8% (621 vs 712) — the constraint is easing",
+      "verdict": "counter_evidence",
+      "detail": "Filed dockets naming data centres, from CourtListener's RECAP search (keyless), compared across two equal 365-day windows. THE DIRECTION HERE IS THE OPPOSITE OF THE STRESS INDICATOR, which is what makes this a test rather than a restatement: falling filings are COUNTER-EVIDENCE because the bubble thesis depends on real constraints arriving. BUT THE FALLING READING IS GENUINELY AMBIGUOUS: it means either (a) resistance is being overcome and projects are proceeding, or (b) the projects were abandoned before litigation became worth anyone's while — which is bearish for a completely different reason. This test cannot distinguish those two and does not pretend to. WHAT IT CANNOT SEE: (1) the corpus is US courts, so local zoning boards and county commissions — where most real resistance is decided — are ABSENT, so a genuine local wave would be invisible here; (2) a filing count says nothing about OUTCOMES, so a year of dismissed challenges and a year of successful injunctions read identically; (3) RECAP depends on volunteer uploads for some material, so a change in coverage could look like a change in behaviour. The +/-10% threshold is a materiality floor, not a tuned parameter."
     }
   ],
   "explosiveness": {
@@ -519,18 +631,18 @@
       "rationale": "The theoretically correct measure is equity risk premium compression (earnings yield minus the 10Y). No free earnings series is available, so this uses deviation of price from its own 5-year log-linear trend as a documented single-dimension proxy. The 10Y yield is reported alongside as context but is NOT scored here. PROXY strength: medium — trend deviation is real arithmetic, but it measures price, not earnings. NOTE on window sensitivity: 2/3/5/7/10-year windows give notably different deviations (roughly +1.5%/+31%/+22%/+20%/+19% measured across the same history), so this indicator is sensitive to the choice of lookback. 5 years is used as the central, least-extreme choice; shortening it materially raises the reported stress, which is a weakness of the measure rather than a fact about the market.",
       "reading": {
         "status": "scored",
-        "stress": 23.56635938976818,
-        "value": 3.9759709926915576,
+        "stress": 23.1294610634403,
+        "value": 3.6639007596002138,
         "unit": "pct deviation of S&P 500 from its 5-year log-linear trend",
-        "detail": "S&P 500 is +4.0% versus its 5-year log-linear trend (last 7765). PROXY: measures price stretch, not earnings. Context, not scored: 10-year Treasury yield 4.96% — a rising long yield compresses the equity risk premium without any change in price.",
+        "detail": "S&P 500 is +3.7% versus its 5-year log-linear trend (last 7743). PROXY: measures price stretch, not earnings. Context, not scored: 10-year Treasury yield 5.18% — a rising long yield compresses the equity risk premium without any change in price.",
         "provenance": {
           "source": "yahoo",
           "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=5y&interval=1mo",
-          "as_of": "2026-09-21",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-25",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.9875242858840634
+      "contribution": 1.8294488976732441
     },
     {
       "id": "concentration",
@@ -539,18 +651,18 @@
       "rationale": "Mega-cap dominance is the headline concentration concern. Computable proxy: when returns are carried by a handful of large names, cap-weight beats equal-weight. PROXY: weak-to-medium — it responds to any large-cap-vs-small-cap regime, not specifically to AI-related concentration, and it is a returns measure rather than the (unavailable) free-float market-cap share. IMPORTANT: this indicator is highly correlated with `breadth` — they measure the same equal-weight-versus-cap-weight quantity over different windows (measured r = -0.70 at 12m, -0.93 at 6m, i.e. up to ~86% shared variance). Their combined weight was reduced from 22 to 11 at methodology 1.2 to stop the model counting one phenomenon as two independent confirmations. Do not read agreement between the two as corroboration.",
       "reading": {
         "status": "scored",
-        "stress": 29.88409379081188,
-        "value": 3.0323437656968775,
+        "stress": 32.567952954580186,
+        "value": 4.064597290223148,
         "unit": "percentage-point spread, SPY 12m return minus RSP 12m return",
-        "detail": "Cap-weight SPY +17.2% vs equal-weight RSP +14.2% over 12 months — a +3.0pp gap. PROXY: a large-cap-versus-small-cap regime measure, not a free-float market-cap share. A NEGATIVE gap means the average constituent is outperforming the index, which is a healthy-breadth reading and scores as low stress.",
+        "detail": "Cap-weight SPY +17.8% vs equal-weight RSP +13.7% over 12 months — a +4.1pp gap. PROXY: a large-cap-versus-small-cap regime measure, not a free-float market-cap share. A NEGATIVE gap means the average constituent is outperforming the index, which is a healthy-breadth reading and scores as low stress.",
         "provenance": {
           "source": "yahoo",
           "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?range=1y&interval=1d",
-          "as_of": "2026-09-21",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-25",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.080147968342598
+      "contribution": 1.1039984052400063
     },
     {
       "id": "breadth",
@@ -559,18 +671,18 @@
       "rationale": "A narrowing rally lifts the index while most constituents lag; the RSP/SPY ratio falling through its own 200-day average is the classic breadth tell. PROXY: medium — this is a relative-performance breadth proxy, not advance/decline line or % of stocks above their 200d, which we cannot get free. Negatives are meaningful: if breadth is healthy, this indicator reports LOW stress and the composite says so. IMPORTANT: this is highly correlated with `concentration` — both measure equal-weight versus cap-weight performance, this one as a ratio-versus-trend and that one as a 12-month return differential (measured r = -0.70 at 12m, -0.93 at 6m). Their combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count one phenomenon twice, and the report now discloses the shared variance.",
       "reading": {
         "status": "scored",
-        "stress": 51.86762916927743,
-        "value": -3.977938194879571,
+        "stress": 52.22771174884804,
+        "value": -4.037951958141339,
         "unit": "pct, equal-weight/cap-weight ratio vs its 200-day average",
-        "detail": "RSP/SPY ratio 0.2750 sits -4.0% versus its own 200-day average. PROXY: relative performance, not an advance/decline line or the percentage of stocks above their 200-day. Falling below average indicates a narrowing rally; above average indicates broad participation.",
+        "detail": "RSP/SPY ratio 0.2737 sits -4.0% versus its own 200-day average. PROXY: relative performance, not an advance/decline line or the percentage of stocks above their 200-day. Falling below average indicates a narrowing rally; above average indicates broad participation.",
         "provenance": {
           "source": "yahoo",
           "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/RSP?range=1y&interval=1d",
-          "as_of": "2026-09-21",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-25",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.5622779870264285
+      "contribution": 1.4753590889505095
     },
     {
       "id": "issuance",
@@ -587,10 +699,10 @@
           "source": "sec-edgar",
           "endpoint": "data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL",
           "as_of": "2026-08-31",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.5257620374642313
+      "contribution": 1.4309406679043075
     },
     {
       "id": "volatility",
@@ -602,15 +714,15 @@
         "stress": 18.262499570846558,
         "value": 14.869999885559082,
         "unit": "VIX index level",
-        "detail": "VIX at 14.9. Cross-check: 20-day annualized realized volatility of the S&P 500 is 10.7%. The anchors are deliberately shallow at the low end: a calm market is mildly bubble-like (complacency) rather than strongly so, because sustained HIGH volatility more often marks a peak already passed.",
+        "detail": "VIX at 14.9. Cross-check: 20-day annualized realized volatility of the S&P 500 is 10.8%. The anchors are deliberately shallow at the low end: a calm market is mildly bubble-like (complacency) rather than strongly so, because sustained HIGH volatility more often marks a peak already passed.",
         "provenance": {
           "source": "yahoo",
           "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1y&interval=1d",
-          "as_of": "2026-09-21",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-25",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 0.8801204612456173
+      "contribution": 0.8254237094167935
     },
     {
       "id": "credit_hy",
@@ -619,18 +731,18 @@
       "rationale": "The single most important non-equity signal. Credit reprices faster and with covenants, and the debt-funded buildout means any disappointment transmits through credit first. DIRECTION: wide spread = high stress, tight spread = low stress. This is NOT inverted, and the choice is deliberate — see the 'credit level vs direction' note below. Scoring tight spreads as complacent/alarming would read almost the entire post-2009 record as a bubble: HY OAS has had a ~3.0% median and has rarely been wide, so a level-based complacency score would be near-constant and carry no timing information. What matters is the DIRECTION OF TRAVEL from a tight base — widening is the early warning, not the level. Read this indicator as the cost of credit, and watch its change.",
       "reading": {
         "status": "scored",
-        "stress": 16.050000000000004,
-        "value": 2.68,
+        "stress": 18.0,
+        "value": 2.8,
         "unit": "pct, ICE BofA US High Yield option-adjusted spread",
-        "detail": "ICE BofA US High Yield option-adjusted spread 2.68 as of 2026-09-18. Direction: WIDE spread = high stress, tight = low stress (not inverted). A tight spread means credit is currently cheap and the market is charging little for this risk; it is NOT scored as a bubble signal, because HY spreads have a ~3.0% median over the available record and a level-based complacency score would read nearly the whole post-2009 period as a bubble. The informative signal is the DIRECTION OF TRAVEL from a tight base — widening is the early warning. Watch the change, not the level. History: 785 observations spanning 2023-09-22 to 2026-09-18.",
+        "detail": "ICE BofA US High Yield option-adjusted spread 2.8 as of 2026-09-24. Direction: WIDE spread = high stress, tight = low stress (not inverted). A tight spread means credit is currently cheap and the market is charging little for this risk; it is NOT scored as a bubble signal, because HY spreads have a ~3.0% median over the available record and a level-based complacency score would read nearly the whole post-2009 period as a bubble. The informative signal is the DIRECTION OF TRAVEL from a tight base — widening is the early warning. Watch the change, not the level. History: 787 observations spanning 2023-09-26 to 2026-09-24.",
         "provenance": {
           "source": "fred",
           "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&file_type=json&api_key=***",
-          "as_of": "2026-09-18",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-24",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.1602409638554219
+      "contribution": 1.2203389830508475
     },
     {
       "id": "credit_ig",
@@ -639,18 +751,18 @@
       "rationale": "Investment-grade credit conditions: the yield on Baa-rated corporate debt less the 10-year Treasury, a credit-risk premium for the lower half of investment grade. SERIES CHANGED 2026-09-17 from the ICE BofA US Corporate option-adjusted spread. The OAS is the better measure in isolation and was given up reluctantly: every ICE BofA series on FRED begins 2023-09-18, so with 2.5 years of data the anchors could not reference any observed stress episode — the series had never seen 2000, 2008 or 2020. BAA10Y runs from 1986 with 10,177 observations and includes all three, so the scale is now justified by history rather than extrapolation. Anchors are set on BAA10Y's OWN distribution (median 2.13, 95th 3.32, max 6.06) and deliberately NOT transposed from the OAS, which lives on a different scale entirely (OAS currently 0.78) — carrying them across would have read the middle of forty years as near-alarm. DIRECTION: wide = high stress, tight = low stress, unchanged; see the credit level-vs-direction note for why the complacency reading is deliberately not used. LIMITATION: the falsification test for credit conditions reads the same BAA10Y series, so the two are not independent measurements.",
       "reading": {
         "status": "scored",
-        "stress": 9.999999999999996,
-        "value": 1.44,
+        "stress": 8.749999999999996,
+        "value": 1.39,
         "unit": "pct, Moody's Baa corporate bond yield less the 10-year Treasury yield",
-        "detail": "Moody's Baa corporate yield less the 10-year Treasury 1.44 as of 2026-09-17. Direction: WIDE spread = high stress, tight = low stress (not inverted). A tight spread means credit is currently cheap and the market is charging little for this risk; it is NOT scored as a bubble signal, because HY spreads have a ~3.0% median over the available record and a level-based complacency score would read nearly the whole post-2009 period as a bubble. The informative signal is the DIRECTION OF TRAVEL from a tight base — widening is the early warning. Watch the change, not the level. History: 10178 observations spanning 1986-01-02 to 2026-09-17. NOT INDEPENDENT: the falsification test for credit conditions reads the same BAA10Y series, so this indicator and that test are the same measurement read two ways (a level here, a historical percentile there). Do not treat them as two pieces of evidence.",
+        "detail": "Moody's Baa corporate yield less the 10-year Treasury 1.39 as of 2026-09-24. Direction: WIDE spread = high stress, tight = low stress (not inverted). A tight spread means credit is currently cheap and the market is charging little for this risk; it is NOT scored as a bubble signal, because HY spreads have a ~3.0% median over the available record and a level-based complacency score would read nearly the whole post-2009 period as a bubble. The informative signal is the DIRECTION OF TRAVEL from a tight base — widening is the early warning. Watch the change, not the level. History: 10183 observations spanning 1986-01-02 to 2026-09-24. NOT INDEPENDENT: the falsification test for credit conditions reads the same BAA10Y series, so this indicator and that test are the same measurement read two ways (a level here, a historical percentile there). Do not treat them as two pieces of evidence.",
         "provenance": {
           "source": "fred",
           "endpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=BAA10Y&file_type=json&api_key=***",
-          "as_of": "2026-09-17",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-24",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 0.36144578313252995
+      "contribution": 0.2966101694915253
     },
     {
       "id": "capex_vs_cashflow",
@@ -667,10 +779,10 @@
           "source": "sec-edgar",
           "endpoint": "data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL",
           "as_of": "2026-08-31",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 3.536854663078
+      "contribution": 3.317050135994057
     },
     {
       "id": "funding_gap",
@@ -687,10 +799,10 @@
           "source": "sec-edgar",
           "endpoint": "data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL",
           "as_of": "2026-08-31",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 3.2677051015948506
+      "contribution": 3.064627383416639
     },
     {
       "id": "leverage",
@@ -707,10 +819,10 @@
           "source": "sec-edgar",
           "endpoint": "data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL",
           "as_of": "2026-08-31",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.2334915193441869
+      "contribution": 1.156833854300198
     },
     {
       "id": "primary_market_supply",
@@ -718,9 +830,19 @@
       "weight": 9.0,
       "rationale": "How much new equity supply is being pushed at the market, the broad IPO wave that the cohort-based 'issuance' indicator explicitly cannot see. Counted from SEC EDGAR full-text search over the trailing twelve months. It measures ATTEMPTS to sell stock, not money raised and not market absorption: many registrations are withdrawn or price far below the indicated range, and this cannot see offer price or first-day performance. Reference values measured from this host 2026-09-17 (annual S-1 counts): 2019 1,867; 2020 2,890; 2021 5,619 (the peak, and the clearest primary-market mania in the window); 2022 2,715; 2023 2,553; 2024 2,663; 2025 2,824. Anchors are deliberately shallow in the middle because this is a noisy count and a few hundred filings either way is not a regime change. A reading near the recent average says the primary market looks ordinary, which is NOT the same as no bubble: this is a supply measure and it carries no price information.",
       "reading": {
-        "status": "unavailable",
-        "reason": "SEC full-text search returned no S-1 registration count for the trailing year, so primary-market supply could not be measured"
-      }
+        "status": "scored",
+        "stress": 35.42333333333333,
+        "value": 2661.0,
+        "unit": "count of form S-1 registration statements filed in the trailing twelve months",
+        "detail": "2661 registration statements (form S-1) filed with the SEC in the trailing twelve months. This counts ATTEMPTS to sell stock, not the money raised and not whether the market absorbed it: no offer price, no first-day performance, and no adjustment for how many companies were simply eligible to file. For scale, measured annual counts: 2021 was the 5,619 peak, 2019 was 1,867, and 2023-2025 sat at 2,553 / 2,663 / 2,824. A reading near the recent average therefore means the primary market looks ordinary, NOT that no bubble exists — this is supply of attempts, and it says nothing about prices.",
+        "provenance": {
+          "source": "sec-edgar-fulltext",
+          "endpoint": "efts.sec.gov/LATEST/search-index forms=S-1 window=2025-09-26..=2026-09-26",
+          "as_of": "2026-09-26",
+          "retrieved_at": "2026-09-26T21:41:27Z"
+        }
+      },
+      "contribution": 1.801186440677966
     },
     {
       "id": "backlog_quality",
@@ -732,15 +854,15 @@
         "stress": 89.14851485148515,
         "value": 51.43564356435643,
         "unit": "ratio, remaining performance obligation divided by contract liability (deferred revenue)",
-        "detail": "Contracted backlog relative to cash actually billed. Highest cohort ratio is GOOGL at 51.4x (RPO $519.5B against deferred revenue). All filers: GOOGL: RPO $519.5B vs deferred revenue $10.1B = 51.4x, MSFT: RPO $684.0B vs deferred revenue $75.7B = 9.0x. WHY THIS IS A DIVERGENCE MEASURE AND NOT A BUBBLE VERDICT: an RPO/REVENUE ratio rises for every long-contract business and cannot distinguish a healthy backlog from a vendor financing its customers, so it is not scored here. What is scored is whether the backlog is being BILLED: when RPO grows while deferred revenue stays flat, the commitments are not converting to cash. It still cannot see counterparty credit quality, cancellation terms or termination clauses — $520B of RPO and $520B of cash are not the same asset. NOT REPORTED AT ALL (a gap, never a decline): META.",
+        "detail": "Contracted backlog relative to cash actually billed. Highest cohort ratio is GOOGL at 51.4x (RPO $519.5B against deferred revenue). All filers: GOOGL: RPO $519.5B vs deferred revenue $10.1B = 51.4x, MSFT: RPO $684.0B vs deferred revenue $75.7B = 9.0x, ORCL: RPO $664.0B vs deferred revenue $30.8B = 21.6x. WHY THIS IS A DIVERGENCE MEASURE AND NOT A BUBBLE VERDICT: an RPO/REVENUE ratio rises for every long-contract business and cannot distinguish a healthy backlog from a vendor financing its customers, so it is not scored here. What is scored is whether the backlog is being BILLED: when RPO grows while deferred revenue stays flat, the commitments are not converting to cash. It still cannot see counterparty credit quality, cancellation terms or termination clauses — $520B of RPO and $520B of cash are not the same asset. NOT REPORTED AT ALL (a gap, never a decline): META. REJECTED BY A HEALTH CHECK, so absent from the rows above rather than missing from the data: AMZN (STALE: latest observation 2020-06-30 is 2279 days before 2026-09-26, beyond the 460 day limit). A rejected series is NOT a decline and NOT an absence — the disclosure exists and this indicator chose not to use it. Read the reason before comparing this filer against the others.",
         "provenance": {
           "source": "sec-edgar",
           "endpoint": "data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL",
-          "as_of": "2026-06-30",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-08-31",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 3.7592747226529877
+      "contribution": 3.5256474800022377
     },
     {
       "id": "private_credit_growth",
@@ -757,10 +879,10 @@
           "source": "fed-z1",
           "endpoint": "https://www.federalreserve.gov/releases/z1/current/z1_csv_files.zip :: csv/F4_4_s.csv :: FL893167205.Q",
           "as_of": "2026-06-30",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.6163191280195661
+      "contribution": 1.5158699166737173
     },
     {
       "id": "datacenter_construction",
@@ -777,10 +899,10 @@
           "source": "census-c30",
           "endpoint": "https://www.census.gov/construction/c30/xlsx/privtime.xlsx :: sheet Priv NSA :: column 'Data center'",
           "as_of": "Jul-26p",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 2.810721229947615
+      "contribution": 2.6360436393858993
     },
     {
       "id": "grid_cancellations",
@@ -788,19 +910,9 @@
       "weight": 6.0,
       "rationale": "How much announced power-plant capacity has been abandoned, measured against what is still planned. The grid is the binding physical constraint on the AI buildout and the interconnection queue is the practical bottleneck, so cancelled generation is intent that did not survive contact with reality and it turns before the spending does. Measured 2026-09-17 from the EIA-860M July 2026 release: 291,138 MW planned against 184,141 MW cancelled or postponed, a 38.7% ratio, with the largest abandoned categories being gas combined cycle (59,466 MW), gas combustion turbine (31,064 MW), solar (28,517 MW), onshore wind (15,752 MW) and coal (15,409 MW). INTERPRETATION LIMIT: the EIA sheets are cumulative INVENTORIES, not flows, so this is a LEVEL of abandoned intent accumulated over the window and NOT a rate of change — it does not show whether cancellations are rising now. Catching the direction of travel would require comparing successive monthly releases against each other, which is not implemented. A second limitation: the same accumulation applies to the planned side, so the denominator includes projects that will themselves be cancelled, which biases the ratio downward.",
       "reading": {
-        "status": "scored",
-        "stress": 58.050000000000004,
-        "value": 38.7,
-        "unit": "pct, cancelled or postponed capacity as a share of announced plus cancelled capacity",
-        "detail": "38.7% of announced generating capacity has been cancelled or postponed ($184141 MW abandoned against 291138 MW still planned). The grid is the binding physical constraint on this buildout, so abandoned generation is intent that did not survive contact with reality. INTERPRET CAREFULLY: the EIA sheets are cumulative INVENTORIES, not flows, so this is a LEVEL of abandoned intent over the whole accumulation window — it is NOT a rate of change and does NOT show whether cancellations are rising now. Catching the direction of travel would require comparing successive monthly releases, which is not implemented.",
-        "provenance": {
-          "source": "eia-860m",
-          "endpoint": "https://www.eia.gov/electricity/data/eia860m/xls/july_generator2026.xlsx :: sheet 'Canceled or Postponed' :: 184141.39999999912 MW",
-          "as_of": "July 2026",
-          "retrieved_at": "2026-09-22T08:02:09Z"
-        }
-      },
-      "contribution": 2.0981927710843373
+        "status": "unavailable",
+        "reason": "EIA-860M planned/cancelled inventories unavailable: the workbook could not be retrieved or the sheets were not parseable"
+      }
     },
     {
       "id": "narrative_saturation",
@@ -809,18 +921,18 @@
       "rationale": "How many companies discuss AI in their regulatory filings, used as a measure of narrative saturation rather than of valuation. EDGAR full-text search is a CENSUS, not a sample: every filing of a form type in the period is indexed, so unlike news volume, social chatter or search interest there is no sampling error, no panel-selection bias, and the phrase is pinned exactly. Measured 2026-09-17: 10-K filings mentioning 'artificial intelligence' ran 41 (2015) → 294 (2018) → 848 (2021) → 1,295 (2023) → 3,324 (2025), an 81x increase over the decade, and the 8-K equivalent ran 45 → 4,690, a 104x increase; a second independent run reproduced every figure exactly. WHAT IT DOES NOT MEASURE: it is not a valuation or a risk measure. A mention may come from a chip designer or from a bakery noting a supply-chain risk, and the count cannot distinguish enthusiasm from caution — so a high reading is equally consistent with hype spreading and with ordinary disclosure practice maturing. Scored on ANNUALISED year-over-year change, because the count is bounded by the number of filers and must saturate; annualising prevents every run before December reporting a calendar artefact as a collapse in AI mentions.",
       "reading": {
         "status": "scored",
-        "stress": 52.647412755716,
-        "value": 53.309265944645,
+        "stress": 53.28920978740474,
+        "value": 54.11151223425592,
         "unit": "pct, annualised year-over-year change in 10-K filings mentioning artificial intelligence",
-        "detail": "3822 10-K filings mentioned \"artificial intelligence\" in 2026, against 3324 in 2025 — a 53% change. This is a CENSUS, not a sample: every filing of that form type in the period is indexed, so unlike news volume or search interest there is no sampling error and the phrase is pinned exactly. WHAT IT MEASURES: how many companies discuss AI in a regulatory filing, which is narrative SATURATION — how far a theme has spread from specialists into general disclosure. IT IS NOT A VALUATION OR A RISK MEASURE: a mention may come from a chip designer or from a bakery noting a supply-chain risk, and the count cannot distinguish enthusiasm from caution. Scored on year-over-year change, since the count is bounded by the number of filers and must saturate. 2026 is a PARTIAL year: 3822 filings so far, annualised to 5096 using 9 elapsed months, so every run before December would otherwise look like a collapse in AI mentions.",
+        "detail": "3842 10-K filings mentioned \"artificial intelligence\" in 2026, against 3324 in 2025 — a 54% change. This is a CENSUS, not a sample: every filing of that form type in the period is indexed, so unlike news volume or search interest there is no sampling error and the phrase is pinned exactly. WHAT IT MEASURES: how many companies discuss AI in a regulatory filing, which is narrative SATURATION — how far a theme has spread from specialists into general disclosure. IT IS NOT A VALUATION OR A RISK MEASURE: a mention may come from a chip designer or from a bakery noting a supply-chain risk, and the count cannot distinguish enthusiasm from caution. Scored on year-over-year change, since the count is bounded by the number of filers and must saturate. 2026 is a PARTIAL year: 3842 filings so far, annualised to 5123 using 9 elapsed months, so every run before December would otherwise look like a collapse in AI mentions. AI-NEWS TONE IS UNSCORED CONTEXT AND UNAVAILABLE THIS RUN: the GDELT tone series was not retrieved, so nothing is claimed about it.",
         "provenance": {
           "source": "sec-edgar-fulltext",
           "endpoint": "efts.sec.gov/LATEST/search-index forms=10-K phrase=\"artificial intelligence\"",
-          "as_of": "2026-09-22",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-26",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.585765444449277
+      "contribution": 1.5053449092487214
     },
     {
       "id": "foreign_interest",
@@ -832,15 +944,15 @@
         "stress": 92.0,
         "value": 99.672131147541,
         "unit": "percentile of rest-of-world US corporate equity holdings within the series' own history",
-        "detail": "Rest-of-world holdings of US corporate equities: $22.21tn at 2026-06-30, the 100th percentile of this series' own history (which begins 1945-12-31). Up 25.7% year over year. Retrieved 2026-09-22. SCORED ON THE PERCENTILE, NOT THE DOLLAR LEVEL: the absolute stock grows with the market itself, so a raw level would rise in every bull market whether or not foreign participation actually increased. A percentile against the full history is the only version of this number that is interpretable. DIRECTION: a higher percentile reads as more stress, following Capital Economics, which flags record foreign ownership as a LATE-STAGE marker — a market increasingly held by investors whose willingness to hold depends on returns continuing is more fragile. This indicator was a declared weight-0 blind spot until 2026-09-17, on the stated grounds that no free machine-readable series existed; that was wrong, and the gap is now closed.",
+        "detail": "Rest-of-world holdings of US corporate equities: $22.21tn at 2026-06-30, the 100th percentile of this series' own history (which begins 1945-12-31). Up 25.7% year over year. Retrieved 2026-09-26. SCORED ON THE PERCENTILE, NOT THE DOLLAR LEVEL: the absolute stock grows with the market itself, so a raw level would rise in every bull market whether or not foreign participation actually increased. A percentile against the full history is the only version of this number that is interpretable. DIRECTION: a higher percentile reads as more stress, following Capital Economics, which flags record foreign ownership as a LATE-STAGE marker — a market increasingly held by investors whose willingness to hold depends on returns continuing is more fragile. This indicator was a declared weight-0 blind spot until 2026-09-17, on the stated grounds that no free machine-readable series existed; that was wrong, and the gap is now closed.",
         "provenance": {
           "source": "fed-z1",
           "endpoint": "https://www.federalreserve.gov/releases/z1/current/z1_csv_files.zip :: csv/M3s_Q.csv :: FL263064105.Q",
           "as_of": "2026-06-30",
-          "retrieved_at": "2026-09-22T08:02:09Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 2.7710843373493974
+      "contribution": 2.598870056497175
     },
     {
       "id": "depreciation_subsidy",
@@ -852,15 +964,15 @@
         "stress": 38.7146162923554,
         "value": 2.5941783835696866,
         "unit": "percentage points the annual depreciation rate fell while the asset base grew",
-        "detail": "FLAGGED: ORCL (-2.59pt, PP&E 4.28x) — extended their depreciation schedule while the asset base grew, which flatters reported earnings without any change in the underlying business.. Measured across 6 filers over the trailing four annual periods: MSFT +1.23pt with PP&E 2.63x; ORCL -2.59pt with PP&E 4.28x; AAPL -1.24pt with PP&E 1.10x; AVGO -1.35pt with PP&E 1.27x; NVDA +1.16pt with PP&E 2.61x; TSLA +1.19pt with PP&E 1.79x. THE GUARD MATTERS MORE THAN THE NUMBER: a naive rate test flags six of nine companies including AAPL and AVGO, which show the same drift with no AI capex story at all because a mechanical ratio drifts as older fully-depreciated assets age into the denominator. Two stages are required — the gross-PP&E series must first pass a health check, then the rate test is ANDed with an asset-growth condition. With both, exactly one of nine flags. Rejected series: AMZN (gross PP&E: GAP: 1827 days between 2019-12-31 and 2024-12-31, beyond the 400 day limit); GOOGL (gross PP&E: STALE: latest observation 2025-03-31 is 540 days before 2026-09-22, beyond the 460 day limit); META (gross PP&E: STALE: latest observation 2020-09-30 is 2183 days before 2026-09-22, beyond the 460 day limit). LIMITATIONS: this detects a CHANGE in a filer's depreciation convention, not an initially aggressive one, so a company that always depreciated over six years never flags; and gross PP&E aggregates buildings and hardware, so it cannot say which of the two the useful life refers to.",
+        "detail": "FLAGGED: ORCL (-2.59pt, PP&E 4.28x) — extended their depreciation schedule while the asset base grew, which flatters reported earnings without any change in the underlying business.. Measured across 6 filers over the trailing four annual periods: MSFT +1.23pt with PP&E 2.63x; ORCL -2.59pt with PP&E 4.28x; AAPL -1.24pt with PP&E 1.10x; AVGO -1.35pt with PP&E 1.27x; NVDA +1.16pt with PP&E 2.61x; TSLA +1.19pt with PP&E 1.79x. THE GUARD MATTERS MORE THAN THE NUMBER: a naive rate test flags six of nine companies including AAPL and AVGO, which show the same drift with no AI capex story at all because a mechanical ratio drifts as older fully-depreciated assets age into the denominator. Two stages are required — the gross-PP&E series must first pass a health check, then the rate test is ANDed with an asset-growth condition. With both, exactly one of nine flags. Rejected series: AMZN (gross PP&E: GAP: 1827 days between 2019-12-31 and 2024-12-31, beyond the 400 day limit); GOOGL (gross PP&E: STALE: latest observation 2025-03-31 is 544 days before 2026-09-26, beyond the 460 day limit); META (gross PP&E: STALE: latest observation 2020-09-30 is 2187 days before 2026-09-26, beyond the 460 day limit). LIMITATIONS: this detects a CHANGE in a filer's depreciation convention, not an initially aggressive one, so a company that always depreciated over six years never flags; and gross PP&E aggregates buildings and hardware, so it cannot say which of the two the useful life refers to.",
         "provenance": {
           "source": "sec-edgar",
           "endpoint": "data.sec.gov/api/xbrl/companyconcept — 5 filers: AMZN, GOOGL, META, MSFT, ORCL",
           "as_of": "2026-06-30",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.3993234804465806
+      "contribution": 1.3123598743171323
     },
     {
       "id": "frontier_premium",
@@ -877,10 +989,10 @@
           "source": "lmarena",
           "endpoint": "huggingface.co/datasets/lmarena-ai/leaderboard-dataset :: text/full parquet :: category=overall :: best-proprietary minus best-open",
           "as_of": "2026-09-13",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 2.1506024096385543
+      "contribution": 2.016949152542373
     },
     {
       "id": "circularity",
@@ -896,11 +1008,11 @@
         "provenance": {
           "source": "sec-edgar (read filings)",
           "endpoint": "sec.gov Archives: AMD 8-K 2025-10-06; SPCX 10-Q 2026-08-04; MSFT 10-K 2026-07-29; ORCL 8-K 2025-09-09",
-          "as_of": "2026-09-22",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-26",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 3.3597659001824387
+      "contribution": 3.1509668894366376
     },
     {
       "id": "inference_demand",
@@ -909,18 +1021,18 @@
       "rationale": "SCORED ON THE RATE OF CHANGE, NOT THE LEVEL, AND THE ANCHORS INVERT. Measured from OpenRouter's public token-volume endpoints (keyless): weekly volume across the top-10 models ran 5.26e12 tokens/week on 2025-09-22 to 1.29e14 on 2026-09-14, about 24x in a year. The scored quantity is the percentage change over a 13-WEEK lag (the calibrated lag), because a LEVEL cannot show deceleration and deceleration with the level still high is the warning this indicator exists to surface. WHY IT INVERTS: every other indicator in this model reads a higher value as more stress. Rising token volume means the compute that was built is being USED, which is evidence against the bubble thesis rather than for it. It is stated here rather than left implicit because an indicator that reads against the thesis must be visible as doing so. WHAT IT CLOSES: `capex_vs_cashflow` and `funding_gap` can both detect that spending outruns revenue, but neither can distinguish demand FAILING (the spend was speculative) from demand OUTRUNNING SUPPLY (the spend is justified and capacity is the constraint) — opposite readings of the same ratio. This separates them. MEASURED LIMITS, each of which biases toward calm: (1) OpenRouter is ONE aggregator, not the market, so the level is a LOWER BOUND on total AI usage; (2) the weekly chart lists only the TOP TEN models per week, so a long tail of smaller models is invisible; (3) token COUNT is not revenue — 9% of measured tokens flowed through free-tier variants that monetise nothing, so this measures usage, never money; (4) falling per-token prices make a flat token count ambiguous between 'demand stalled' and 'demand grew but got cheaper', which only realised revenue per token could resolve and no free source publishes it. THE SERIES ITSELF HAS TWO MEASURED TRAPS, both guarded in code: the daily feed back-fills incompletely (six of seven dates carried 1-10 rows against 544 for the single complete day, so only the most recent COMPLETE day is used), and the newest week is routinely PARTIAL (measured 5.8e10 against 1.29e14, a ~2,200x artefact that made an unguarded growth calculation report 0.0x over a year of 24x growth). THE LAG IS 13 WEEKS, AND THAT IS A CALIBRATION DECISION WORTH STATING. Measured on the live chart: a 13-week lag has 39 observations (range +3.5% to +385.1%), a 26-week lag has 26, and a 51-week lag has exactly ONE. An anchor set built on a single-observation lag is a scale with one point on it, and the first live run proved it: +2,351% over 51 weeks clamped to the top anchor and the reading could distinguish nothing from anything. A quarter has a real distribution to calibrate against, and the current measurement (+176%) sits inside it. The trade is explicit: a quarter detects deceleration LATER than a year would, and it is the longest lag this series can support a calibration for.",
       "reading": {
         "status": "scored",
-        "stress": 96.0,
-        "value": -62.0631617646764,
+        "stress": 26.842171776536066,
+        "value": 176.31523519553278,
         "unit": "pct change in weekly tokens over 13 weeks (the calibrated lag)",
-        "detail": "Weekly AI token volume is -62.1% over the last 13 weeks (latest week 2026-09-21, 1.772e13 tokens). open-weight share 76-76% of the latest complete day (0.80% of tokens could not be classified) A LEVEL cannot show deceleration; this is a RATE, and deceleration with the level still high is the warning this indicator exists to surface. LIMIT: OpenRouter is ONE aggregator, not the market, so the level is a LOWER BOUND on total AI usage and its bias is toward CALM. The anchors INVERT relative to every other indicator here — rising usage means the buildout is being consumed, which is LESS bubble stress, not more.",
+        "detail": "Weekly AI token volume is +176.3% over the last 13 weeks (latest week 2026-09-14, 1.289e14 tokens). open-weight share 71-74% of the latest complete day (2.42% of tokens could not be classified) A LEVEL cannot show deceleration; this is a RATE, and deceleration with the level still high is the warning this indicator exists to surface. LIMIT: OpenRouter is ONE aggregator, not the market, so the level is a LOWER BOUND on total AI usage and its bias is toward CALM. The anchors INVERT relative to every other indicator here — rising usage means the buildout is being consumed, which is LESS bubble stress, not more.",
         "provenance": {
           "source": "openrouter",
           "endpoint": "https://openrouter.ai/api/frontend/v1/rankings/models",
-          "as_of": "2026-09-20",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "as_of": "2026-09-25",
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 5.783132530120482
+      "contribution": 1.516506880030286
     },
     {
       "id": "energisation_delay",
@@ -937,22 +1049,61 @@
           "source": "lbnl",
           "endpoint": "https://emp.lbl.gov/sites/default/files/2026-05/LBNL_Ix_Queue_Data_File_thru2025.xlsx",
           "as_of": "2025",
-          "retrieved_at": "2026-09-22T08:02:08Z"
+          "retrieved_at": "2026-09-26T21:41:27Z"
         }
       },
-      "contribution": 1.3076722131627696
+      "contribution": 1.2264044485029366
+    },
+    {
+      "id": "opposition_pressure",
+      "label": "Opposition pressure (filed legal challenges to data-centre construction)",
+      "weight": 8.0,
+      "rationale": "COUNT OF FILED LEGAL CHALLENGES to data-centre construction, from CourtListener's RECAP docket search (keyless), measured as the percentage change between two equal 365-day windows. WHY THIS IS NOT SENTIMENT AND NOT A NEWS PROXY: a docket number is a recorded event with a court, a case number and a filing date. It cannot be astroturfed, it is not an opinion poll, and an injunction is a direct mechanism by which opposition removes future revenue — a project that is enjoined does not get built, and a moratorium removes the permit path entirely. News coverage, by contrast, is the TRANSMISSION channel and is fetched separately but deliberately NOT scored. MEASURED 2026-09-26: moratorium 17 -> 18 (+5.9%), lawsuit 313 -> 256 (-18.2%), injunction 382 -> 346 (-9.4%), for a combined -13.9%. THE FINDING IS A DIVERGENCE, AND IT IS THE POINT: over the same window GDELT news coverage of the data-centre moratorium theme rose 6.33x, so the SALIENCE of this issue is running far ahead of the legal activity itself. That gap is evidence about the narrative rather than about the constraint. WHY THE ANCHORS ARE CENTRED ON ZERO: there is no measured legal wave, so a scale built as though filings were exploding would encode the news cycle rather than the mechanism. The bands place a doubling at 90 and a halving below 16. WEIGHTING: the queries are combined by FILING VOLUME rather than equally, because the moratorium series is thin (17-18 filings, where a single filing moves the percentage 6%) while the other two are in the hundreds; an unweighted mean would let the noisiest series dominate. DIRECTION, STATED PLAINLY BECAUSE IT IS GENUINELY TWO-SIDED: rising filings are bubble-consistent, because a real constraint is arriving — but they are ALSO counter-evidence, because litigation is what happens to projects valuable enough to be fought over, and capital that has quietly stopped does not generate injunctions. Falling filings cut both ways in mirror image. Neither reading is asserted here; the fifth falsifier tests the direction. LIMITS, ALL MATERIAL: (1) this is a US court corpus, so local zoning boards, county commissions and city councils — where most real-world data-centre resistance is actually decided — are ABSENT, making this a LOWER BOUND. Measured dead ends for that local layer: Legistar municipal legislation returns HTTP 500 requiring a commercial per-client licence, the Socrata open-data catalog has zero data-centre-moratorium datasets, and FERC eLibrary has no public endpoint (405/404); (2) a docket record shows that a challenge was FILED, not that it succeeded, so a wave of dismissed suits would score as high as a wave of successful ones; (3) CourtListener's RECAP coverage depends on volunteer uploads for some material, so the corpus is not a guaranteed complete census in the way EDGAR full-text search is.",
+      "reading": {
+        "status": "scored",
+        "stress": 37.05337078651685,
+        "value": -12.780898876404494,
+        "unit": "pct change in filed dockets, trailing 365 days vs the 365 before",
+        "detail": "Filed legal challenges to data-centre construction changed -12.8% over the trailing year (621 filings against 712). BY QUERY: moratorium +5.9% (18 vs 17); lawsuit -18.2% (256 vs 313); injunction -9.2% (347 vs 382). DIRECTION, STATED PLAINLY BECAUSE IT IS GENUINELY TWO-SIDED: rising filings are bubble-consistent, because an injunction or a moratorium is a real constraint that removes future revenue — but they are ALSO counter-evidence, because litigation is what happens to projects valuable enough to fight over, and capital that has quietly stopped does not generate injunctions. Falling filings cut both ways in mirror image. THE MEASURED GAP IS THE POINT: over the same window news coverage of the data-centre moratorium theme rose about 6.3x while filings fell, so the SALIENCE of this issue is running well ahead of the legal activity itself. LIMIT: this is a US court corpus, so local zoning boards, county commissions and city councils — where most real-world resistance is actually decided — are ABSENT. Measured dead ends for that local layer: Legistar (needs a commercial licence, HTTP 500), the Socrata open-data catalog (0 datasets), and FERC eLibrary (no public endpoint). This is therefore a LOWER BOUND on opposition.",
+        "provenance": {
+          "source": "courtlistener",
+          "endpoint": "https://www.courtlistener.com/api/rest/v4/search/",
+          "as_of": "2026-09-26",
+          "retrieved_at": "2026-09-26T21:41:27Z"
+        }
+      },
+      "contribution": 1.6747286231194056
+    },
+    {
+      "id": "public_attention",
+      "label": "Public attention (Wikipedia pageviews for AI-bubble topics)",
+      "weight": 0.0,
+      "rationale": "PUBLIC ATTENTION to AI-bubble topics, measured as the change in daily English-Wikipedia pageviews for two tracked articles between the trailing 7 complete days and the 7 days before them. WEIGHT 0 BY DESIGN: this series CANNOT move the composite or the coverage fraction, because `score::composite` excludes weight-0 indicators from both. It is reported because it answers a question nothing else in the model answers — whether the public is LOOKING, as distinct from whether the press is hostile (gdelt tone) or whether organised opposition is filing (opposition_pressure). WHY IT IS NOT SCORED: pageviews are the noisiest available channel and the most prone to lagging, since people look a topic up after it becomes news. The sibling sentiment channel was formally tested and FAILED the lead/lag gate — its peak correlation sits at lag +7, meaning it trails price, and the observed peak of 0.221 falls below the 90th percentile of a 2000-shuffle empirical null (0.264), p = 0.36. Attention lags even more than tone, so the prior is that it would fail the same test; the gate has not been run against it, so the honest status is UNPROVEN rather than scored. WEEK-AGAINST-WEEK, NOT DAY-AGAINST-DAY: pageviews carry a strong weekly cycle, so the comparison uses a full week against a full week, which cancels the weekday pattern by construction. A series shorter than 14 days is REFUSED rather than partially compared, because 7 days against 3 would be dominated by whichever weekdays happened to be present — the same defect class as scoring a partial week as a complete one. MEASURED 2026-09-26: `AI_bubble` ran 1785 views/day at the start of the window and 1416 at the end. LIMITS, STATED: (1) the `all-access` aggregate includes automated traffic, and while this module requests the `user` path rather than `all-agents`, Wikimedia's classification is imperfect, so a bot surge would read as public interest; (2) two articles are a NARROW proxy for a broad theme, and the choice is itself a judgement; (3) Wikipedia is one of several places attention lands, and for a topic that is primarily discussed in financial media and on social platforms it may under-represent the attention that matters; (4) the series is normalised per-article, so it measures change in interest rather than the level of interest, and a topic that was already famous cannot show the same percentage growth as one that was not.",
+      "reading": {
+        "status": "scored",
+        "stress": 0.0,
+        "value": -10.00593945952367,
+        "unit": "pct change in daily pageviews, trailing 7 days vs the 7 before",
+        "detail": "PUBLIC ATTENTION, OBSERVED AND NOT SCORED — this indicator carries weight 0 and therefore CANNOT move the composite or the coverage fraction. BY ARTICLE: ai_bubble 1312 views/day vs 1817 the week before (-27.8%); artificial_intelligence 20055 views/day vs 18606 the week before (+7.8%). WHY IT IS NOT SCORED: pageviews lag, because people look a topic up after it becomes news. The sibling sentiment channel was tested against a pre-registered gate and FAILED it (peak correlation at lag +7, i.e. trailing price, with an empirical null p = 0.36), and attention lags more than tone does — but the gate has NOT been run against attention itself, so the honest status is UNPROVEN rather than scored. The comparison is a full week against the full week before it, which cancels the weekday cycle; a series shorter than 14 days is refused rather than partially compared. WHAT IT ADDS: the model already answers whether the press is hostile and whether opposition is filing. Neither answers whether the PUBLIC is looking, which is a different question and the one a reader is most likely to ask.",
+        "provenance": {
+          "source": "wikimedia-pageviews",
+          "endpoint": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article",
+          "as_of": "2026-09-26",
+          "retrieved_at": "2026-09-26T21:41:27Z"
+        }
+      }
     }
   ],
   "data_quality": {
-    "total_weight": 175.0,
-    "available_weight": 166.0,
-    "coverage": 0.9485714285714286,
+    "total_weight": 183.0,
+    "available_weight": 177.0,
+    "coverage": 0.9672131147540983,
     "unavailable": [
       {
-        "id": "primary_market_supply",
-        "label": "Primary-market supply (SEC registration statements)",
-        "weight": 9.0,
-        "reason": "SEC full-text search returned no S-1 registration count for the trailing year, so primary-market supply could not be measured"
+        "id": "grid_cancellations",
+        "label": "Abandoned generating capacity (grid pipeline)",
+        "weight": 6.0,
+        "reason": "EIA-860M planned/cancelled inventories unavailable: the workbook could not be retrieved or the sheets were not parseable"
       }
     ],
     "notes": [
@@ -991,9 +1142,9 @@
     },
     {
       "name": "eia-860m",
-      "status": "ok",
-      "ok_count": 2,
-      "failed_count": 0,
+      "status": "unavailable",
+      "ok_count": 0,
+      "failed_count": 1,
       "detail": "EIA-860M planned vs cancelled generating capacity (xlsx)"
     },
     {
@@ -1005,21 +1156,21 @@
     },
     {
       "name": "sec-edgar-fulltext",
-      "status": "unavailable",
-      "ok_count": 0,
-      "failed_count": 1,
+      "status": "ok",
+      "ok_count": 1,
+      "failed_count": 0,
       "detail": "S-1 registration count, trailing 1 year (primary-market supply)"
     }
   ],
-  "headline": "Composite bubble-stress 45.2/100 (mid phase) on 95% weighted coverage, high confidence. 166 of 175 weight available; 1 indicator(s) unavailable and contributing nothing.",
+  "headline": "Composite bubble-stress 40.2/100 (mid phase) on 97% weighted coverage, high confidence. 177 of 183 weight available; 1 indicator(s) unavailable and contributing nothing.",
   "caveats": [
-    "COMPARABILITY: this run has 95% weighted coverage. Because the composite is renormalized over available weight, a run with different coverage is NOT directly comparable to this one at the decimal level. Compare direction and the per-indicator stresses, or re-run with all sources healthy.",
+    "COMPARABILITY: this run has 97% weighted coverage. Because the composite is renormalized over available weight, a run with different coverage is NOT directly comparable to this one at the decimal level. Compare direction and the per-indicator stresses, or re-run with all sources healthy.",
     "PROXIES IN USE: valuation is price-stretch versus trend (no free earnings series); concentration and breadth use cap-weight versus equal-weight returns (not a free-float share). Issuance is no longer a proxy: it is computed from reported cash flows (cash raised from stock issuance minus cash paid to repurchase stock, over operating cash flow), which are available for every scored filer except AMZN, whose equity-issuance concept does not exist because it does not issue equity. Each indicator's row names its own limitation.",
     "NOT INDEPENDENT: `concentration` and `breadth` measure the same underlying quantity — equal-weight versus cap-weight performance — over different windows. Measured correlation is -0.70 at 12 months and -0.93 at 6 months, i.e. up to ~86% shared variance. Their combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count one phenomenon as two pieces of evidence. Do NOT read agreement between the two as corroboration.",
-    "METHODOLOGY VERSION 2.4. The tool records which version of the model produced each run, and refuses to compute a direction of travel across a version change: redefining an indicator changes what the composite MEANS, so a difference across such a change would report an accounting change as a market move. This version replaced the share-count issuance proxy with reported cash flows and added primary-market supply; runs recorded before it are preserved but cannot serve as baselines.",
+    "METHODOLOGY VERSION 2.5. The tool records which version of the model produced each run, and refuses to compute a direction of travel across a version change: redefining an indicator changes what the composite MEANS, so a difference across such a change would report an accounting change as a market move. This version replaced the share-count issuance proxy with reported cash flows and added primary-market supply; runs recorded before it are preserved but cannot serve as baselines.",
     "A CALM READING IS NOT EVIDENCE OF SAFETY. Bubbles are generally identifiable only in hindsight, and cheap credit or healthy breadth are consistent with both 'no bubble' and 'the quiet phase of one'. More generally: this tool reports the STATE of a set of indicators, and state extremity carries no timing information.",
     "CREDIT IS SCORED AS LEVEL, NOT COMPLACENCY. A wide spread reads as high stress and a tight one as low. Scoring tight spreads as the bubble signal is a defensible alternative (credit tightened into the dot-com peak) but is deliberately not used here: HY OAS has a ~3.0% median over the available record, so a level-based complacency score would read most of the last decade as a bubble — a near-constant with no timing value. The informative credit signal is the DIRECTION OF TRAVEL from a tight base. Measured effect of the alternative reading on this composite: 32.4 -> 44.2, i.e. early -> late.",
-    "DIRECTION OF TRAVEL NOT REPORTED: No eligible baseline run: the baseline is below the 0.9 day minimum elapsed gap — the configured minimum exists so that a re-run minutes or hours later cannot be presented as a trend, and the elapsed period is what makes a change interpretable. Measured from the recorded timestamps, not from the calendar dates, because two runs either side of midnight differ by a calendar day while being minutes apart [1 run(s): 11.5 hour(s) old]; baseline coverage differs by more than the 5.0pp tolerance — the difference would partly reflect WHICH SOURCES answered rather than a change in the market, so the two runs are not on the same scale [2 run(s): 100%]; the baseline was computed under an earlier methodology version — the composite means something different across that change, so the two are not comparable; the difference would be partly a MODEL change rather than a market move [59 run(s): 2.2, 2.1, 2.0, +10 more]. A direction of travel is deliberately NOT reported rather than computed against a run that is not comparable."
+    "DIRECTION OF TRAVEL NOT REPORTED: No eligible baseline run: the most recent archive entry is from today, below the 0.9 day minimum gap — a comparison against today would report 0.0 as though it measured market change, and the archive permits only one point per date [2 run(s): 2026-09-26]; the baseline was computed under an earlier methodology version — the composite means something different across that change, so the two are not comparable; the difference would be partly a MODEL change rather than a market move [64 run(s): 2.4, 2.2, 2.1, +11 more]. A direction of travel is deliberately NOT reported rather than computed against a run that is not comparable."
   ],
   "disclaimer": "This tool is a state descriptor, not a forecast and not investment advice. It measures where a set of published indicators currently sit relative to documented historical reference points, and it says so plainly when it cannot measure something. It has no ability to tell you if or when a market reversal will occur, and it should not be the sole basis for any financial decision."
 }
