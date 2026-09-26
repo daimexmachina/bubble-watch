@@ -46,4 +46,19 @@ fi
 "$BIN" report --out "$REPO/out" --name "ai-bubble-watch-$RUN_DATE" \
   --history-dir "$REPO/data/history" --no-record >/dev/null || true
 
+# ---------------------------------------------------------------- gap check ----
+#
+# A daily series with a hole in it fails SILENTLY: nothing errors, and `trend` spans
+# the gap as though the missing days never existed. On 2026-09-24 this host was off
+# across the 13:30 timer slot and `Persistent=true` did not fire a catch-up, so that
+# day vanished with no trace anywhere. This runs the check every day so a missed run
+# announces itself instead of being found by hand weeks later.
+#
+# It is a WARNING, not a failure: the run above may have succeeded perfectly, and a
+# non-zero exit here would mark a healthy unit as failed and hide the real signal.
+# Checked over 7 days, which is long enough to catch a one-day gap promptly.
+if ! "$BIN" doctor --history-dir "$REPO/data/history" --days 7; then
+  echo "WARNING: the archive has a gap. The run above may still have succeeded; see the list." >&2
+fi
+
 exit $rc
