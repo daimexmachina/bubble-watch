@@ -80,6 +80,31 @@ So the conclusion holds at daily, weekly and drawdown-level frequency: **the cou
 complex and the tech complex reprice together.** There is no measurable interval in which the
 financiers move first.
 
+## Replication: a second, independent implementation agrees
+
+The headline numbers were produced twice, by two implementations sharing no code path for the
+statistics or the shuffling (pure-Python `statistics.fmean` + `random.shuffle` versus numpy +
+`RNG.permutation`). Both peak at **k = 0** for every pair they cover, and the correlations agree
+to the precision the first run printed:
+
+| pair | peak lag | r (impl 1) | r (impl 2) | n |
+|---|---|---|---|---|
+| OWL → SPY | +0 / +0 | +0.562 | +0.562 | 1451 |
+| OWL → QQQ | +0 / +0 | +0.519 | +0.519 | 1451 |
+| OWL → NVDA | +0 / +0 | +0.390 | +0.390 | 1451 |
+| DLR → SPY | +0 / +0 | +0.532 | +0.532 | 1943 |
+| EQIX → QQQ | +0 / +0 | +0.529 | +0.529 | 1943 |
+| ARCC → SPY | +0 / +0 | +0.573 | +0.573 | 1943 |
+
+Also agreeing: `n` exactly, and the null's p90 to 0.001 or better on every shared pair.
+
+Two caveats, stated rather than glossed. The second implementation covered **6 of the 10 pairs**
+before it was terminated — it was the slow version superseded by the vectorized one — and the
+shuffle nulls are **not identical by construction**, since the two runs draw different permutations
+from differently-seeded generators. So this is corroboration of the point estimate and the lag
+structure, not a bit-for-bit reproduction. The published artifact remains
+`2026-09-26-bars/gate_results.json`, from the vectorized implementation, which covers all ten pairs.
+
 ## What this means for the user's story
 
 The story (Oracle force majeure → Project Jupiter → Blue Owl/Stack) reads as though the
