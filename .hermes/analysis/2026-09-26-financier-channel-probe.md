@@ -59,7 +59,12 @@ filers, and no indicator reads a price, spread or filing for a **lessor, private
 fund, or DC REIT**. The counterparty side — the parties who actually bear the loss — are
 not modelled at all.
 
-## 4. The counterparty leg is NOT currently fetchable (gate cannot run)
+## 4. The counterparty leg was NOT fetchable from Yahoo — a workaround was found
+
+> **SUPERSEDED 2026-09-26 (same day).** The gate was subsequently RUN using Nasdaq's keyless
+> historical endpoint. Result: **every pair peaks at k = 0 (same-day); nothing leads.** See
+> `2026-09-26-financier-lead-lag.md` for the verdict. This section is kept because the dead
+> ends and the diagnosis are still the reason the workaround exists.
 
 | attempt | result |
 |---|---|
@@ -72,7 +77,12 @@ every Yahoo symbol refused, so this is **Yahoo rate-limiting this host at the IP
 not a network failure and not a symbol problem. The tool has 5 cached Yahoo bodies
 (`SPY`, `RSP`, `^GSPC`, `^TNX`, `^VIX`) and none of them is financier-side.
 
-**Consequence: the proposed lead/lag gate on the financier channel CANNOT be run today.**
+**RESOLVED:** `api.nasdaq.com/api/quote/{sym}/historical?assetclass={stocks|etf}` answered
+**HTTP 200, keyless**, with 1,944 usable daily bars per symbol back to 2019 (OWL: 1,452 — it
+listed later). Ten series fetched. This is now the price source of record for this project
+and it should be tried FIRST next time Yahoo refuses, rather than after a backoff.
+
+**Original conclusion, now superseded: the proposed lead/lag gate CANNOT be run today.**
 It is blocked on a source, not on a design question. Re-probe before building — this is
 the third consecutive day Yahoo has refused bursts from this host.
 

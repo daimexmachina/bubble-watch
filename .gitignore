@@ -10,3 +10,11 @@
 # The generated site is a build artifact.
 /site
 .falsify-manifest
+
+# Raw third-party HTTP response bodies are scratch, not source. One recon pass once
+# staged ~22MB of scraped HTML into a public repo: it bloats it, can trip the secret-
+# shaped pre-push guard on false positives, and makes the repo a redistribution point
+# for content we do not own. The DERIVED findings (gate_results.json, ledger.jsonl) and
+# the written analysis stay tracked; the per-symbol payloads do not.
+.hermes/analysis/*-bars/*.json
+!.hermes/analysis/*-bars/gate_results.json
