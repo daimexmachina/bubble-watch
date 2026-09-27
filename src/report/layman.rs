@@ -26,6 +26,12 @@ pub struct LaymanSummary {
     /// Whether things are getting better or worse. This is the section that
     /// answers the question the credit indicators were always meant to answer.
     pub direction_of_travel: String,
+    /// Where the sub-questions DISAGREE. Present because the composite averages
+    /// questions whose answers can differ by tens of points, and the average hides
+    /// that. Empty when the spread is small (< 10 points), because a small spread
+    /// needs no explanation. See `Report::sub_scores`.
+    #[serde(default)]
+    pub the_questions_disagree: String,
     /// The permanent holes in the model, which do not depend on today's data.
     /// These are stated prominently rather than listed as data quality, because
     /// the most consequential one is a real blind spot rather than a failed
@@ -204,6 +210,62 @@ even where spending is stretched.",
         )
     };
 
+    // WHERE THE ANSWER DEPENDS ON THE QUESTION.
+    //
+    // This is the section that stops one blended number from hiding a real
+    // disagreement. The composite averages questions that can legitimately differ by
+    // tens of points, and it always has — but until now a reader saw only the average.
+    // Measured 2026-09-26: strain 53.3 vs pricing 25.2, blended to 40.2.
+    //
+    // States the SPLIT and names the highest and lowest, without asserting which one is
+    // right: the model does not know, and picking a winner would be the prior dressed
+    // as arithmetic.
+    let spread_paragraph = {
+        let scored_groups: Vec<(&crate::score::SubScore, &str, &str)> = r
+            .sub_scores
+            .iter()
+            .filter(|s| s.score.is_some() && s.weight > 0.0)
+            .filter_map(|s| {
+                r.sub_question_labels
+                    .iter()
+                    .find(|(k, _, _, _)| k == &s.key)
+                    .map(|(_, _, label, _)| (s, label.as_str(), ""))
+            })
+            .collect();
+        let mut ranked: Vec<(&crate::score::SubScore, &str)> =
+            scored_groups.iter().map(|(s, p, _)| (*s, *p)).collect();
+        ranked.sort_by(|a, b| {
+            let av = a.0.score.unwrap_or(0.0);
+            let bv = b.0.score.unwrap_or(0.0);
+            bv.partial_cmp(&av)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| a.0.key.cmp(&b.0.key))
+        });
+
+        if ranked.len() < 2 {
+            String::new()
+        } else {
+            let hi = ranked[0];
+            let lo = ranked[ranked.len() - 1];
+            let hi_v = hi.0.score.unwrap_or(0.0);
+            let lo_v = lo.0.score.unwrap_or(0.0);
+            let gap = hi_v - lo_v;
+            if gap < 10.0 {
+                String::new()
+            } else {
+                format!(
+                    "The questions do not agree with each other, and that is worth more than the \
+single score. The strongest answer comes from {} ({:.0} out of 100). The calmest comes from {} \
+({:.0} out of 100). That is a gap of about {:.0} points. The overall score of {:.0} is the two of \
+them averaged together. Read the gap, not just the average: it says the strain is showing up in \
+one part of the system and not in another, and this report cannot tell you which one will turn \
+out to have been right.",
+                    hi.1, hi_v, lo.1, lo_v, gap, r.composite
+                )
+            }
+        }
+    };
+
     // Blind spots: real gaps (excluding the permanent weight-0 declarations).
     let gaps: Vec<String> = r
         .data_quality
@@ -375,6 +437,7 @@ again on another day and a comparison will appear."
         what_we_cannot_measure,
         about_timing,
         direction_of_travel,
+        the_questions_disagree: spread_paragraph,
         known_blind_spots,
         bottom_line,
     }
@@ -427,6 +490,7 @@ mod tests {
                 },
             },
             contribution: None,
+            group: None,
         }
     }
 
@@ -447,6 +511,8 @@ mod tests {
             generated_at: "2026-09-17T00:00:00Z".into(),
             composite,
             coverage: 1.0,
+            sub_scores: vec![],
+            sub_question_labels: vec![],
             confidence: "high".into(),
             phase: "early".into(),
             phase_label: "Early".into(),
@@ -491,6 +557,7 @@ mod tests {
                 what_we_cannot_measure: String::new(),
                 about_timing: String::new(),
                 direction_of_travel: String::new(),
+                the_questions_disagree: String::new(),
                 known_blind_spots: String::new(),
                 bottom_line: String::new(),
             },

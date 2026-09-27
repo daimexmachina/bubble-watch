@@ -59,6 +59,34 @@ pub fn build_with_history(
     let (comp_opt, coverage) = crate::score::composite(&readings);
     crate::score::attribute(&mut readings);
 
+    // Sub-question scores. Computed from the SAME readings the composite uses, and
+    // deliberately NOT fed back into it — a test asserts the composite is byte-identical
+    // with and without them, exactly as it is for the trend.
+    //
+    // WHY THEY EXIST. A single number blends questions whose answers disagree, and the
+    // blend hides the disagreement. Measured 2026-09-26: strain 53.3 vs pricing 25.2,
+    // blended to 40.2. The strain block is the PRECONDITION for a bust and the pricing
+    // block is its REALISATION, so averaging them understates the precondition for
+    // exactly as long as the realisation has not arrived.
+    let sub_questions: Vec<(String, u32)> = cfg
+        .sub_question
+        .iter()
+        .map(|s| (s.key.clone(), s.order))
+        .collect();
+    let sub_scores = crate::score::sub_scores(&readings, &sub_questions);
+    let sub_question_labels: Vec<(String, String, String, String)> = cfg
+        .sub_question
+        .iter()
+        .map(|s| {
+            (
+                s.key.clone(),
+                s.plain.clone(),
+                s.label.clone(),
+                s.role.clone(),
+            )
+        })
+        .collect();
+
     let composite = comp_opt.unwrap_or(0.0);
     let confidence = crate::score::confidence(
         coverage,
@@ -366,6 +394,8 @@ pub fn build_with_history(
         composite,
         coverage,
         confidence: confidence.to_string(),
+        sub_scores,
+        sub_question_labels,
         phase: phase.id().to_string(),
         phase_label: phase.label().to_string(),
         phase_detail: phase.detail().to_string(),
@@ -377,6 +407,7 @@ pub fn build_with_history(
             what_we_cannot_measure: String::new(),
             about_timing: String::new(),
             direction_of_travel: String::new(),
+            the_questions_disagree: String::new(),
             known_blind_spots: String::new(),
             bottom_line: String::new(),
         },
@@ -444,6 +475,7 @@ mod tests {
                 },
             },
             contribution: None,
+            group: None,
         }
     }
 
@@ -457,6 +489,7 @@ mod tests {
                 reason: "down".into(),
             },
             contribution: None,
+            group: None,
         }
     }
 

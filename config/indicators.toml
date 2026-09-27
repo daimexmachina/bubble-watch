@@ -278,6 +278,7 @@ note = "Extremes in both analogs were reached only shortly before the peak, but 
 
 [[indicator]]
 id = "valuation_stretch"
+group = "pricing"
 label = "Equity valuation stretch"
 weight = 14.0
 unit = "pct deviation of S&P 500 from its 5-year log-linear trend"
@@ -287,6 +288,7 @@ anchors = [[-15.0, 5.0], [-5.0, 12.0], [0.0, 18.0], [10.0, 32.0], [20.0, 50.0], 
 
 [[indicator]]
 id = "concentration"
+group = "pricing"
 label = "Index concentration (cap vs equal weight)"
 # WEIGHT REDUCED 12.0 -> 6.0 at methodology 1.2. See the note below the anchors.
 weight = 6.0
@@ -328,6 +330,7 @@ anchors = [[-8.0, 8.0], [-3.0, 15.0], [0.0, 22.0], [5.0, 35.0], [10.0, 50.0], [2
 
 [[indicator]]
 id = "breadth"
+group = "pricing"
 label = "Market breadth"
 # WEIGHT REDUCED 10.0 -> 5.0 at methodology 1.2. See the note under `concentration`.
 weight = 5.0
@@ -338,6 +341,7 @@ anchors = [[-20.0, 93.0], [-10.0, 78.0], [-5.0, 58.0], [-2.0, 40.0], [0.0, 28.0]
 
 [[indicator]]
 id = "issuance"
+group = "pricing"
 label = "Net equity issuance / supply pressure"
 weight = 10.0
 unit = "pct, net equity issuance (cash raised minus cash paid to repurchase stock) divided by TTM operating cash flow"
@@ -374,6 +378,7 @@ anchors = [[-60.0, 5.0], [-40.0, 10.0], [-20.0, 18.0], [-5.0, 28.0], [0.0, 38.0]
 
 [[indicator]]
 id = "volatility"
+group = "pricing"
 label = "Volatility regime"
 weight = 8.0
 unit = "VIX index level"
@@ -383,6 +388,7 @@ anchors = [[10.0, 5.0], [14.0, 15.0], [18.0, 30.0], [22.0, 45.0], [28.0, 62.0], 
 
 [[indicator]]
 id = "credit_hy"
+group = "pricing"
 label = "US high-yield credit spreads"
 weight = 12.0
 unit = "pct, ICE BofA US High Yield option-adjusted spread"
@@ -393,6 +399,7 @@ anchors = [[2.0, 5.0], [2.8, 18.0], [3.5, 30.0], [5.0, 50.0], [7.0, 75.0], [10.0
 
 [[indicator]]
 id = "credit_ig"
+group = "pricing"
 label = "US investment-grade credit spreads"
 weight = 6.0
 unit = "pct, Moody's Baa corporate bond yield less the 10-year Treasury yield"
@@ -433,6 +440,7 @@ anchors = [[1.2, 4.0], [1.6, 14.0], [2.0, 26.0], [2.5, 42.0], [3.1, 60.0], [4.0,
 
 [[indicator]]
 id = "capex_vs_cashflow"
+group = "strain"
 label = "Hyperscaler capex vs operating cash flow"
 weight = 14.0
 unit = "ratio, TTM capex divided by TTM operating cash flow, five-hyperscaler cohort"
@@ -442,6 +450,7 @@ anchors = [[0.25, 5.0], [0.45, 18.0], [0.65, 35.0], [0.85, 52.0], [1.0, 68.0], [
 
 [[indicator]]
 id = "funding_gap"
+group = "strain"
 label = "Infrastructure spend vs revenue"
 weight = 8.0
 unit = "ratio, TTM capex divided by TTM revenue, five-hyperscaler cohort"
@@ -451,6 +460,7 @@ anchors = [[0.08, 8.0], [0.12, 25.0], [0.16, 42.0], [0.20, 58.0], [0.28, 78.0], 
 
 [[indicator]]
 id = "leverage"
+group = "strain"
 label = "Cohort leverage (debt + leases vs cash generation)"
 weight = 6.0
 unit = "ratio, (total long-term debt + operating leases) divided by TTM operating cash flow"
@@ -492,6 +502,7 @@ anchors = [[0.3, 5.0], [0.6, 14.0], [1.0, 28.0], [1.5, 48.0], [2.2, 70.0], [3.2,
 
 [[indicator]]
 id = "primary_market_supply"
+group = "pricing"
 label = "Primary-market supply (SEC registration statements)"
 weight = 9.0
 unit = "count of form S-1 registration statements filed in the trailing twelve months"
@@ -525,6 +536,7 @@ anchors = [[800.0, 4.0], [1500.0, 12.0], [2000.0, 22.0], [2600.0, 34.0], [3200.0
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "backlog_quality"
+group = "strain"
 label = "Backlog vs billed cash (RPO / deferred revenue)"
 weight = 7.0
 unit = "ratio, remaining performance obligation divided by contract liability (deferred revenue)"
@@ -563,6 +575,7 @@ anchors = [[2.0, 6.0], [5.0, 15.0], [10.0, 28.0], [18.0, 45.0], [28.0, 62.0], [4
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "private_credit_growth"
+group = "strain"
 label = "Private-credit lending growth (whole-economy channel)"
 weight = 6.0
 unit = "pct, year-over-year growth in private-credit loans outstanding"
@@ -602,6 +615,7 @@ anchors = [[-10.0, 5.0], [0.0, 15.0], [8.0, 32.0], [16.0, 50.0], [25.0, 68.0], [
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "datacenter_construction"
+group = "buildout"
 label = "Data-center construction spending (physical)"
 weight = 7.0
 unit = "pct, year-over-year growth in US data-center construction spending"
@@ -637,6 +651,7 @@ anchors = [[-15.0, 5.0], [0.0, 12.0], [10.0, 21.0], [25.0, 34.0], [40.0, 50.0], 
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "grid_cancellations"
+group = "buildout"
 label = "Abandoned generating capacity (grid pipeline)"
 weight = 6.0
 unit = "pct, cancelled or postponed capacity as a share of announced plus cancelled capacity"
@@ -674,6 +689,7 @@ anchors = [[5.0, 8.0], [12.0, 18.0], [20.0, 30.0], [30.0, 45.0], [40.0, 60.0], [
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "narrative_saturation"
+group = "opposition"
 label = "AI narrative saturation (SEC filing census)"
 weight = 5.0
 unit = "pct, annualised year-over-year change in 10-K filings mentioning artificial intelligence"
@@ -683,6 +699,7 @@ anchors = [[-25.0, 6.0], [0.0, 14.0], [20.0, 26.0], [40.0, 42.0], [60.0, 58.0], 
 
 [[indicator]]
 id = "foreign_interest"
+group = "strain"
 label = "Foreign ownership of US equities"
 weight = 5.0
 unit = "percentile of rest-of-world US corporate equity holdings within the series' own history"
@@ -758,6 +775,7 @@ anchors = [[5.0, 6.0], [25.0, 14.0], [50.0, 26.0], [70.0, 42.0], [85.0, 60.0], [
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "depreciation_subsidy"
+group = "strain"
 label = "Depreciation schedule extension (capital subsidy)"
 weight = 6.0
 unit = "percentage points the annual depreciation rate fell while the asset base grew"
@@ -797,6 +815,7 @@ anchors = [[0.0, 0.0], [0.5, 0.0], [1.0, 14.0], [2.0, 30.0], [3.5, 52.0], [5.0, 
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "frontier_premium"
+group = "demand"
 label = "Open-versus-closed capability premium (the moat)"
 weight = 6.0
 unit = "Elo points by which the best closed model leads the best open one (LOW = high stress)"
@@ -807,6 +826,7 @@ anchors = [[0.0, 92.0], [15.0, 80.0], [30.0, 62.0], [50.0, 42.0], [80.0, 26.0], 
 
 [[indicator]]
 id = "circularity"
+group = "strain"
 label = "Circular financing in the AI buildout (verified structures only)"
 # WAS 0.0 AS A DECLARED GAP. Raised to 6.0 at methodology 2.1, on evidence.
 #
@@ -885,6 +905,7 @@ anchors = [[0.0, 5.0], [25.0, 25.0], [45.0, 45.0], [60.0, 60.0], [80.0, 80.0], [
 # The level is a LOWER BOUND on total AI usage and its bias is toward CALM.
 [[indicator]]
 id = "inference_demand"
+group = "demand"
 label = "Measured AI inference demand (public token volume)"
 weight = 10.0
 unit = "pct change in weekly tokens over the longest available lag"
@@ -914,6 +935,7 @@ anchor_note = "SCORED ON PERCENTAGE CHANGE OVER THE LONGEST AVAILABLE LAG, WITH 
 # different kind. Both readings are real.
 [[indicator]]
 id = "energisation_delay"
+group = "buildout"
 label = "Interconnection queue time-to-energise (physical supply constraint)"
 weight = 7.0
 unit = "median months from interconnection request to commercial operation"
@@ -944,6 +966,7 @@ anchor_note = "SCORED ON THE MEASURED MEDIAN, WITH THE ANCHORS INVERTED. The ban
 # sitting modestly below neutral rather than being forced to an extreme.
 [[indicator]]
 id = "opposition_pressure"
+group = "opposition"
 label = "Opposition pressure (filed legal challenges to data-centre construction)"
 weight = 8.0
 unit = "pct change in filed dockets, trailing 365 days vs the 365 before"
@@ -979,6 +1002,7 @@ anchor_note = "SCORED ON THE YEAR-OVER-YEAR CHANGE IN FILING COUNT, ASCENDING, W
 # exactly zero.
 [[indicator]]
 id = "public_attention"
+group = "opposition"
 label = "Public attention (Wikipedia pageviews for AI-bubble topics)"
 weight = 0.0
 unit = "pct change in daily pageviews, trailing 7 days vs the 7 before"
@@ -989,3 +1013,78 @@ source = "wikipedia"
 anchors = []
 rationale = "PUBLIC ATTENTION to AI-bubble topics, measured as the change in daily English-Wikipedia pageviews for two tracked articles between the trailing 7 complete days and the 7 days before them. WEIGHT 0 BY DESIGN: this series CANNOT move the composite or the coverage fraction, because `score::composite` excludes weight-0 indicators from both. It is reported because it answers a question nothing else in the model answers — whether the public is LOOKING, as distinct from whether the press is hostile (gdelt tone) or whether organised opposition is filing (opposition_pressure). WHY IT IS NOT SCORED: pageviews are the noisiest available channel and the most prone to lagging, since people look a topic up after it becomes news. The sibling sentiment channel was formally tested and FAILED the lead/lag gate — its peak correlation sits at lag +7, meaning it trails price, and the observed peak of 0.221 falls below the 90th percentile of a 2000-shuffle empirical null (0.264), p = 0.36. Attention lags even more than tone, so the prior is that it would fail the same test; the gate has not been run against it, so the honest status is UNPROVEN rather than scored. WEEK-AGAINST-WEEK, NOT DAY-AGAINST-DAY: pageviews carry a strong weekly cycle, so the comparison uses a full week against a full week, which cancels the weekday pattern by construction. A series shorter than 14 days is REFUSED rather than partially compared, because 7 days against 3 would be dominated by whichever weekdays happened to be present — the same defect class as scoring a partial week as a complete one. MEASURED 2026-09-26: `AI_bubble` ran 1785 views/day at the start of the window and 1416 at the end. LIMITS, STATED: (1) the `all-access` aggregate includes automated traffic, and while this module requests the `user` path rather than `all-agents`, Wikimedia's classification is imperfect, so a bot surge would read as public interest; (2) two articles are a NARROW proxy for a broad theme, and the choice is itself a judgement; (3) Wikipedia is one of several places attention lands, and for a topic that is primarily discussed in financial media and on social platforms it may under-represent the attention that matters; (4) the series is normalised per-article, so it measures change in interest rather than the level of interest, and a topic that was already famous cannot show the same percentage growth as one that was not."
 anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY, AND NO ANCHOR IS EVER CONSULTED. This entry exists so the series is fetched, reported and rendered; it is arithmetically incapable of moving the composite or the coverage fraction. It is NOT a placeholder awaiting a scale: supplying anchors here would imply the series is scoreable and invite a later reader to simply raise the weight. If a future version wants to score attention, the pre-registered gate must be run FIRST — the sibling sentiment channel was tested that way and failed (peak at lag +7, p = 0.36), and attention lags more than tone does. A weight-0 entry that a reader might mistake for unfinished work is a smaller hazard than a scored series that trails the thing it claims to predict."
+
+# ---------------------------------------------------------------------------
+# THE QUESTIONS THIS MODEL ANSWERS
+#
+# Added 2026-09-26 because a single composite provably blends questions whose answers
+# disagree, and the blend was hiding the disagreement. Measured on that date:
+#
+#     spending / balance-sheet strain   53.3   (weight 78)
+#     physical buildout                 58.6   (weight 20)
+#     market pricing                    25.2   (weight 70)
+#     demand reality                    39.1   (weight 16)
+#     opposition                        43.2   (weight 13)
+#     BLENDED -> the composite           40.2   (weight 177)
+#
+# THE POINT IS NOT THAT 40 IS WRONG. It is that these indicators do not measure one
+# quantity that should be averaged. `strain` is the PRECONDITION for a bust; `pricing`
+# is its REALISATION. Averaging a cause with its own downstream effect guarantees that
+# a clearly-present precondition reads as "middle range" for exactly as long as the
+# realisation has not happened — and the realisation is, by construction, the LAST
+# thing to arrive. So the blend systematically understates the precondition, not
+# through any mis-set number but through its structure.
+#
+# THE SUB-SCORES DO NOT FEED BACK INTO THE COMPOSITE. The composite is byte-identical
+# with and without them, exactly as the trend is, and a test asserts it. They are a
+# second view of the same readings, not a second input to the same number.
+#
+# WHY `strain` AND `buildout` ARE SEPARATE rather than one "spending" group: they fail
+# differently. `strain` measures whether the FINANCING is sustainable; `buildout`
+# measures whether the PHYSICAL thing is arriving and at what delay. A buildout that
+# slips is an operational fact; a financing that turns fragile is the bubble mechanism.
+# Merging them would average a cost overrun with a solvency question.
+#
+# `order` controls report order and must be unique.
+# ---------------------------------------------------------------------------
+
+[[sub_question]]
+key = "strain"
+label = "Spending & balance-sheet strain"
+order = 1
+role = "THE PRECONDITION. Whether the spending is funded in a way that survives a slowdown: how far capex outruns cash flow, how much is debt-financed, how much of the demand is circular, and whether booked backlog converts to billed cash. This is the mechanism a bubble forms through."
+plain = "Is the money being spent on AI being spent in a way that can survive a slowdown?"
+rationale = "Read this FIRST when asking whether the boom is fragile, because it is the question the fragility actually lives in."
+
+[[sub_question]]
+key = "buildout"
+label = "Physical buildout"
+order = 2
+role = "THE PHYSICAL FACT. Whether the capacity is actually arriving: construction spend growth, how long a power project waits to energise, and how much announced generating capacity was abandoned. Operational rather than financial."
+plain = "Is the physical thing actually getting built, and how long is it waiting?"
+rationale = "A slipping buildout is an operational fact and can be either bullish (demand outrunning supply) or bearish (the plan failing). It does not on its own decide direction."
+
+[[sub_question]]
+key = "pricing"
+label = "Market pricing"
+order = 3
+role = "THE REALISATION. Whether any of it has been repriced yet: valuation stretch, volatility, credit spreads, issuance appetite, market breadth and concentration. These are the indicators that MOVE when the turn comes, which is exactly why they read calmly until it does."
+plain = "Has the stock market started to act as though this is a problem?"
+rationale = "Read this as the CONFIRMATION leg, not the warning leg. It being calm is not evidence of safety; it is what being early looks like."
+
+[[sub_question]]
+key = "demand"
+label = "Demand reality"
+order = 4
+role = "THE JUSTIFICATION. Whether the capacity being financed is actually being used: token volume growth and the open-versus-closed capability premium. The only group whose evidence can argue AGAINST the bubble thesis."
+plain = "Is the AI actually being used enough to justify the spending?"
+rationale = "Deliberately included even though it cuts against the thesis. A model that only contains indicators agreeing with itself is not measuring anything."
+
+[[sub_question]]
+key = "opposition"
+label = "Opposition & attention"
+order = 5
+role = "THE RESISTANCE. Whether the buildout is being fought: filed legal challenges, how saturated the public narrative is, and how much public attention the topic draws. Attention is reported at weight 0 and never scored."
+plain = "Is anyone fighting the buildout, and how loud is the public conversation about it?"
+rationale = "A docket is a recorded event and can be scored; salience is a transmission channel and is not. The split is visible in the weights."
+

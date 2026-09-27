@@ -480,6 +480,11 @@ pub struct IndicatorReading {
     /// `None` when the indicator is unavailable or has zero weight.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contribution: Option<f64>,
+    /// Which sub-question this indicator answers. Carried on the reading so the
+    /// sub-scores are computed from the same structs the composite uses, rather than
+    /// from a parallel lookup that could drift out of sync with it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -650,6 +655,19 @@ pub struct Report {
     pub composite: f64,
     pub coverage: f64,
     pub confidence: String,
+    /// The same readings scored SEPARATELY by the question they answer.
+    ///
+    /// CONTEXT ONLY — never an input to the composite, which is byte-identical with
+    /// and without this field. Present because one number provably blends questions
+    /// whose answers disagree (strain 53.3 vs pricing 25.2 on 2026-09-26, blended to
+    /// 40.2), and the blend hides a real disagreement that a reader needs to see.
+    #[serde(default)]
+    pub sub_scores: Vec<crate::score::SubScore>,
+    /// Plain-English label for each sub-question, carried so the layman summary can
+    /// name them without a second config lookup that could disagree with the scores.
+    /// Tuple: (key, plain, label, role).
+    #[serde(default)]
+    pub sub_question_labels: Vec<(String, String, String, String)>,
     pub phase: String,
     pub phase_label: String,
     pub phase_detail: String,

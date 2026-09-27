@@ -763,6 +763,7 @@ mod tests {
                 },
             },
             contribution: None,
+            group: None,
         }
     }
 
@@ -1194,6 +1195,7 @@ mod tests {
                 reason: "down".into(),
             },
             contribution: None,
+            group: None,
         };
         let p = point_from(
             &[scored("a", 10.0, 42.0), gap],

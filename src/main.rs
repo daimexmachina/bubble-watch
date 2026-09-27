@@ -776,6 +776,10 @@ fn print_human(r: &bubble_watch::model::Report) {
     println!();
     println!("{}", wrap(&r.layman.what_is_calm, 72));
     println!();
+    if !r.layman.the_questions_disagree.is_empty() {
+        println!("{}", wrap(&r.layman.the_questions_disagree, 72));
+        println!();
+    }
     println!("{}", wrap(&r.layman.what_we_cannot_measure, 72));
     println!();
     println!("{}", wrap(&r.layman.about_timing, 72));
@@ -799,6 +803,41 @@ fn print_human(r: &bubble_watch::model::Report) {
     );
     println!("{}", "-".repeat(72));
     println!("{}", r.phase_label);
+    // The sub-questions, as a table. Placed in DETAIL rather than the summary because
+    // the summary already states the disagreement in prose; this is the exact
+    // arithmetic behind it, with each group's own coverage shown.
+    if !r.sub_scores.is_empty() {
+        println!();
+        println!("BY QUESTION (each scored separately over its own available weight)");
+        for s in &r.sub_scores {
+            let label = r
+                .sub_question_labels
+                .iter()
+                .find(|(k, _, _, _)| k == &s.key)
+                .map(|(_, _, l, _)| l.as_str())
+                .unwrap_or(s.key.as_str());
+            let val = match s.score {
+                Some(v) => format!("{:.1}", v),
+                None => "NOT MEASURED".to_string(),
+            };
+            println!(
+                "  {:<34} {:>12}   weight {:.0}  {}/{} measured  coverage {:.0}%",
+                label,
+                val,
+                s.weight,
+                s.measured,
+                s.total,
+                s.coverage * 100.0
+            );
+        }
+        println!();
+        println!(
+            "  These do NOT feed back into the composite ({:.1}) — the composite is",
+            r.composite
+        );
+        println!("  byte-identical with and without them. They are the same readings,");
+        println!("  scored per question instead of blended into one number.");
+    }
 
     // Declared judgment. Printed after the falsifiers: the reader has seen what would
     // disprove the thesis, and now sees what the tool DOES NOT claim to measure.

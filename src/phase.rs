@@ -235,6 +235,7 @@ mod tests {
                 },
             ],
             indicator: vec![],
+            sub_question: vec![],
         }
     }
 

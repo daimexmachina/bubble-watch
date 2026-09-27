@@ -58,6 +58,7 @@ pub fn evaluate_one(ctx: &Ctx, ic: &IndicatorCfg) -> IndicatorReading {
         rationale: ic.rationale.clone(),
         reading,
         contribution: None,
+        group: ic.group.clone(),
     }
 }
 

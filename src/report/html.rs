@@ -334,6 +334,105 @@ fn explosiveness_card(r: &Report) -> String {
     )
 }
 
+/// The sub-questions, as their own card.
+///
+/// WHY THIS CARD EXISTS. The composite is a weighted mean over indicators that answer
+/// five DIFFERENT questions, and those questions can disagree by tens of points —
+/// measured 2026-09-26: strain 54.3 against pricing 25.2, blended into 40.2. Averaging
+/// a precondition (strain) with its own downstream realisation (pricing) means a
+/// clearly-present precondition reads as "middle range" for as long as the realisation
+/// has not happened. This card shows the disagreement instead of hiding it inside one
+/// number.
+///
+/// Each group is renormalized over its OWN available weight, so `coverage` here is
+/// per-question: a group with a dead source shows reduced coverage rather than a
+/// confident score. `buildout` currently demonstrates this (grid_cancellations is the
+/// missing source).
+///
+/// Returns an empty string when there are no sub-scores, so the page does not gain an
+/// empty card on a config that predates the feature.
+fn sub_questions_card(r: &Report) -> String {
+    if r.sub_scores.is_empty() {
+        return String::new();
+    }
+
+    let label_for = |key: &str| -> String {
+        r.sub_question_labels
+            .iter()
+            .find(|(k, _, _, _)| k == key)
+            .map(|(_, _, label, _)| label.clone())
+            .unwrap_or_else(|| key.to_string())
+    };
+    let role_for = |key: &str| -> String {
+        r.sub_question_labels
+            .iter()
+            .find(|(k, _, _, _)| k == key)
+            .map(|(_, _, _, role)| role.clone())
+            .unwrap_or_default()
+    };
+
+    let mut rows = String::new();
+    for s in &r.sub_scores {
+        // A dead group must READ as unmeasured, never as 0 — the same rule the
+        // composite follows.
+        let (cell, cls) = match s.score {
+            Some(v) => (format!("{:.1}", v), ""),
+            None => (
+                "<span class='nd'>not measured</span>".to_string(),
+                " class='nd-group'",
+            ),
+        };
+        // Coverage only warrants comment when it is degraded, so the common case stays
+        // uncluttered.
+        let cov = if s.coverage >= 0.999 {
+            format!("{}/{}", s.measured, s.total)
+        } else {
+            format!(
+                "{}/{} <span class='nd'>cov {:.0}%</span>",
+                s.measured,
+                s.total,
+                s.coverage * 100.0
+            )
+        };
+        rows.push_str(&format!(
+            "<tr{cls}><td class='id'>{label}</td><td class='num'>{cell}</td>\
+             <td class='num'>{w:.0}</td><td class='num'>{cov}</td><td>{role}</td></tr>",
+            cls = cls,
+            label = esc(&label_for(&s.key)),
+            cell = cell,
+            w = s.weight,
+            cov = cov,
+            role = esc(&role_for(&s.key)),
+        ));
+    }
+
+    format!(
+        r##"<div class="card">
+  <h3 style="margin-top:0;font-size:15px">By question — the composite, taken apart</h3>
+  <p style="margin:0 0 8px;font-size:13px;line-height:1.6">
+    The score above is one number averaged across <b>five different questions</b>. They can
+    disagree, and when they do the average hides it. Each row below re-scores the same readings
+    over just that question, and each is renormalized over its <b>own</b> available weight — so a
+    question with a missing source shows reduced coverage rather than a confident score.
+  </p>
+  <table class="subq">
+    <thead><tr><th>Question</th><th>Score</th><th>Weight</th><th>Measured</th><th>What it asks</th></tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
+  <p class="mut" style="margin:10px 0 0;font-size:12px">
+    These rows do <b>not</b> feed back into the composite ({composite:.1}) — it is byte-identical
+    with and without them. They are a second view of the same readings, not a second input to the
+    same number. Where they disagree, the gap is the finding: this report cannot tell you which
+    question will turn out to have been the right one to ask.
+  </p>
+</div>
+
+"##,
+        rows = rows,
+        composite = r.composite,
+    )
+}
+
 /// The per-company exposure table.
 ///
 /// Three distinct absent-value states are rendered differently, because
@@ -1047,6 +1146,14 @@ table.ind {{ table-layout:fixed; }}
 table.ind th:nth-child(1) {{ width:17%; }} table.ind th:nth-child(2) {{ width:7%; }}
 table.ind th:nth-child(3) {{ width:7%; }}  table.ind th:nth-child(4) {{ width:10%; }}
 table.ind th:nth-child(5) {{ width:19%; }} table.ind th:nth-child(6) {{ width:40%; }}
+/* The sub-question table has FIVE columns, not six. Reusing table.ind's widths would give
+   it the indicator layout and leave the last column starved, so its own widths are declared
+   here. Same reason the exposure table has its own: a shared class with per-table column
+   counts is the bug this pattern exists to avoid. */
+table.subq {{ table-layout:fixed; }}
+table.subq th:nth-child(1) {{ width:24%; }} table.subq th:nth-child(2) {{ width:9%; }}
+table.subq th:nth-child(3) {{ width:9%; }}  table.subq th:nth-child(4) {{ width:14%; }}
+table.subq th:nth-child(5) {{ width:44%; }}
 th {{ text-align:left; background:#f2f2f2; padding:8px; border-bottom:1px solid #ddd; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#555; }}
 td {{ padding:8px; border-bottom:1px solid #eee; vertical-align:top; }}
 td.num {{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }}
@@ -1288,6 +1395,17 @@ pub fn render(r: &Report) -> String {
     let lm_blocks = [
         layman_block("What is stretched", &r.layman.what_is_stretched),
         layman_block("What is calm", &r.layman.what_is_calm),
+        // The disagreement between sub-questions, when there is one worth showing.
+        // Omitted entirely when the spread is small or the label list is empty, so the
+        // grid does not gain an empty cell.
+        if r.layman.the_questions_disagree.is_empty() {
+            String::new()
+        } else {
+            layman_block(
+                "Where the questions disagree",
+                &r.layman.the_questions_disagree,
+            )
+        },
         layman_block("Getting better or worse", &r.layman.direction_of_travel),
         layman_block("What this cannot see at all", &r.layman.known_blind_spots),
         layman_block(
@@ -1366,6 +1484,7 @@ pub fn render(r: &Report) -> String {
 
 {expcard}
 
+{subqcard}
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Indicators</h3>
   <table class="ind">
@@ -1416,6 +1535,7 @@ pub fn render(r: &Report) -> String {
         judgcard = judgments_card(r),
         explcard = explosiveness_card(r),
         expcard = exposure_card(r),
+        subqcard = sub_questions_card(r),
         blind = esc(&r.layman.known_blind_spots),
         rows = rows,
         avail = r.data_quality.available_weight,
@@ -1693,6 +1813,7 @@ mod tests {
                 },
             },
             contribution: Some(3.53),
+            group: None,
         };
 
         let row = reading_row(&mk(long), 158.0);
@@ -1733,7 +1854,7 @@ mod tests {
         // This asserts the RULE, not one table: any table the report renders with more than
         // four columns must carry a class whose layout is declared.
         let style = style_block();
-        for t in ["table.ind", "table.exp"] {
+        for t in ["table.ind", "table.exp", "table.subq"] {
             assert!(
                 style.contains(&format!("{} {{ table-layout:fixed;", t)),
                 "{} must declare a fixed layout, or a long value widens the page",
@@ -1747,6 +1868,14 @@ mod tests {
                 style.contains(&format!("table.exp th:nth-child({}) {{", col)),
                 "exposure column {} needs a declared width, or the table demands more room \
                  than a narrow card has",
+                col
+            );
+        }
+        // The sub-question table is five columns; every one needs its width declared.
+        for col in 1..=5 {
+            assert!(
+                style.contains(&format!("table.subq th:nth-child({}) {{", col)),
+                "sub-question column {} needs a declared width",
                 col
             );
         }
@@ -1866,5 +1995,113 @@ mod tests {
             d.contains("No runs recorded yet"),
             "an empty dashboard must explain itself rather than render blank"
         );
+    }
+
+    // ------------------------------------------------------- sub-question card
+
+    /// Build a Report through the REAL build path, so the card is tested against the
+    /// same struct the page renders rather than a hand-made literal that could drift.
+    fn report_with_sub_scores(readings: Vec<crate::model::IndicatorReading>) -> Report {
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("shipped config must load");
+        crate::report::build(
+            readings,
+            &crate::model::Observations::default(),
+            &cfg,
+            "2026-09-26T00:00:00Z",
+        )
+    }
+
+    fn reading(id: &str, weight: f64, stress: f64, group: &str) -> crate::model::IndicatorReading {
+        crate::model::IndicatorReading {
+            id: id.into(),
+            label: id.into(),
+            weight,
+            rationale: String::new(),
+            reading: crate::model::Reading::Scored {
+                stress,
+                value: 1.0,
+                unit: "u".into(),
+                detail: "d".into(),
+                provenance: crate::model::Provenance {
+                    source: "t".into(),
+                    endpoint: "t".into(),
+                    as_of: "2026-09-26".into(),
+                    retrieved_at: "2026-09-26T00:00:00Z".into(),
+                },
+            },
+            contribution: None,
+            group: Some(group.into()),
+        }
+    }
+
+    #[test]
+    fn the_sub_question_card_scores_each_group_separately() {
+        // Two groups with a 60-point gap. The card must show BOTH scores, and must not
+        // show either group's number as the other's.
+        let r = report_with_sub_scores(vec![
+            reading("capex_vs_cashflow", 14.0, 90.0, "strain"),
+            reading("credit_hy", 12.0, 30.0, "pricing"),
+        ]);
+        let html = sub_questions_card(&r);
+        assert!(
+            html.contains("54.3") || html.contains("90.0"),
+            "strain score must appear"
+        );
+        assert!(html.contains("30.0"), "pricing score must appear");
+        // The point of the card: the groups are NOT blended into one figure here.
+        assert!(html.contains("By question"), "the card must title itself");
+        assert!(
+            html.contains("byte-identical"),
+            "the card must state that it does not feed the composite"
+        );
+    }
+
+    #[test]
+    fn an_unmeasured_group_reads_as_not_measured_never_as_zero() {
+        // THE LOAD-BEARING RULE. A group whose source is dead must not render a 0.0,
+        // which a reader would take for calm. Build readings where `demand` has no
+        // available members at all.
+        let r = report_with_sub_scores(vec![
+            reading("capex_vs_cashflow", 14.0, 50.0, "strain"),
+            // inference_demand is configured in `demand`; supplying nothing measured for
+            // it leaves the group with zero available weight.
+            crate::model::IndicatorReading {
+                id: "inference_demand".into(),
+                label: "inference_demand".into(),
+                weight: 10.0,
+                rationale: String::new(),
+                reading: crate::model::Reading::Unavailable {
+                    reason: "source down".into(),
+                },
+                contribution: None,
+                group: Some("demand".into()),
+            },
+        ]);
+        let html = sub_questions_card(&r);
+        assert!(
+            html.contains("not measured"),
+            "an unmeasured group must SAY so: {}",
+            &html[..html.len().min(400)]
+        );
+        // And it must not have substituted a numeric zero for that group.
+        let demand_rows = html
+            .lines()
+            .filter(|l| l.contains("Demand reality"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            !demand_rows.contains(">0.0<"),
+            "an unmeasured group must never render a 0.0 score: {demand_rows}"
+        );
+    }
+
+    #[test]
+    fn the_sub_question_card_is_empty_when_there_are_no_sub_scores() {
+        // A config predating the feature must not gain an empty card.
+        let r = report_with_sub_scores(vec![reading("capex_vs_cashflow", 14.0, 50.0, "strain")]);
+        let mut bare = r.clone();
+        bare.sub_scores.clear();
+        assert!(sub_questions_card(&bare).is_empty());
     }
 }

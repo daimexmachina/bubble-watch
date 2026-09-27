@@ -18,3 +18,11 @@
 # the written analysis stay tracked; the per-symbol payloads do not.
 .hermes/analysis/*-bars/*.json
 !.hermes/analysis/*-bars/gate_results.json
+
+# A report at the repo ROOT is a run snapshot, not source. The real output path is
+# /out (already ignored) and the dated copies go to the archive directory. These two
+# were swept in by a `git add -A` and nothing reads them: they would otherwise churn
+# on every run and grow the repository daily, which is exactly why /data/history is
+# ignored. Kept ignored rather than deleted so a local `report` run still works.
+/bubble-report.html
+/bubble-report.json

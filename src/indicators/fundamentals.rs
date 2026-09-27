@@ -2548,6 +2548,13 @@ mod tests {
                 caveat: String::new(),
             },
             analog_band: vec![],
+            sub_question: vec![SubQuestionCfg {
+                key: "strain".into(),
+                label: "S".into(),
+                role: "r".into(),
+                plain: "p".into(),
+                order: 1,
+            }],
             indicator: vec![IndicatorCfg {
                 id: "capex_vs_cashflow".into(),
                 label: "X".into(),
@@ -2556,6 +2563,7 @@ mod tests {
                 source: "edgar".into(),
                 rationale: String::new(),
                 anchors: vec![[0.0, 0.0], [2.0, 100.0]],
+                group: Some("strain".into()),
                 fred_series: None,
             }],
         };

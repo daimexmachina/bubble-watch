@@ -173,7 +173,7 @@ PY
         ok "guard IS falsifiable — the named test failed when broken"
         printf '%s' "$out" | grep -E 'panicked at' | head -2 | sed 's/^/      /' || true
     else
-        printf '\033[33mNOTE\033[0m the test ran ($ran test(s)) and still PASSED with the guard broken.\n'
+        printf '\033[33mNOTE\033[0m the test ran (%s test(s)) and still PASSED with the guard broken.\n' "$ran"
         info "That means this test does not exercise the mutated path — the guard's"
         info "real check is elsewhere, or the test is calibrated to the wrong mechanism."
     fi

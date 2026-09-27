@@ -292,9 +292,17 @@ mod tests {
                 caveat: String::new(),
             },
             analog_band: vec![],
+            sub_question: vec![SubQuestionCfg {
+                key: "pricing".into(),
+                label: "P".into(),
+                role: "r".into(),
+                plain: "p".into(),
+                order: 1,
+            }],
             indicator: vec![
                 IndicatorCfg {
                     id: "credit_hy".into(),
+                    group: Some("pricing".into()),
                     label: "HY".into(),
                     weight: 12.0,
                     unit: "pct".into(),
@@ -319,6 +327,7 @@ mod tests {
                     source: "fred".into(),
                     rationale: String::new(),
                     anchors: vec![[0.5, 8.0], [0.8, 20.0], [1.5, 55.0]],
+                    group: Some("pricing".into()),
                     fred_series: Some("BAMLC0A0CM".into()),
                 },
             ],
