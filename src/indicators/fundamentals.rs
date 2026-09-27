@@ -1102,10 +1102,24 @@ impl Indicator for GridCancellations {
             }
         };
         let Some(raw) = ctx.obs.eia_ratio.as_deref() else {
+            // Name the ACTUAL failure. The previous text ("the workbook could not be
+            // retrieved or the sheets were not parseable") covered both a network fault
+            // and a parse fault while stating neither, so a reader could not tell
+            // "EIA is down" (wait) from "our URL is stale" (fix it). On 2026-09-26 the
+            // answer was the latter and the message hid it for two days. The resolver
+            // now reports which candidates it tried and why each was rejected.
+            let detail = ctx
+                .obs
+                .failures
+                .iter()
+                .find(|f| f.source == "eia-860m")
+                .map(|f| f.reason.as_str())
+                .unwrap_or("no EIA-860M fetch was attempted this run");
             return Reading::Unavailable {
-                reason: "EIA-860M planned/cancelled inventories unavailable: the workbook could \
-                         not be retrieved or the sheets were not parseable"
-                    .into(),
+                reason: format!(
+                    "EIA-860M planned/cancelled inventories unavailable: {}",
+                    detail
+                ),
             };
         };
         let Ok(ratio) = raw.parse::<f64>() else {
@@ -1131,7 +1145,11 @@ impl Indicator for GridCancellations {
             .map(|s| s.provenance.clone())
             .unwrap_or(crate::model::Provenance {
                 source: "eia-860m".into(),
-                endpoint: super::super::sources::eia::URL.into(),
+                // The vintage is resolved at fetch time, so the fallback names the
+                // directory pattern rather than a fixed month. Naming a specific month
+                // here would be a stale claim: this const previously read
+                // `.../xls/july_generator2026.xlsx` and the resolver had already moved on.
+                endpoint: super::super::sources::eia::archive_url_dir().into(),
                 as_of: String::new(),
                 retrieved_at: crate::now_iso8601(),
             });

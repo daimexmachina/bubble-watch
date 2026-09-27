@@ -210,7 +210,10 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }
         Err(e) => obs.failures.push(SourceFailure {
             source: "eia-860m".into(),
-            endpoint: format!("{} :: Planned / Canceled or Postponed", eia::URL),
+            endpoint: format!(
+                "{} :: Planned / Canceled or Postponed (vintage resolved at fetch time)",
+                eia::archive_url_dir()
+            ),
             reason: e,
         }),
     }
