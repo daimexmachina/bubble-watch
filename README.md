@@ -565,6 +565,36 @@ scoring path stays deterministic and testable offline.
   it. It propagates the tool's exit codes, so a degraded run shows up as a failed unit rather than a
   silent success.
 
+## The reading queue (Jev-ranked)
+
+`circular` finds the disclosure edges, but only the handful carrying a `verified_passage` have
+been read by a human, and an unread edge scores **zero** — the rubric says so, and says it biases
+the composite toward CALM. Reading is therefore the bottleneck, not measurement.
+
+`scripts/reading_queue.py` produces a **reading order** for those unread edges using
+[Jev / TypeSafe System One](https://docs.typesafe.ai) as the judgment layer. It ranks; it never
+classifies, and it never writes anything into the composite. Findings still come from a human
+opening the filing.
+
+```bash
+python3 scripts/reading_queue.py --strict --out site     # rank, validate, write artifacts
+```
+
+- **Validated every run.** 13 edges a human confirmed as real structures and 1 they confirmed as a
+  refutation are always included regardless of `--limit`. If the refutation is not ranked below
+  every real structure, the run fails loudly (exit 3 under `--strict`) — a queue that floats a
+  known false positive is worse than no queue.
+- **Tier, not order.** Run-to-run variance is ±0.02, which reshuffles everything in the
+  0.76–0.99 band. Read the tier; treat the ordering inside it as noise.
+- **`kind` is not published.** The fine-grained label is written to the diagnostic CSV only,
+  never the HTML: measured mean confidence was 0.71, as low as 0.22.
+- Cost is trivial (~64k input tokens for 65 edges, ~14s); the binding constraint remains the
+  human read. It reuses the tool's own EDGAR response cache, reproducing its filename hash and URL
+  encoding, so the normal path makes no extra search requests.
+- Scheduled by `bubble-watch-reading-queue.timer` (14:15 local, after the refresh).
+
+Design notes and the two silent failures found while wiring it: `.hermes/analysis/2026-09-29-circular-reading-queue.md`.
+
 ## License
 
 MIT.

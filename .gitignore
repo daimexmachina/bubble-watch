@@ -1,6 +1,7 @@
 /target
 /out
 /data/cache
+/data/doc-cache
 *.log
 
 # The run archive is generated state, not source. It is reproduced by running

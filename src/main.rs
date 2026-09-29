@@ -76,12 +76,22 @@ enum Cmd {
         /// Search window start (YYYY-MM-DD).
         #[arg(long, default_value = "2024-01-01")]
         start: String,
-        /// Search window end (YYYY-MM-DD).
-        #[arg(long, default_value = "2026-09-20")]
+        /// Search window end (YYYY-MM-DD). Defaults to TODAY, not a fixed date.
+        ///
+        /// A pinned default silently freezes the scan: every later run re-reads the same
+        /// window and cannot see a new disclosure, while still looking successful.
+        #[arg(long, default_value = "")]
         end: String,
         /// Pause between requests, in milliseconds. EDGAR rate-limits.
         #[arg(long, default_value_t = 200)]
         pause_ms: u64,
+        /// Emit the full `ScanResult` as JSON instead of the human table.
+        ///
+        /// Exists so downstream tooling (the Jev reading-queue ranker) consumes a
+        /// stable typed contract rather than screen-scraping a formatted table.
+        /// The scan itself is unchanged; only the rendering differs.
+        #[arg(long)]
+        json: bool,
     },
     /// Survey FUND holdings of private AI companies from NPORT-P filings. Networked.
     ///
@@ -302,9 +312,30 @@ fn run(cli: &Cli) -> Result<(), String> {
             start,
             end,
             pause_ms,
+            json,
         } => {
             let fetcher = bubble_watch::http::Fetcher::new(cli.offline, cache.clone());
-            let res = bubble_watch::sources::circularity::scan(&fetcher, start, end, *pause_ms);
+            // A FROZEN WINDOW IS A SILENT FAILURE. This used to default to a hardcoded
+            // 2026-09-20, so every future run would re-read the same filings and never see
+            // a disclosure published after that date -- with no error and no visibly
+            // different output, because the old edges keep matching. The window end
+            // therefore tracks today unless it is pinned explicitly.
+            let end = if end.is_empty() {
+                bubble_watch::now_date()
+            } else {
+                end.clone()
+            };
+            let res = bubble_watch::sources::circularity::scan(&fetcher, start, &end, *pause_ms);
+            // Machine-readable mode first: consumers get the typed ScanResult, including
+            // the `silent` and `errors` fields, so a coverage gap cannot be silently
+            // dropped by a downstream reader that only looks at `edges`.
+            if *json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&res).map_err(|e| e.to_string())?
+                );
+                return Ok(());
+            }
             println!("CIRCULAR-FINANCING DISCLOSURE SCAN");
             println!("{}", "=".repeat(72));
             println!(
