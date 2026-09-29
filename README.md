@@ -584,8 +584,11 @@ python3 scripts/reading_queue.py --strict --out site     # rank, validate, write
   refutation are always included regardless of `--limit`. If the refutation is not ranked below
   every real structure, the run fails loudly (exit 3 under `--strict`) — a queue that floats a
   known false positive is worse than no queue.
-- **Tier, not order.** Run-to-run variance is ±0.02, which reshuffles everything in the
-  0.76–0.99 band. Read the tier; treat the ordering inside it as noise.
+- **Tier, not order — and the boundary is soft.** Run-to-run variance is larger than a mean
+  figure suggests: the lab's mean |Δ| was ±0.02, but one edge here (`APLD x Tesla`) scored
+  0.55–0.76 across five runs of identical code, so the tier is 15 or 16 edges depending on the
+  run. Everything ≥0.9 is stable; the 0.70–0.90 band is where membership moves. Re-read the tier
+  each run; never cache it as a fixed list. The *separation* is the stable result, not the scores.
 - **`kind` is not published.** The fine-grained label is written to the diagnostic CSV only,
   never the HTML: measured mean confidence was 0.71, as low as 0.22.
 - Cost is trivial (~64k input tokens for 65 edges, ~14s); the binding constraint remains the

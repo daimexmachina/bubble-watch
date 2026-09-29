@@ -436,16 +436,23 @@ def load_ciks() -> dict:
 
 # ----------------------------------------------------------------------- render ----
 def render_html(rows: list[dict], meta: dict, cut: float, generated: str,
-                control_ok: bool = True) -> str:
+                control_ok: bool = True, never_read: set | None = None) -> str:
     """A reading list, deliberately not a report: no verdicts, no composite input."""
+    never_read = never_read or set()
+
     def esc(s):
         return html.escape(str(s if s is not None else ""))
 
     body = []
     for i, r in enumerate(rows, 1):
+        # The unread edges are the actual deliverable: everything else in the tier has
+        # already been adjudicated by a human, so the badge is the difference between
+        # "here is the reading order" and "here is what is still outstanding".
+        fresh = (" <span class=fresh>never read</span>"
+                 if (r["filer"], r["counterparty"]) in never_read else "")
         body.append(
             f"<tr><td class=r>{i}</td>"
-            f"<td><b>{esc(r['filer'])}</b> &times; {esc(r['counterparty'])}</td>"
+            f"<td><b>{esc(r['filer'])}</b> &times; {esc(r['counterparty'])}{fresh}</td>"
             f"<td class=n>{r['financing_p']:.2f}</td><td class=n>{r['worth_read_p']:.2f}</td>"
             f"<td>{esc(r.get('form') or '')} {esc(r.get('filing_date') or '')}</td>"
             f"<td><a href=\"{esc(r.get('url') or '#')}\">filing</a></td></tr>"
@@ -474,6 +481,8 @@ def render_html(rows: list[dict], meta: dict, cut: float, generated: str,
  td.r{{color:#999;width:2.5rem}} td.n{{text-align:right;font-variant-numeric:tabular-nums}}
  th{{background:#fafafa;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:#555}}
  a{{color:#0b6bcb}}
+ .fresh{{background:#e8f0fe;color:#1a56db;border-radius:3px;padding:.05rem .35rem;
+   font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}}
 </style>
 <h1>Reading queue &mdash; circular-financing disclosure edges</h1>
 <p class=sub>Generated {esc(generated)}. Ranked by Jev <code>financing_p</code>
@@ -682,7 +691,8 @@ def main() -> None:
                        "scan_errors": meta.get("errors")}, fh, indent=2)
         hp = os.path.join(args.out, "reading-queue.html")
         with open(hp, "w", encoding="utf-8") as fh:
-            fh.write(render_html(tier, meta, args.cut, generated, control_ok=not failed))
+            fh.write(render_html(tier, meta, args.cut, generated, control_ok=not failed,
+                                 never_read={(r["filer"], r["counterparty"]) for r in never_read}))
         print(f"\nwrote {qp}\nwrote {hp}")
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as fh:

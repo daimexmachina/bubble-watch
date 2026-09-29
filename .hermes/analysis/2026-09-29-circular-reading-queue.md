@@ -71,9 +71,17 @@ scored 0.78–0.80 across runs — i.e. it sits *at* the 0.7 cut and would fall 
 This is the concrete reason the tier default is 0.7 and not the 0.8 the lab used: 0.8 is
 inside the measured run-to-run noise band and would drop a known-real edge.
 
-⚠ **Do not read the order inside the tier.** Scores moved ±0.02 between identical runs
-(`CRWV x OpenAI` 0.80 then 0.78; mean |Δ| ≈ 0.02 in the lab's v1→v2 comparison), which
-reshuffles everything from 0.76 to 0.99. The tier is a list; the ranking within it is noise.
+⚠ **Do not read the order inside the tier — and treat the tier's lower boundary as soft.**
+Scores move between identical runs. The lab's *mean* |Δ| was ±0.02, but that average badly
+understates individual edges: `APLD x Tesla` scored **0.55, 0.55, 0.74, 0.76, 0.76** across
+five runs of the same code, i.e. a ~0.21 spread on one edge. Consequence: the tier is
+**15 or 16 edges**, not a fixed list — that edge crosses the 0.7 cut depending on the run.
+The stable core is everything ≥0.9 (12 edges, consistent in every run); the 0.70–0.90 band
+is where membership moves. Re-read the tier each run rather than caching "the 15 edges", and
+do not report a count as if it were fixed.
+
+⚠ **The separation is the stable result, not the accuracy.** Control separation was +0.54,
++0.55 and +0.47 on three runs (PASS every time); individual scores were not stable.
 
 ⚠ **The fine-grained `kind` label is not published.** It is written to the CSV for diagnosis
 only, and deliberately omitted from the HTML. Measured mean confidence on this corpus was
