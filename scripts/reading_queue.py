@@ -119,6 +119,31 @@ def jev_call(state: dict, questions: dict, key: str) -> dict:
     raise last  # type: ignore[misc]
 
 
+# The three questions below are the whole reason this job needs a model at all, so there is
+# no equivalent replacement if Jev is unreachable. Rather than fail the run, the queue
+# degrades to its PRE-JEV ordering (rank by mention count) and says so loudly. See
+# `--no-jev` / the `mode` field in the artifacts. Nothing in this script may treat Jev as
+# load-bearing: the output is a READING ORDER for a human, and a coarser reading order is
+# still useful, whereas no artifact at all is not.
+PROBE_QUESTIONS = {
+    "reachable": {"type": "noul", "instructions": "Is this a reachability probe?"},
+}
+
+
+def probe_jev(key: str) -> tuple[bool, str]:
+    """One cheap call to decide whether to use Jev for this run.
+
+    Without this, an outage costs one failed round-trip PER EDGE (65 timeouts, ~4 minutes)
+    before the run gives up. A single probe turns that into one call and a clean decision.
+    Returns (available, reason).
+    """
+    try:
+        jev_call({"probe": "reachability check"}, PROBE_QUESTIONS, key)
+        return True, "ok"
+    except Exception as exc:  # noqa: BLE001 - any failure means "use the fallback"
+        return False, f"{type(exc).__name__}: {exc}"
+
+
 # ------------------------------------------------------------------- questions ----
 # Kept byte-identical to the validated lab definitions. The criteria strings come from
 # the project's own rubric enum doc comments, not from a paraphrase, so the judgment
@@ -435,8 +460,14 @@ def load_ciks() -> dict:
 
 
 # ----------------------------------------------------------------------- render ----
+def fmt_p(v) -> str:
+    """Format a probability that may be absent (fallback runs carry no signal)."""
+    return f"{v:.2f}" if isinstance(v, (int, float)) else "  n/a"
+
+
 def render_html(rows: list[dict], meta: dict, cut: float, generated: str,
-                control_ok: bool = True, never_read: set | None = None) -> str:
+                control_ok: bool = True, never_read: set | None = None,
+                fallback_reason: str | None = None) -> str:
     """A reading list, deliberately not a report: no verdicts, no composite input."""
     never_read = never_read or set()
 
@@ -453,7 +484,8 @@ def render_html(rows: list[dict], meta: dict, cut: float, generated: str,
         body.append(
             f"<tr><td class=r>{i}</td>"
             f"<td><b>{esc(r['filer'])}</b> &times; {esc(r['counterparty'])}{fresh}</td>"
-            f"<td class=n>{r['financing_p']:.2f}</td><td class=n>{r['worth_read_p']:.2f}</td>"
+            f"<td class=n>{fmt_p(r.get('financing_p'))}</td>"
+            f"<td class=n>{fmt_p(r.get('worth_read_p'))}</td>"
             f"<td>{esc(r.get('form') or '')} {esc(r.get('filing_date') or '')}</td>"
             f"<td><a href=\"{esc(r.get('url') or '#')}\">filing</a></td></tr>"
         )
@@ -462,11 +494,26 @@ def render_html(rows: list[dict], meta: dict, cut: float, generated: str,
     # A queue built on a failed control is not a weaker queue, it is an unvalidated one.
     # It is rendered with the failure on top rather than withheld, because withholding it
     # would hide the fact that the run happened and failed.
-    fail_banner = "" if control_ok else (
-        '<div class=fail><b>The control did NOT hold on this run.</b> An edge a human '
-        'confirmed as a REFUTATION ranked above one they confirmed as a real structure. '
-        '<b>Do not use this list.</b> Re-run before reading anything here.</div>'
-    )
+    if fallback_reason:
+        # Degraded run: Jev was unavailable. This is NOT a control failure -- there was
+        # nothing to validate -- and the distinction matters, because the queue below is
+        # still worth reading, just coarser.
+        fail_banner = (
+            "<div class=degraded><b>Degraded run &mdash; Jev was unavailable.</b> "
+            f"Reason: {esc(fallback_reason)}. This list is ordered by <b>disclosure mention "
+            "count</b> (the pre-Jev behaviour), not by any financing judgment, because no "
+            "model scored it. <code>financing_p</code> is null throughout. The ordering is "
+            "coarser but not meaningless &mdash; read it as &ldquo;most-mentioned first&rdquo;. "
+            "Re-run when Jev is reachable to get a scored ranking.</div>"
+        )
+    elif not control_ok:
+        fail_banner = (
+            '<div class=fail><b>The control did NOT hold on this run.</b> An edge a human '
+            'confirmed as a REFUTATION ranked above one they confirmed as a real structure. '
+            '<b>Do not use this list.</b> Re-run before reading anything here.</div>'
+        )
+    else:
+        fail_banner = ""
     return f"""<!doctype html><html lang=en><meta charset=utf-8>
 <title>bubble-watch reading queue</title>
 <style>
@@ -476,6 +523,8 @@ def render_html(rows: list[dict], meta: dict, cut: float, generated: str,
  .warn{{background:#fff8e1;border-left:4px solid #f0a500;padding:.7rem 1rem;margin:1rem 0}}
  .fail{{background:#fdecea;border-left:4px solid #c62828;padding:.9rem 1rem;margin:1rem 0;
    color:#7f1d1d;font-size:1.05rem}}
+ .degraded{{background:#f3f4f6;border-left:4px solid #6b7280;padding:.9rem 1rem;margin:1rem 0;
+   color:#374151;font-size:1.02rem}}
  table{{border-collapse:collapse;width:100%;margin-top:1rem}}
  th,td{{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #e5e5e5}}
  td.r{{color:#999;width:2.5rem}} td.n{{text-align:right;font-variant-numeric:tabular-nums}}
@@ -529,11 +578,18 @@ def main() -> None:
     ap.add_argument("--offline", action="store_true",
                     help="scan from cache only (reproducible replay; needs a matching --end)")
     ap.add_argument("--strict", action="store_true", help="exit 3 if the control check fails")
+    ap.add_argument("--no-jev", action="store_true",
+                    help="skip the model entirely and rank by mention count (pre-Jev "
+                         "behaviour); also what the run does automatically if Jev is down")
     args = ap.parse_args()
 
     key = load_key()
-    if not key:
-        sys.exit(2)
+    if not key and not args.no_jev:
+        # No credential is a configuration error for a Jev-ranked run, but it must NOT be
+        # fatal to the fallback path -- otherwise "Jev is unavailable" takes the queue down
+        # with it, which is exactly the coupling this is meant to remove.
+        print("no TYPESAFE_API_KEY: degrading to mention-count ranking "
+              "(use --no-jev to make this explicit)", file=sys.stderr)
 
     # The tool resolves an empty --end from its own UTC clock. Resolve it here the SAME
     # way, because the window dates are part of the cache key and of the EDGAR query: if
@@ -548,6 +604,25 @@ def main() -> None:
     cache_dir = args.cache_dir
     edges, meta = load_edges(args.edges, cache_dir, end_date, args.offline)
     ciks = load_ciks()
+
+    # ---- decide whether this run is Jev-ranked or degraded -------------------------
+    # Jev is an ENHANCEMENT, never a dependency. If it cannot be reached, the run still
+    # produces a reading order using the pre-Jev rule (rank by mention count) and marks
+    # itself degraded in every artifact. A coarser queue beats no queue.
+    mode, probe_reason = "jev", "ok"
+    if args.no_jev:
+        mode, probe_reason = "fallback", "disabled by --no-jev"
+    elif not key:
+        mode, probe_reason = "fallback", "no TYPESAFE_API_KEY configured"
+    if mode == "jev" and key:
+        ok, why = probe_jev(key)
+        if not ok:
+            mode, probe_reason = "fallback", why
+    use_jev = mode == "jev" and bool(key)
+    if use_jev:
+        print("jev: reachable (probe ok)")
+    else:
+        print(f"jev: UNAVAILABLE -> degraded to mention-count ranking ({probe_reason})")
 
     # ALREADY-READ, DERIVED FROM THE TOOL. The scan reports a `verified_passage` on the
     # edges a human actually read, so that set is read from the data rather than asserted.
@@ -576,6 +651,7 @@ def main() -> None:
     print(f"model={MODEL}  window_end={end_date}  cache={cache_dir}  live_edgar={'allowed' if live else 'off'}\n")
 
     rows, chits, clive = [], 0, 0
+    fell_back = 0
     for i, e in enumerate(sample, 1):
         filer, cp = e["filer"], e["counterparty"]
         t0 = time.time()
@@ -600,99 +676,177 @@ def main() -> None:
         if len(passage) < 80:
             print(f"[{i}/{len(sample)}] {filer} x {cp}: passage too short to judge")
             continue
-        try:
-            ans = jev_call({"filer": filer, "counterparty": cp, "passage": passage},
-                           QUESTIONS, key)["answers"]
-        except Exception as exc:  # noqa: BLE001 - a judge failure must not invent a score
-            print(f"[{i}/{len(sample)}] {filer} x {cp}: JUDGE FAILED "
-                  f"{type(exc).__name__}: {exc}")
-            continue
-        rows.append({
+
+        # ---- judge, or degrade ------------------------------------------------
+        row = {
             "filer": filer, "counterparty": cp, "hits": e["hits"],
             "form": filing["form"], "filing_date": filing["date"], "url": filing["url"],
-            "passage_chars": len(passage),
-            "financing_p": ans["looks_like_financing"]["noul"],
-            "worth_read_p": ans["worth_human_read"]["noul"],
-            # Retained in the CSV for diagnosis ONLY. Never published, never a finding.
-            "kind_diagnostic_do_not_record": ans["mention_kind"]["choice"],
-            "kind_conf_diagnostic": ans["mention_kind"]["confidence"],
-            "seconds": round(time.time() - t0, 1),
-        })
-        print(f"[{i}/{len(sample)}] {filer} x {cp}: financing={rows[-1]['financing_p']:.2f} "
-              f"worth_read={rows[-1]['worth_read_p']:.2f} [{filing['form']} {filing['date']}]")
+            "passage_chars": len(passage), "seconds": round(time.time() - t0, 1),
+        }
+        ans = None
+        if use_jev:
+            try:
+                ans = jev_call({"filer": filer, "counterparty": cp, "passage": passage},
+                               QUESTIONS, key)["answers"]
+            except Exception as exc:  # noqa: BLE001
+                # A per-edge failure is NOT fatal: this edge falls back and the run keeps
+                # going. Aborting here was the original defect -- one flaky call threw away
+                # the whole night's queue.
+                fell_back += 1
+                print(f"[{i}/{len(sample)}] {filer} x {cp}: jev unavailable for this edge "
+                      f"({type(exc).__name__}) -> mention-count fallback", file=sys.stderr)
+
+        if ans is not None:
+            row.update({
+                "financing_p": ans["looks_like_financing"]["noul"],
+                "worth_read_p": ans["worth_human_read"]["noul"],
+                # Retained in the CSV for diagnosis ONLY. Never published, never a finding.
+                "kind_diagnostic_do_not_record": ans["mention_kind"]["choice"],
+                "kind_conf_diagnostic": ans["mention_kind"]["confidence"],
+                "mode": "jev",
+            })
+            print(f"[{i}/{len(sample)}] {filer} x {cp}: financing={row['financing_p']:.2f} "
+                  f"worth_read={row['worth_read_p']:.2f} [{filing['form']} {filing['date']}]")
+        else:
+            # PRE-JEV BEHAVIOUR, verbatim: no judgment, order by mention count. There is no
+            # financing signal available without a model, so the score is None rather than a
+            # guess -- a fabricated 0.5 would read as a real measurement downstream.
+            row.update({
+                "financing_p": None,
+                "worth_read_p": None,
+                "kind_diagnostic_do_not_record": None,
+                "kind_conf_diagnostic": None,
+                "mode": "fallback_mentions",
+            })
+            print(f"[{i}/{len(sample)}] {filer} x {cp}: NO JUDGE -> ranked by hits "
+                  f"({e['hits']}) [{filing['form']} {filing['date']}]")
+        rows.append(row)
 
     if not rows:
         sys.exit("no edges were judged; nothing to rank")
 
+    if fell_back:
+        print(f"\n!! {fell_back} edge(s) fell back to mention-count ordering mid-run.")
+
+    if mode == "fallback":
+        # The whole-run fallback. Say it loudly: this artifact is a valid reading order but
+        # it carries no financing signal at all, and nothing downstream may imply otherwise.
+        print("\n" + "!" * 72)
+        print("DEGRADED RUN — Jev was unavailable, so NOTHING here is Jev-ranked.")
+        print(f"  reason: {probe_reason}")
+        print("  ordering: mention count (the pre-Jev behaviour). financing_p is null.")
+        print("  This is a reading order only. Re-run when Jev is reachable.")
+        print("!" * 72)
+
     # Rank by the financing signal, tie-break on whether a human read is worth it.
-    rows.sort(key=lambda r: (-(r["financing_p"] or 0), -(r["worth_read_p"] or 0)))
+    # In fallback mode financing_p is None throughout, so this reduces to mention count.
+    rows.sort(key=lambda r: (-(r["financing_p"] or 0), -(r["worth_read_p"] or 0), -r["hits"]))
+
 
     tier = [r for r in rows if (r["financing_p"] or 0) >= args.cut]
     never_read = [r for r in tier if (r["filer"], r["counterparty"]) not in
                   (already_read | KNOWN_REFUTED)]
 
-    print(f"\n=== READING QUEUE (tier cut financing_p >= {args.cut}) ===")
-    print(f"{'#':<4}{'EDGE':<26}{'FIN':>6}{'READ':>6}  LATEST")
-    for n, r in enumerate(tier, 1):
-        print(f"{n:<4}{r['filer'] + ' x ' + r['counterparty']:<26}"
-              f"{r['financing_p']:>6.2f}{r['worth_read_p']:>6.2f}  "
-              f"{r.get('form')} {r.get('filing_date')}")
-    print(f"\n{len(tier)}/{len(rows)} judged edges in the tier; "
-          f"{len(never_read)} of them were never read by a human.")
-    print("Use the TIER as a reading list, not the rank order within it.")
+    if mode == "fallback":
+        # No financing signal exists without a model, so there is no "tier" to cut. Print
+        # the mention-count reading order instead of pretending a threshold applied.
+        print("\n=== READING ORDER (DEGRADED: by mention count, no financing signal) ===")
+        print(f"{'#':<4}{'EDGE':<26}{'HITS':>6}  LATEST")
+        for n, r in enumerate(rows, 1):
+            print(f"{n:<4}{r['filer'] + ' x ' + r['counterparty']:<26}"
+                  f"{r['hits']:>6}  {r.get('form')} {r.get('filing_date')}")
+        print(f"\n{len(rows)} edges, ordered by mention count. "
+              f"{sum(1 for r in rows if (r['filer'], r['counterparty']) not in (already_read | KNOWN_REFUTED))}"
+              f" never read by a human.")
+        print("This is NOT a Jev ranking. Re-run when Jev is reachable.")
+    else:
+        print(f"\n=== READING QUEUE (tier cut financing_p >= {args.cut}) ===")
+        print(f"{'#':<4}{'EDGE':<26}{'FIN':>6}{'READ':>6}  LATEST")
+        for n, r in enumerate(tier, 1):
+            print(f"{n:<4}{r['filer'] + ' x ' + r['counterparty']:<26}"
+                  f"{r['financing_p']:>6.2f}{r['worth_read_p']:>6.2f}  "
+                  f"{r.get('form')} {r.get('filing_date')}")
+        print(f"\n{len(tier)}/{len(rows)} judged edges in the tier; "
+              f"{len(never_read)} of them were never read by a human.")
+        print("Use the TIER as a reading list, not the rank order within it.")
 
     # ---------------------------------------------------------------- control ----
+    # The control compares Jev's scores, so it is only meaningful on a Jev-ranked run. A
+    # degraded run must not report FAIL (it was never validated) and must not trip
+    # --strict: the unit would go red for an outage that is already reported as degraded.
     failed = False
-    print("\n=== CONTROL (truth established by a human reading the filing) ===")
-    for r in rows:
-        pair = (r["filer"], r["counterparty"])
-        if pair in KNOWN_TRUE:
-            print(f"  real      {r['filer']} x {r['counterparty']:<10} "
-                  f"financing={r['financing_p']:.2f}  rank {rows.index(r) + 1}/{len(rows)}")
-        elif pair in KNOWN_REFUTED:
-            print(f"  REFUTED   {r['filer']} x {r['counterparty']:<10} "
-                  f"financing={r['financing_p']:.2f}  rank {rows.index(r) + 1}/{len(rows)}")
+    if mode == "fallback":
+        print("\n=== CONTROL ===\n  not applicable: this run used the mention-count "
+              "fallback, so there is no Jev ranking to validate.")
+    else:
+        print("\n=== CONTROL (truth established by a human reading the filing) ===")
+        for r in rows:
+            pair = (r["filer"], r["counterparty"])
+            if pair in KNOWN_TRUE:
+                print(f"  real      {r['filer']} x {r['counterparty']:<10} "
+                      f"financing={fmt_p(r['financing_p'])}  rank {rows.index(r) + 1}/{len(rows)}")
+            elif pair in KNOWN_REFUTED:
+                print(f"  REFUTED   {r['filer']} x {r['counterparty']:<10} "
+                      f"financing={fmt_p(r['financing_p'])}  rank {rows.index(r) + 1}/{len(rows)}")
     reals = [r for r in rows if (r["filer"], r["counterparty"]) in KNOWN_TRUE]
     refs = [r for r in rows if (r["filer"], r["counterparty"]) in KNOWN_REFUTED]
-    if reals and refs:
-        worst_real = min(r["financing_p"] for r in reals)
-        for ref in refs:
-            sep = worst_real - ref["financing_p"]
-            ok = sep > 0
-            failed = failed or not ok
-            print(f"\n  separation {worst_real:.2f} - {ref['financing_p']:.2f} = {sep:+.2f} "
-                  f"-> {'PASS' if ok else 'FAIL: the refutation outranks a real structure'}")
-    elif not reals or not refs:
-        # A control that is absent is not a passing control.
-        failed = True
-        print(f"\n  FAIL: incomplete control (reals={len(reals)}, refuted={len(refs)}). "
-              f"The ranking is unvalidated.")
-    if failed:
-        print("\n  !! The control did not hold. Do NOT act on this queue. !!")
-    else:
-        print("\n  control held.")
+    if mode != "fallback":
+        if reals and refs and all(r["financing_p"] is not None for r in reals + refs):
+            worst_real = min(r["financing_p"] for r in reals)
+            for ref in refs:
+                sep = worst_real - ref["financing_p"]
+                ok = sep > 0
+                failed = failed or not ok
+                print(f"\n  separation {worst_real:.2f} - {ref['financing_p']:.2f} = {sep:+.2f} "
+                      f"-> {'PASS' if ok else 'FAIL: the refutation outranks a real structure'}")
+        elif not reals or not refs:
+            # A control that is absent is not a passing control.
+            failed = True
+            print(f"\n  FAIL: incomplete control (reals={len(reals)}, refuted={len(refs)}). "
+                  f"The ranking is unvalidated.")
+        if failed:
+            print("\n  !! The control did not hold. Do NOT act on this queue. !!")
+        else:
+            print("\n  control held.")
 
     # ------------------------------------------------------------------ cost ----
     n = len(rows)
-    print(f"\n=== COST ===\n  {n} edges judged; cache hits={chits}, live EDGAR fetches={clive}")
-    print(f"  ~{n * 991:,} input tokens (measured 991/edge); "
-          f"{sum(r['seconds'] for r in rows):.0f}s wall, {sum(r['seconds'] for r in rows) / n:.1f}s/edge")
+    if mode == "fallback":
+        print(f"\n=== COST ===\n  {n} edges read; cache hits={chits}, "
+              f"live EDGAR fetches={clive}\n  no model calls (fallback run)")
+    else:
+        print(f"\n=== COST ===\n  {n} edges judged; cache hits={chits}, live EDGAR fetches={clive}")
+        print(f"  ~{n * 991:,} input tokens (measured 991/edge); "
+              f"{sum(r['seconds'] for r in rows):.0f}s wall, "
+              f"{sum(r['seconds'] for r in rows) / n:.1f}s/edge")
 
     # ---------------------------------------------------------------- outputs ----
     generated = time.strftime("%Y-%m-%d %H:%M %Z")
+    # On a degraded run the "queue" is the mention-count order, and the JSON says so via
+    # mode/degraded/control_ok. Consumers keying on control_ok therefore see a failed
+    # validation rather than a silent downgrade.
+    out_queue = rows if mode == "fallback" else tier
     if args.out:
         os.makedirs(args.out, exist_ok=True)
         qp = os.path.join(args.out, "reading-queue.json")
         with open(qp, "w", encoding="utf-8") as fh:
-            json.dump({"generated": generated, "model": MODEL, "cut": args.cut,
-                       "count": len(tier), "never_read": len(never_read),
-                       "control_ok": not failed, "queue": tier,
+            json.dump({"generated": generated, "model": MODEL if mode == "jev" else None,
+                       "mode": mode, "degraded": mode == "fallback",
+                       "degraded_reason": None if mode == "jev" else probe_reason,
+                       "cut": args.cut, "count": len(out_queue),
+                       "never_read": len(never_read) if mode == "jev" else
+                       sum(1 for r in out_queue
+                           if (r["filer"], r["counterparty"]) not in (already_read | KNOWN_REFUTED)),
+                       "control_ok": (not failed) and mode == "jev",
+                       "queue": out_queue,
                        "all": rows, "scan_silent": meta.get("silent"),
                        "scan_errors": meta.get("errors")}, fh, indent=2)
         hp = os.path.join(args.out, "reading-queue.html")
         with open(hp, "w", encoding="utf-8") as fh:
-            fh.write(render_html(tier, meta, args.cut, generated, control_ok=not failed,
-                                 never_read={(r["filer"], r["counterparty"]) for r in never_read}))
+            fh.write(render_html(out_queue, meta, args.cut, generated,
+                                 control_ok=(not failed) and mode == "jev",
+                                 never_read={(r["filer"], r["counterparty"]) for r in never_read},
+                                 fallback_reason=None if mode == "jev" else probe_reason))
         print(f"\nwrote {qp}\nwrote {hp}")
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as fh:
