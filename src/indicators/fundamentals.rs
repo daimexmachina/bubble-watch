@@ -2306,13 +2306,44 @@ impl Indicator for OppositionPressure {
             })
             .collect();
 
+        // A SILENT SUBSET IS THE ONE OUTCOME THAT MUST NOT BE ALLOWED.
+        //
+        // Measured 2026-10-16 against 28 archived reports: this indicator is configured with THREE
+        // queries but listed only TWO for SIXTEEN consecutive runs (2026-10-01 to 2026-10-16), while the
+        // five runs before that listed all three. `injunction` — the query whose request sits last, and
+        // therefore the one the host's rate limiter starves — was absent, and NOTHING SAID SO. Its
+        // published value was the year-over-year change over a subset, presented as the change over the
+        // measure. A failed query returns Err, drops out of the vector, and the sum proceeds over the
+        // remainder as though that were the whole set.
+        //
+        // The fix is disclosure, not recomputation: the value is unchanged, so there is no methodology
+        // bump, and a reader can now see that the figure rests on a subset. What made this dangerous was
+        // never the number going down — it was the number going down quietly.
+        let absent: Vec<&str> = crate::sources::courtlistener::tracked_queries()
+            .iter()
+            .map(|(label, _)| *label)
+            .filter(|label| !ctx.obs.courtlistener.iter().any(|c| c.query == *label))
+            .collect();
+        let subset_note = if absent.is_empty() {
+            String::new()
+        } else {
+            format!(
+                " INCOMPLETE MEASURE: {} of {} configured queries returned no data ({}), so this figure \
+                 is the change over a SUBSET and not over the whole measure. A partial sum and a \
+                 complete sum are different quantities, and this one has moved without saying so before.",
+                absent.len(),
+                crate::sources::courtlistener::tracked_queries().len(),
+                absent.join(", ")
+            )
+        };
+
         Reading::Scored {
             stress,
             value: change_pct,
             unit: "pct change in filed dockets, trailing 365 days vs the 365 before".into(),
             detail: format!(
                 "Filed legal challenges to data-centre construction changed {:+.1}% over the \
-                 trailing year ({} filings against {}). BY QUERY: {}. DIRECTION, STATED PLAINLY \
+                 trailing year ({} filings against {}). BY QUERY: {}.{} DIRECTION, STATED PLAINLY \
                  BECAUSE IT IS GENUINELY TWO-SIDED: rising filings are bubble-consistent, because \
                  an injunction or a moratorium is a real constraint that removes future revenue — \
                  but they are ALSO counter-evidence, because litigation is what happens to \
@@ -2329,7 +2360,8 @@ impl Indicator for OppositionPressure {
                 change_pct,
                 total_recent,
                 total_prior,
-                parts.join("; ")
+                parts.join("; "),
+                subset_note
             ),
             provenance: crate::model::Provenance {
                 source: "courtlistener".into(),
@@ -2547,13 +2579,34 @@ impl Indicator for DistressEvents {
             })
             .collect();
 
+        // The sibling of the same guard on `opposition_pressure`, and added here at the same time
+        // because the structural risk is identical: this indicator sums whatever is present in
+        // `obs.insolvency`, so a partially successful fetch would silently score a subset. It happens to
+        // GAP instead today only because BOTH its queries fail — honest by accident, not by design.
+        let absent: Vec<&str> = crate::sources::courtlistener::insolvency_queries()
+            .iter()
+            .map(|(label, _)| *label)
+            .filter(|label| !ctx.obs.insolvency.iter().any(|c| c.query == *label))
+            .collect();
+        let subset_note = if absent.is_empty() {
+            String::new()
+        } else {
+            format!(
+                " INCOMPLETE MEASURE: {} of {} configured queries returned no data ({}), so this is the \
+                 change over a SUBSET rather than over the whole measure.",
+                absent.len(),
+                crate::sources::courtlistener::insolvency_queries().len(),
+                absent.join(", ")
+            )
+        };
+
         Reading::Scored {
             stress,
             value: change_pct,
             unit: "pct change in insolvency dockets, trailing 365 days vs the 365 before".into(),
             detail: format!(
                 "AI-exposed insolvency dockets filed AT LEAST {} times in the trailing year against \
-                 AT LEAST {} in the year before, a change of {:+.1}%. BY QUERY: {}. READ THE COUNTS, \
+                 AT LEAST {} in the year before, a change of {:+.1}%. BY QUERY: {}.{} READ THE COUNTS, \
                  NOT ONLY THE PERCENTAGE: the base is small by construction, so a handful of extra \
                  filings moves this figure by tens of points. DIRECTION IS ONE-WAY — rising \
                  insolvencies are the bubble thesis being realised, not counter-evidence, so there is \
@@ -2562,7 +2615,7 @@ impl Indicator for DistressEvents {
                  declared blind spot, not a zero; (2) RECAP IS CROWD-SOURCED, so every count above is \
                  a FLOOR and the true number is at least what is stated; (3) the counts are docket \
                  filings and will lag the event by days.",
-                recent, prior, change_pct, parts.join("; ")
+                recent, prior, change_pct, parts.join("; "), subset_note
             ),
             provenance: crate::model::Provenance {
                 source: "courtlistener".into(),
@@ -3554,6 +3607,89 @@ mod tests {
                 assert!(
                     detail.contains("9") && detail.contains("6"),
                     "the raw counts must be printed beside the percentage: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    // ---- the silent-subset guard, both court indicators --------------------
+
+    #[test]
+    fn opposition_pressure_declares_a_query_that_went_missing_rather_than_summing_a_subset() {
+        // THE DEFECT THIS GUARDS, and it is measured rather than imagined: against 28 archived reports,
+        // this indicator was configured with THREE queries but listed only TWO for SIXTEEN consecutive
+        // runs (2026-10-01 to 2026-10-16), while the five runs before that listed all three. `injunction`
+        // was absent and NOTHING SAID SO — the published value was the year-over-year change over a
+        // subset, presented as the change over the measure.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.courtlistener = dockets(&[("moratorium", -15.0, 17, 20), ("lawsuit", -17.2, 270, 326)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match OppositionPressure.evaluate(&ctx) {
+            Reading::Scored { detail, .. } => {
+                assert!(
+                    detail.contains("INCOMPLETE MEASURE"),
+                    "a partial sum must say it is partial: {detail}"
+                );
+                assert!(
+                    detail.contains("injunction"),
+                    "the missing query must be NAMED, not merely counted: {detail}"
+                );
+                assert!(
+                    detail.contains("1 of 3"),
+                    "the ratio of MISSING to configured queries must be stated: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_complete_query_set_carries_no_incompleteness_note() {
+        // The complement, so the guard cannot be satisfied by crying "incomplete" unconditionally —
+        // which would be its own failure, and the reassuring-to-nobody kind.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.courtlistener = dockets(&[
+            ("moratorium", -15.0, 17, 20),
+            ("lawsuit", -17.2, 270, 326),
+            ("injunction", 5.0, 30, 28),
+        ]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match OppositionPressure.evaluate(&ctx) {
+            Reading::Scored { detail, .. } => assert!(
+                !detail.contains("INCOMPLETE MEASURE"),
+                "a complete set must not be flagged: {detail}"
+            ),
+            other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn distress_events_declares_a_missing_query_too() {
+        // The same structural risk, guarded at the same time. This indicator sums whatever is present in
+        // obs.insolvency, so a partially successful fetch would score a subset silently. It GAPs today
+        // only because BOTH its queries fail — honest by accident rather than by design.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.insolvency = dockets(&[("chapter11_ai", 0.0, 9, 6)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match DistressEvents.evaluate(&ctx) {
+            Reading::Scored { detail, .. } => {
+                assert!(detail.contains("INCOMPLETE MEASURE"), "{detail}");
+                assert!(
+                    detail.contains("chapter11_compute"),
+                    "the absent query must be named: {detail}"
                 );
             }
             other => panic!("expected Scored, got {other:?}"),
