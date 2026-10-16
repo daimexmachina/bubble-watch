@@ -108,6 +108,23 @@ pub fn build_with_history(
         None
     };
 
+    // How fast the inputs are moving. CONTEXT ONLY, never an input to the composite.
+    //
+    // Every indicator scores a LEVEL, and the config says outright that the level is not the signal
+    // ("watch the change" / "catching the direction of travel is not implemented"). This supplies the
+    // change the instrument already tells the reader to look at. Reported with `gross` beside `net`
+    // because a weighted mean absorbs opposing moves, and net alone is what hid a +19.6 stress move.
+    let velocity = if history_consulted && !archive.is_empty() {
+        Some(crate::history::velocity(
+            archive,
+            &readings,
+            &crate::history::date_of(generated_at),
+            crate::history::VELOCITY_WINDOW_DAYS,
+        ))
+    } else {
+        None
+    };
+
     let composite = comp_opt.unwrap_or(0.0);
     let confidence = crate::score::confidence(
         coverage,
@@ -390,10 +407,11 @@ pub fn build_with_history(
             // DERIVED from readings already made; neither is an input to the composite.
             let split = question_split_note(&sub_scores);
             let fresh = freshness_note(freshness.as_ref());
+            let vel = velocity_note(velocity.as_ref());
             format!(
                 "Composite bubble-stress {:.1}/100 ({} phase) on {:.0}% weighted coverage, {} \
                  confidence. {} of {} weight available; {} indicator(s) unavailable and contributing \
-                 nothing.{}{}{}",
+                 nothing.{}{}{}{}",
                 c,
                 phase.id(),
                 coverage * 100.0,
@@ -403,6 +421,7 @@ pub fn build_with_history(
                 unavailable.len(),
                 split,
                 fresh,
+                vel,
                 dir
             )
         }
@@ -424,6 +443,7 @@ pub fn build_with_history(
         sub_scores,
         sub_question_labels,
         freshness,
+        velocity,
         phase: phase.id().to_string(),
         phase_label: phase.label().to_string(),
         phase_detail: phase.detail().to_string(),
@@ -539,6 +559,74 @@ fn freshness_note(f: Option<&crate::history::Freshness>) -> String {
         oldest,
         f.frozen_indicators,
         f.frozen_indicators + f.live_indicators
+    )
+}
+
+/// Say how fast the inputs are moving, and name the largest movers.
+///
+/// WHY THIS CLAUSE EXISTS. Every indicator here scores a LEVEL, and the config instructs the reader to
+/// watch the CHANGE instead. Nothing measured the change, so the model's largest recent deterioration
+/// was invisible: on 2026-10-16 `volatility` moved +19.6 stress points in seven days while the composite
+/// moved +0.13. A weighted mean absorbs opposing moves, so the level can sit still while the components
+/// are in violent disagreement — and "the score is flat" then reads as "nothing is happening" when the
+/// truth is "channels are moving hard in opposite directions".
+///
+/// `net` and `gross` are printed TOGETHER for that reason. Net alone is what hid the signal; gross is
+/// what tells the reader the movement was real.
+///
+/// CONTEXT ONLY — never an input to the composite.
+fn velocity_note(v: Option<&crate::history::Velocity>) -> String {
+    let Some(v) = v else {
+        return String::new();
+    };
+    let Some(since) = v.since.as_deref() else {
+        return " RECENT MOVEMENT: unknown — no earlier reading to measure a change from, so this \
+                report cannot say whether anything is currently deteriorating."
+            .to_string();
+    };
+    if v.movers.is_empty() {
+        return String::new();
+    }
+    // Name the largest riser and the largest faller: a reader needs to know WHO moved, and naming only
+    // the biggest absolute mover would hide that the movement is two-sided.
+    let top = |want_rise: bool| {
+        v.movers
+            .iter()
+            .find(|m| (m.contribution > 0.0) == want_rise)
+            .map(|m| {
+                format!(
+                    "{} {:+.1} stress ({:+.2} on the score)",
+                    m.id, m.delta, m.contribution
+                )
+            })
+    };
+    let rise = top(true).unwrap_or_else(|| "nothing rose".into());
+    let fall = top(false).unwrap_or_else(|| "nothing fell".into());
+    format!(
+        " RECENT MOVEMENT over the last {} days (from {}): the inputs moved {:.2} composite points in \
+         total but only {:.2} survived into the net, so {:.0}% of the movement was opposing channels \
+         cancelling out — a small change here does NOT mean the components were quiet. Largest riser: \
+         {}. Largest faller: {}.{}",
+        v.window_days,
+        since,
+        v.gross,
+        v.net,
+        if v.gross > 0.0 {
+            100.0 * (1.0 - (v.net.abs() / v.gross))
+        } else {
+            0.0
+        },
+        rise,
+        fall,
+        if v.absent.is_empty() {
+            String::new()
+        } else {
+            format!(
+                " {} indicator(s) had no value at the start of the window and are excluded from \
+                 this movement rather than counted as unchanged.",
+                v.absent.len()
+            )
+        }
     )
 }
 

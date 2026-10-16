@@ -902,6 +902,153 @@ pub fn freshness(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Velocity — the change, not the level
+// ---------------------------------------------------------------------------
+
+/// The window over which "recent" is measured, in days.
+///
+/// Seven days: long enough that a weekly-cadence source contributes a real change, short enough that
+/// a quarterly source contributes nothing and is visibly absent. Published rather than implied,
+/// because the same data reads differently at one day and at thirty.
+pub const VELOCITY_WINDOW_DAYS: i64 = 7;
+
+/// One indicator's contribution to the recent movement.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Mover {
+    pub id: String,
+    pub weight: f64,
+    /// Stress at the start and end of the window.
+    pub from: f64,
+    pub to: f64,
+    /// Change in stress points.
+    pub delta: f64,
+    /// Change in COMPOSITE points, i.e. weight x delta / total weight. This is the number that
+    /// matters: a large stress move on a small weight is not a large move in the score.
+    pub contribution: f64,
+}
+
+/// How fast the measured inputs are moving, and in which direction.
+///
+/// THE DEFECT THIS ADDRESSES. Every indicator in this model scores a LEVEL, and the config says in
+/// its own words that the level is not the signal:
+///
+///   `credit_hy`: "What matters is the DIRECTION OF TRAVEL from a tight base — widening is the early
+///   warning, not the level. … watch its change."
+///   `grid_cancellations`: "this is a LEVEL … NOT a rate of change — it does not show whether
+///   cancellations are rising now. Catching the direction of travel … is not implemented."
+///
+/// So the model instructed its reader to watch the change while measuring none. Measured
+/// consequence on 2026-10-16: `volatility` moved +19.61 stress points in seven days while the
+/// composite moved +0.13, because a weighted MEAN absorbs opposing moves. Reporting only the level
+/// therefore hid the single largest recent deterioration in the model.
+///
+/// `net` and `gross` are reported TOGETHER and deliberately: `net` alone is what hid the movement.
+/// When gross is large and net is small, the message is that channels disagree — not that the world
+/// is quiet.
+///
+/// CONTEXT ONLY. Never an input to the composite; a test asserts the composite is byte-identical
+/// with and without it.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Velocity {
+    pub window_days: i64,
+    /// Weighted mean change, in composite points. This is what the headline level moved by.
+    pub net: f64,
+    /// Sum of ABSOLUTE contributions, in composite points. How much movement occurred.
+    pub gross: f64,
+    /// Date the window starts from. None when there is no usable earlier point.
+    pub since: Option<String>,
+    /// Largest risers and fallers by absolute contribution, so a reader sees WHO moved.
+    pub movers: Vec<Mover>,
+    /// Indicators that could not contribute because they had no value at the window start.
+    pub absent: Vec<String>,
+}
+
+/// Recent movement across the measured inputs.
+///
+/// Returns `net = 0`, `gross = 0` and an empty `movers` when there is no earlier point to compare
+/// against — never a fabricated zero-movement reading, which would look like calm.
+pub fn velocity(
+    archive: &[TrendPoint],
+    readings: &[IndicatorReading],
+    today: &str,
+    window_days: i64,
+) -> Velocity {
+    let mut current: BTreeMap<String, f64> = BTreeMap::new();
+    let mut weights: BTreeMap<String, f64> = BTreeMap::new();
+    for r in readings {
+        if r.weight <= 0.0 {
+            continue; // declared blind spot, never scored
+        }
+        if let Reading::Scored { stress, .. } = &r.reading {
+            current.insert(r.id.clone(), *stress);
+            weights.insert(r.id.clone(), r.weight);
+        }
+    }
+    let total: f64 = weights.values().sum();
+
+    let daily = daily_series(archive);
+    // The baseline is the newest archived point at least `window_days` before today, so a re-run on
+    // an already-archived date is measured against an earlier day rather than against itself.
+    let baseline = daily
+        .iter()
+        .filter(|p| p.date != today)
+        .filter(|p| {
+            days_between(&p.date, today)
+                .map(|d| d >= window_days as f64)
+                .unwrap_or(false)
+        })
+        .next_back();
+
+    let Some(base) = baseline else {
+        return Velocity {
+            window_days,
+            net: 0.0,
+            gross: 0.0,
+            since: None,
+            movers: Vec::new(),
+            absent: weights.keys().cloned().collect(),
+        };
+    };
+
+    let mut movers: Vec<Mover> = Vec::new();
+    let mut absent: Vec<String> = Vec::new();
+    for (id, w) in &weights {
+        match (base.stresses.get(id), current.get(id)) {
+            (Some(from), Some(to)) => {
+                let delta = to - from;
+                movers.push(Mover {
+                    id: id.clone(),
+                    weight: *w,
+                    from: *from,
+                    to: *to,
+                    delta,
+                    contribution: if total > 0.0 { w * delta / total } else { 0.0 },
+                });
+            }
+            // The indicator had no value at the window start. Named rather than treated as unchanged:
+            // an unmeasured input is not a stable one, and silently dropping it would overstate how
+            // much of the model the velocity figure actually covers.
+            _ => absent.push(id.clone()),
+        }
+    }
+    movers.sort_by(|a, b| {
+        b.contribution
+            .abs()
+            .partial_cmp(&a.contribution.abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    Velocity {
+        window_days,
+        net: movers.iter().map(|m| m.contribution).sum(),
+        gross: movers.iter().map(|m| m.contribution.abs()).sum(),
+        since: Some(base.date.clone()),
+        movers,
+        absent,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1716,6 +1863,122 @@ mod tests {
             !f.frozen_ids.iter().any(|id| id == "blind"),
             "a declared blind spot must never be listed as a frozen input: {:?}",
             f.frozen_ids
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Velocity
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn velocity_separates_gross_from_net_when_channels_oppose() {
+        // THE WHOLE POINT OF THE MEASURE. Two channels moving hard in opposite directions produce a
+        // small net and a large gross. Reporting only the net — which is what the composite does — makes
+        // that read as "nothing is happening", when in fact the largest single recent move in this model
+        // (+19.6 stress points on volatility, 2026-10-16) sat behind a composite change of +0.13.
+        //
+        // THE FIRST VERSION OF THIS TEST WAS WRONG IN TWO WAYS, both caught by running it: it dated the
+        // baseline one day back while the code correctly demands a baseline at least the full window old,
+        // and its riser/faller figures gave a gross/net ratio of 2 rather than the near-cancellation the
+        // test claimed. The fixture was fixed, not the code.
+        let archive = vec![fp(
+            "2026-10-01", // 15 days before today: qualifies for a 7-day window
+            &[("riser", 10.0), ("faller", 40.0)],
+        )];
+        let readings = vec![
+            reading("riser", 10.0, 40.0),  // +30 stress
+            reading("faller", 10.0, 10.0), // -30 stress
+        ];
+        let v = velocity(&archive, &readings, "2026-10-16", 7);
+
+        assert_eq!(v.since.as_deref(), Some("2026-10-01"));
+        // each contribution = 10 * delta / 20
+        assert!(
+            v.net.abs() < 1e-9,
+            "equal and opposite moves must cancel to zero: net {}",
+            v.net
+        );
+        assert!(
+            (v.gross - 30.0).abs() < 1e-9,
+            "the gross must still show the full movement: gross {}",
+            v.gross
+        );
+        assert!(
+            v.gross > 10.0 * v.net.abs(),
+            "gross must dwarf a cancelled net: gross {} net {}",
+            v.gross,
+            v.net
+        );
+        // the largest mover by ABSOLUTE contribution is one of them, and BOTH sides are listed
+        assert!(v.movers[0].delta.abs() > 0.0);
+        assert!(
+            v.movers.iter().any(|m| m.delta > 0.0) && v.movers.iter().any(|m| m.delta < 0.0),
+            "a two-sided move must list both sides: {:?}",
+            v.movers
+        );
+    }
+
+    #[test]
+    fn velocity_reports_no_history_as_UNKNOWN_rather_than_as_calm() {
+        // An empty archive yields no movement figure. Returning net = 0.0 with a baseline date would
+        // claim "nothing moved", which is a measurement this code never took — and it is the reassuring
+        // direction to fail in, which is the dangerous one.
+        let readings = vec![reading("a", 10.0, 50.0)];
+        let v = velocity(&[], &readings, "2026-10-16", 7);
+
+        assert!(v.since.is_none(), "no baseline may be invented");
+        assert!(v.movers.is_empty());
+        assert!((v.net - 0.0).abs() < 1e-9);
+        assert!((v.gross - 0.0).abs() < 1e-9);
+        assert_eq!(
+            v.absent,
+            vec!["a".to_string()],
+            "the indicator is not 'unchanged', it is unmeasured"
+        );
+    }
+
+    #[test]
+    fn velocity_names_indicators_absent_at_the_window_start() {
+        // An input with no value at the baseline is not a stable input. Counting it as unchanged would
+        // understate the movement; counting it as zero would fabricate one. It is excluded and NAMED.
+        let archive = vec![
+            fp("2026-10-01", &[("present", 10.0)]), // `new_one` does not exist yet
+            fp("2026-10-15", &[("present", 10.0), ("new_one", 80.0)]),
+        ];
+        let readings = vec![
+            reading("present", 10.0, 10.0),
+            reading("new_one", 10.0, 80.0),
+        ];
+        let v = velocity(&archive, &readings, "2026-10-16", 7);
+
+        assert_eq!(v.absent, vec!["new_one".to_string()]);
+        assert!(
+            v.movers.iter().all(|m| m.id == "present"),
+            "only the indicator with a baseline may contribute: {:?}",
+            v.movers
+        );
+    }
+
+    #[test]
+    fn velocity_measures_from_at_least_the_full_window_back() {
+        // The baseline must be at least `window_days` old. A one-day re-run would otherwise be measured
+        // against yesterday and reported as "the last 7 days", understating every figure.
+        let archive = vec![
+            fp("2026-10-05", &[("a", 0.0)]),  // 11 days before today, qualifies
+            fp("2026-10-15", &[("a", 30.0)]), // 1 day before today, must NOT be used for a 7-day window
+        ];
+        let readings = vec![reading("a", 10.0, 30.0)];
+        let v = velocity(&archive, &readings, "2026-10-16", 7);
+
+        assert_eq!(
+            v.since.as_deref(),
+            Some("2026-10-05"),
+            "a 7-day window must not be measured from yesterday"
+        );
+        assert!(
+            (v.movers[0].delta - 30.0).abs() < 1e-9,
+            "delta measured from the qualifying baseline: {}",
+            v.movers[0].delta
         );
     }
 }

@@ -571,6 +571,7 @@ mod tests {
             sub_scores: vec![],
             sub_question_labels: vec![],
             freshness: None,
+            velocity: None,
             confidence: "high".into(),
             phase: "early".into(),
             phase_label: "Early".into(),

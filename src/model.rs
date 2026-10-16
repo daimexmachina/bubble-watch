@@ -677,6 +677,14 @@ pub struct Report {
     /// in weeks.
     #[serde(default)]
     pub freshness: Option<crate::history::Freshness>,
+    /// How fast the measured inputs are moving, and in which direction.
+    ///
+    /// CONTEXT ONLY — never an input to the composite. Present because every indicator here scores a
+    /// LEVEL while the config instructs the reader to watch the CHANGE, so the model's largest recent
+    /// deterioration (volatility +19.6 stress points in 7 days on 2026-10-16) was invisible behind a
+    /// composite that moved +0.13. A weighted mean absorbs opposing moves; `net` alone hid the signal.
+    #[serde(default)]
+    pub velocity: Option<crate::history::Velocity>,
     pub phase: String,
     pub phase_label: String,
     pub phase_detail: String,
