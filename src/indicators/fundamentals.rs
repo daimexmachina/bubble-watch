@@ -2583,6 +2583,7 @@ mod tests {
                 anchors: vec![[0.0, 0.0], [2.0, 100.0]],
                 group: Some("strain".into()),
                 fred_series: None,
+                fred_series_b: None,
             }],
         };
         let obs = Observations::default();

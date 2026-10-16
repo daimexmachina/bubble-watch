@@ -158,6 +158,15 @@ pub struct IndicatorCfg {
     pub anchors: Vec<[f64; 2]>,
     #[serde(default)]
     pub fred_series: Option<String>,
+    /// A SECOND FRED series, when the indicator is a SPREAD of two.
+    ///
+    /// Added 2026-10-16 for `funding_stress` (SOFR − EFFR). A spread cannot be expressed as a
+    /// single series id, and the alternative — hardcoding the two ids inside the indicator —
+    /// would put the measurement in the code rather than the config, where every other
+    /// indicator's series is declared. The spread is always `fred_series` MINUS this, so the
+    /// direction is stated rather than inferred.
+    #[serde(default)]
+    pub fred_series_b: Option<String>,
     /// Which QUESTION this indicator answers — one of the four `SubQuestion` keys
     /// declared in `[[sub_question]]`. Optional in TOML so a config written before
     /// groups existed still loads; `validate` then refuses to start, because an
@@ -417,6 +426,7 @@ mod tests {
                 rationale: "r".into(),
                 anchors: vec![[0.0, 0.0], [10.0, 100.0]],
                 fred_series: None,
+                fred_series_b: None,
             }],
         }
     }
@@ -479,6 +489,46 @@ mod tests {
         let d = TrendCfg::defaults();
         assert!(d.coverage_tolerance_pp > 0.0);
         assert!(d.sparkline_points >= 2);
+    }
+
+    #[test]
+    fn the_shipped_funding_stress_anchors_point_the_right_way() {
+        // DIRECTION CANNOT BE VALIDATED GLOBALLY, which is why this is targeted.
+        //
+        // A check that every ladder ascended in stress was considered and REJECTED: measured across
+        // the shipped config, 5 of 25 indicators are legitimately descending in stress
+        // (breadth, frontier_premium, inference_demand, depreciation_subsidy, energisation_delay),
+        // because for those a HIGHER raw value means LESS stress. So a global rule would have broken
+        // five correct indicators while appearing to be a safety check.
+        //
+        // What CAN be guarded is the one new claim: for `funding_stress`, a WIDER spread must never
+        // score as LESS stress. An inverted ladder there would report a funding squeeze as easing,
+        // and the config's own 5%-to-100% reading of the September 2019 episode would silently invert
+        // with it. The indicator unit test cannot catch this, because it uses its own copy of the
+        // ladder; only the SHIPPED file can be wrong.
+        let c = Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("shipped config must load");
+        let ind = c
+            .indicator("funding_stress")
+            .expect("funding_stress must be in the shipped config");
+        let raw: Vec<f64> = ind.anchors.iter().map(|a| a[0]).collect();
+        let stress: Vec<f64> = ind.anchors.iter().map(|a| a[1]).collect();
+        for k in 1..raw.len() {
+            assert!(raw[k] > raw[k - 1], "raw values must ascend: {:?}", raw);
+            assert!(
+                stress[k] > stress[k - 1],
+                "a WIDER funding spread must score as MORE stress, never less — got stress {:?} \
+                 for raw {:?}",
+                stress,
+                raw
+            );
+        }
+        assert!(
+            (raw[0] - -0.10).abs() < 1e-9 && (raw[raw.len() - 1] - 2.95).abs() < 1e-9,
+            "the ladder must still span the measured window, p1 to the September 2019 maximum: \
+             {:?}",
+            raw
+        );
     }
 
     // ------------------------------------------------- sub-question grouping rules
@@ -557,6 +607,7 @@ mod tests {
             rationale: "r".into(),
             anchors: vec![[0.0, 0.0], [10.0, 100.0]],
             fred_series: None,
+            fred_series_b: None,
         });
         let e = c.validate().unwrap_err().0;
         assert!(e.contains("order") && e.contains("unique"), "got: {e}");

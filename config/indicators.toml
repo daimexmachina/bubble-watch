@@ -127,7 +127,7 @@
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "2.5"
+schema_version = "2.6"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -572,6 +572,60 @@ anchors = [[2.0, 6.0], [5.0, 15.0], [10.0, 28.0], [18.0, 45.0], [28.0, 62.0], [4
 # reports a whole-economy total. It is NOT AI-specific. This measures the CHANNEL,
 # not the AI share of it, and a high reading is consistent with the BIS thesis
 # without confirming it.
+# ---------------------------------------------------------------------------
+# `funding_stress` added at weight 7.0: the first MONEY-MARKET indicator in the
+# model. Total weight 183 -> 190, so runs archived under 2.5 are non-comparable
+# and the trend code refuses across the boundary automatically.
+# METHODOLOGY CHANGED 2026-10-16 — schema_version 2.5 -> 2.6.
+#
+# WHY IT WAS ADDED. The model measured the PRICE of risk (credit spreads) but
+# nothing measured whether the machinery that rolls the debt was still working.
+# In a funding event the money market seizes first and hardest, and no indicator
+# here could see it. Measured before building: the composite's own credit channel
+# had already moved (credit_hy stress 18.0 -> 25.7 in three weeks) while the rest
+# of the model sat frozen on quarterly data, so the fast channels are where a
+# deterioration actually registers first.
+#
+# WHAT IT IS: SOFR minus EFFR — the rate paid to borrow cash overnight against
+# Treasury collateral, less the rate paid on reserves. Normally slightly NEGATIVE,
+# because reserves are abundant and secured borrowing is cheap relative to the
+# administered rate. POSITIVE readings mean secured funding is being bid away from
+# the administered rate, which is what a reserve squeeze looks like from outside.
+# DIRECTION: positive = pressure. Not inverted.
+#
+# THE ANCHORS ARE MEASURED FROM THE OBSERVED DISTRIBUTION, NOT CHOSEN, over 2,132
+# paired observations 2018-04-03 to 2026-10-15: p1 -0.10, p25 -0.03, p50 -0.01,
+# p75 +0.01, p90 +0.05, p95 +0.07, p99 +0.18, p99.9 +0.45, max +2.950. The top
+# anchor is the observed maximum, on 2019-09-17 — the September 2019 repo-market
+# seizure. So unlike the ICE credit indices this scale rests on a REAL funding
+# crisis rather than an extrapolation.
+#
+# THE LIMITATION IS DECLARED, NOT IMPLIED AWAY: SOFR begins 2018-04-03, so this
+# contains no 2000, 2008 or 2020 point. The top of the scale rests on a single
+# episode. It is pressure relative to recent years, not a full-cycle calibration,
+# and the indicator's own output says so on every run.
+#
+# NOT CLAIMED TO LEAD ANYTHING. This project already tested whether attention leads
+# repricing and found every pair peaking at lag 0, and the tone series is reported
+# but deliberately unscored for that reason. This indicator claims only to measure a
+# channel that was previously invisible — not to predict or time a reversal.
+#
+# NOT INDEPENDENT OF THE OTHER CREDIT LEGS IN ONE RESPECT, stated so it is not
+# mistaken for extra evidence: all three are fast market-priced channels from the
+# same source and will move together in a genuine credit event. They are three
+# readings of one episode, not three independent confirmations.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "funding_stress"
+group = "pricing"
+label = "Money-market funding stress"
+weight = 7.0
+unit = "pct, SOFR less EFFR"
+source = "fred"
+fred_series = "SOFR"
+fred_series_b = "EFFR"
+rationale = "The first money-market indicator in this model, and the only one that measures whether the machinery rolling the debt still works — credit spreads price risk, they do not show a reserve squeeze. SOFR minus EFFR: the rate paid to borrow cash overnight against Treasury collateral, less the rate paid on reserves. Normally slightly negative, because reserves are abundant; POSITIVE means secured funding is being bid away from the administered rate, which is pressure. DIRECTION: positive = high stress, not inverted. Anchors are measured from the observed distribution over 2,132 paired observations, 2018-04-03 to 2026-10-15 (p1 -0.10, p50 -0.01, p95 +0.07, p99 +0.18, p99.9 +0.45), with the top anchor at the observed maximum, +2.950 on 2019-09-17 — the September 2019 repo-market seizure. WINDOW LIMITATION, DECLARED: SOFR begins 2018-04-03, so the scale contains no 2000, 2008 or 2020 point and its top rests on a single episode; read it as pressure against recent years, not a full cycle. NOT A LEADING INDICATOR: this project tested whether attention leads repricing and found all pairs peaking at lag 0, so no predictive claim is made here — only that a previously invisible channel is now measured. It will tend to move with credit_hy and credit_ig in a real credit event: three readings of one episode, not three independent confirmations."
+anchors = [[-0.10, 5.0], [0.00, 15.0], [0.07, 30.0], [0.18, 50.0], [0.45, 70.0], [1.00, 88.0], [2.95, 100.0]]
 # ---------------------------------------------------------------------------
 [[indicator]]
 id = "private_credit_growth"

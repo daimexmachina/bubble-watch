@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 423 tests, no network required
+cargo test                                         # 429 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -170,6 +170,7 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `datacenter_construction` | 7 | Data-center construction spending, YoY | Census C30 |
 | `concentration` | 6 | Cap-weight vs equal-weight 12-month return gap | Yahoo |
 | `credit_ig` | 6 | Baa yield less 10Y Treasury (40 years of history) | FRED *(key)* |
+| `funding_stress` | 7 | SOFR less EFFR — money-market funding pressure (p1 to the September 2019 repo spike) | FRED *(key)* |
 | `leverage` | 6 | Long-term debt **plus operating leases** ÷ operating cash flow | SEC EDGAR |
 | `private_credit_growth` | 6 | Private-credit lending, YoY (whole-economy channel) | Fed Z.1 |
 | `grid_cancellations` | 6 | Cancelled/postponed generating capacity as share of announced | EIA-860M |
@@ -180,7 +181,7 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
 | `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
 
-Weight totals 183 across the 23 scored indicators, and **there are no declared gaps left**.
+Weight totals 190 across the 24 scored indicators, and **there are no declared gaps left**.
 
 ### `circularity` — a former blind spot, now scored
 

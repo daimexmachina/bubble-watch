@@ -90,6 +90,13 @@ pub const FRED_SPECS: &[&str] = &[
     // so the credit indicators otherwise have no 2000 or 2008 episode to
     // compare against.
     "BAA10Y",
+    // Money-market funding pair for `funding_stress`, added 2026-10-16. Neither is an ICE series,
+    // so both return their full history rather than the 3-year window the credit indices are
+    // licensed down to. SOFR is the secured overnight financing rate and EFFR the effective federal
+    // funds rate; the spread widens when secured funding is bid away from the administered rate,
+    // which is the transmission channel the model otherwise cannot see at all.
+    "SOFR",
+    "EFFR",
 ];
 
 /// Fetch everything. Partial failure is normal and expected: the returned

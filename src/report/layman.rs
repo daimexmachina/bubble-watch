@@ -51,6 +51,10 @@ fn plain_name(id: &str) -> &'static str {
         "volatility" => "how jumpy the market is",
         "credit_hy" => "what weaker companies pay to borrow money",
         "credit_ig" => "what strong companies pay to borrow money",
+        // Written for a non-specialist, and deliberately NOT called "funding risk" or "a funding
+        // crisis": the honest plain description is the plumbing itself, since that is what is being
+        // measured and what a reader needs to picture.
+        "funding_stress" => "how expensive it is for banks and funds to borrow cash overnight, which is the plumbing that keeps debt rolling and jams first when money gets tight",
         "capex_vs_cashflow" => "how much AI companies spend building data centres compared with the cash their business brings in",
         "inference_demand" => "whether the AI compute that has been built is actually being used, and whether that use is still growing",
         "energisation_delay" => "how long a new power project has to wait in the queue before it can actually be switched on",
