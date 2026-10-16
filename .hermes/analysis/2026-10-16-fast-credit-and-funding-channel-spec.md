@@ -1,8 +1,10 @@
 # Spec: a FAST, verifiable credit-and-funding channel — research and gate design
 
-**Status: research complete, awaiting review before build.** Decision taken 2026-10-16 after Daim
-chose path (A) — add high-frequency *verifiable* series, each gated — and delegated the choice of
-which series ("your call").
+**Status: BUILD COMPLETE (2026-10-16, commit f7db427). C1 shipped as `funding_stress`, weight 7.0,
+schema_version 2.5 -> 2.6. See section 6 for what was verified and section 7 for what the build
+changed relative to this spec.** Decision taken 2026-10-16 after Daim chose path (A) — add
+high-frequency *verifiable* series, each gated — and delegated the choice of which series ("your
+call"), then said "Build it!".
 
 **Chosen family: credit & funding spreads.** Not arbitrary. The model's own config already calls
 credit "the single most important non-equity signal… credit reprices faster and with covenants, and
@@ -161,9 +163,58 @@ such series).
 - **Not concluded that C1 is the best of the three.** It is ranked first on currency (updated to
   2026-10-16), completeness (no windowing), and novelty (no overlapping indicator) — not on a
   demonstrated forecasting edge, which has not been measured.
-- **Not concluded that the 3-year ICE window is permanent.** It may be a transport default rather
-  than a licence term; the API-key path (item 2) would settle it, and that has not been tried
-  because no key is configured.
+- **RESOLVED, was "not concluded that the 3-year ICE window is permanent".** It was left open as
+  possibly a transport default. Measured on 2026-10-16 with a working key and
+  `observation_start=1900-01-01`: the ICE indices still return exactly 794 rows while `DGS10` returns
+  16,902 from 1962. So the cap is **server-side, for licensing, and permanent** — it is not fixable
+  by credential or parameter. Long HY OAS history must come from another source entirely.
 - **Not concluded that these readings change the headline.** Today's funding spread is −0.010, i.e.
   calm. If added, it would most likely move the composite only slightly — the value is an early
   channel, not a larger number.
+
+## 6. What was verified after the build (2026-10-16, `f7db427`)
+
+| check | result |
+|---|---|
+| Live reading | `funding_stress` weight 7, **stress 17.1**, contribution 0.63 |
+| Arithmetic ties | 7 × 17.1 / 190 = 0.63 — matches the table |
+| Coverage | 100%, 190 of 190 weight, 0 indicators unavailable |
+| Composite | 39.8 (was 40.8 before, on 183 weight) |
+| Offline degradation | SOFR uncached → GAP naming the series **and both transports tried**, `api_key` redacted, composite still computed at 96% |
+| Tests | 429 green, 0 warnings |
+
+The composite fell 40.8 → 39.8 because the new indicator currently reads calm (17.1) and therefore
+pulls the average down. That is the honest consequence of measuring a channel that is quiet, and it is
+**not** a reason to weight it differently.
+
+**Falsification: the pairing guard took three attempts, and the first two proved nothing.**
+
+- Attempt 1 edited an anchor that `cargo fmt` had moved. The `assert count == 1` caught it, so
+  *nothing was tested* — but without that assertion the suite would have reported green and the
+  falsification would have silently retired.
+- Attempt 2 replaced a **value** inside a date-keyed map while the **key** still governed which
+  observations paired. The buggy behaviour was unreachable, so the test correctly still passed. **A
+  mutation that does not change behaviour proves nothing**, even when the bytes changed.
+- Attempt 3 replaced the pairing *decision* and failed as required, reporting `got 1.1` against the
+  expected `0.10`.
+- The disjoint-calendar guard failed correctly on the first attempt (fabricating `0.0` would read as a
+  calm funding market).
+- The shipped-config direction guard was falsified by inverting the ladder in the TOML — raw still
+  ascending, stress descending — and failed with a named reason.
+
+## 7. What the build changed relative to this spec
+
+- **C1 shipped as designed** (SOFR − EFFR), after the IORB → EFFR revision in section 3.
+- **`IndicatorCfg` gained `fred_series_b`** — a spread cannot be one series id, and hardcoding the two
+  legs inside the indicator would put the measurement in the code instead of the config. The spread is
+  always `fred_series` MINUS `fred_series_b`, so direction is stated rather than inferred.
+- **A global "anchors must ascend in stress" guard was CONSIDERED AND REJECTED.** Measured: 5 of 25
+  shipped indicators are legitimately descending in stress, so the rule would have broken five correct
+  indicators while appearing to be a safety check. A targeted assertion on the shipped
+  `funding_stress` ladder replaced it — the indicator's unit test cannot catch a config-side inversion
+  because it carries its own copy of the ladder.
+- **C2 and C3 remain unbuilt**, as ranked. C3's "11 days stale" was resolved as *weekly cadence*, not a
+  stalled feed, which removes it from contention as a fast channel.
+- **The `credit_hy` anchor remains unreproducible** (Finding 2) and is now known to be unfixable from
+  FRED. It is still flagged, not fixed.
+
