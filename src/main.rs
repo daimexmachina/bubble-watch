@@ -1061,6 +1061,18 @@ fn print_human(r: &bubble_watch::model::Report) {
     for c in &r.caveats {
         println!("  ! {}", c);
     }
+    // OPERATIONAL WARNINGS BELONG ON THE TERMINAL TOO, not only in the document.
+    //
+    // These reached the HTML but not the console, because the loop that prints `trend.warnings` lives in
+    // `print_trend` and this function did not print them at all. So `report --offline` refused to record a
+    // measurement and told the operator NOTHING -- a smaller instance of the exact defect the refusal was
+    // added to prevent. A refusal nobody can hear is indistinguishable from success.
+    if !r.trend.warnings.is_empty() {
+        println!();
+        for w in &r.trend.warnings {
+            println!("  ! {}", w);
+        }
+    }
     println!("\n{}", r.disclaimer);
 }
 
