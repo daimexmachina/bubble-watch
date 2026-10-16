@@ -121,7 +121,7 @@ pub fn count_window(
     // where `distress_events` sits, so it reported a GAP on every single run while `opposition_pressure`
     // — needing only five — looked healthy. Caching means the ten are spent once and a re-run costs
     // nothing. A docket count does not change minute to minute; a day is well inside its cadence.
-    let body = f.get_with_ttl(
+    let body = f.get_with_ttl_fresh_only(
         &search_url(query, filed_after, filed_before),
         UA_WEB,
         std::time::Duration::from_secs(COURTLISTENER_TTL_SECS),

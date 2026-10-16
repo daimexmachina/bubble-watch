@@ -177,11 +177,39 @@ impl Fetcher {
     /// A TTL means those ten requests are spent ONCE and a same-day re-run costs nothing. The threshold
     /// is per CALL, not global: a price series wants no cache at all, a court docket count is fine for a
     /// day. The cached file's mtime IS the fetch time, so no extra bookkeeping is needed.
+    /// As `get_with_ttl`, but NEVER falls back to an expired cache entry.
+    ///
+    /// WHY THIS EXISTS, and it is a correction to my own work. The stale-while-throttled fallback is
+    /// worth having in general, but it makes a query that would otherwise be ABSENT become PRESENT with
+    /// an old value — which SILENCES the incompleteness disclosure the court indicators depend on.
+    /// Substituting a two-week-old count and still reporting "3 of 3 queries" is the same class of defect
+    /// this whole line of work exists to remove: a silent substitution. Worse, the fetch log that records
+    /// `CACHE stale` is printed by `main.rs` and never rendered in the report, so a reader would have no
+    /// way to see it. An absent query must stay absent and be DECLARED.
+    pub fn get_with_ttl_fresh_only(
+        &self,
+        url: &str,
+        user_agent: &str,
+        ttl: std::time::Duration,
+    ) -> Result<String, String> {
+        self.get_with_ttl_impl(url, user_agent, ttl, false)
+    }
+
     pub fn get_with_ttl(
         &self,
         url: &str,
         user_agent: &str,
         ttl: std::time::Duration,
+    ) -> Result<String, String> {
+        self.get_with_ttl_impl(url, user_agent, ttl, true)
+    }
+
+    fn get_with_ttl_impl(
+        &self,
+        url: &str,
+        user_agent: &str,
+        ttl: std::time::Duration,
+        allow_stale: bool,
     ) -> Result<String, String> {
         if !self.offline {
             if let Some(p) = self.cache_path(url) {
@@ -215,13 +243,15 @@ impl Fetcher {
         match self.get(url, user_agent) {
             Ok(s) => Ok(s),
             Err(e) => {
-                if let Some(stale) = self.stale_cache_body(url) {
-                    self.log.borrow_mut().push(format!(
+                if allow_stale {
+                    if let Some(stale) = self.stale_cache_body(url) {
+                        self.log.borrow_mut().push(format!(
                         "CACHE stale ({}) {} :: served after a fetch failure, so this value is NOT current",
                         stale.0,
                         redact_url(url)
                     ));
-                    return Ok(String::from_utf8_lossy(&stale.1).to_string());
+                        return Ok(String::from_utf8_lossy(&stale.1).to_string());
+                    }
                 }
                 Err(e)
             }
@@ -744,6 +774,32 @@ mod tests {
         assert!(
             !stale_was_served(&f),
             "and it must not be declared as a served stale value: {:?}",
+            f.log.borrow()
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn the_fresh_only_variant_refuses_the_stale_fallback() {
+        // THE CORRECTION TO MY OWN WORK. The stale fallback makes an ABSENT query become PRESENT with an
+        // old value, which silences the incompleteness disclosure the court indicators depend on — and
+        // the `CACHE stale` line that records it is printed by main.rs and never rendered in the report,
+        // so a reader could not see it. A two-week-old count still reported as "3 of 3 queries" is a
+        // silent substitution, the same defect class this work exists to remove. So the court calls opt
+        // out, and an absent query stays absent and is declared.
+        let dir = scratch("freshonly");
+        let f = ttl_fetcher(&dir);
+        let url = "https://example.invalid/ttl-fresh-only";
+        std::fs::write(f.cache_path(url).unwrap(), b"CACHED-BODY").unwrap();
+
+        let got = f.get_with_ttl_fresh_only(url, "ua", std::time::Duration::from_secs(0));
+        assert!(
+            got.is_err(),
+            "fresh-only must NOT serve the expired entry, got {got:?}"
+        );
+        assert!(
+            !stale_was_served(&f),
+            "and it must not log a stale serve: {:?}",
             f.log.borrow()
         );
         std::fs::remove_dir_all(&dir).ok();
