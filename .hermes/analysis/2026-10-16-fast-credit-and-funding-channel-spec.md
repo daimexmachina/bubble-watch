@@ -208,11 +208,16 @@ pulls the average down. That is the honest consequence of measuring a channel th
 - **`IndicatorCfg` gained `fred_series_b`** — a spread cannot be one series id, and hardcoding the two
   legs inside the indicator would put the measurement in the code instead of the config. The spread is
   always `fred_series` MINUS `fred_series_b`, so direction is stated rather than inferred.
-- **A global "anchors must ascend in stress" guard was CONSIDERED AND REJECTED.** Measured: 5 of 25
-  shipped indicators are legitimately descending in stress, so the rule would have broken five correct
-  indicators while appearing to be a safety check. A targeted assertion on the shipped
-  `funding_stress` ladder replaced it — the indicator's unit test cannot catch a config-side inversion
-  because it carries its own copy of the ladder.
+- **A global "anchors must ascend in stress" guard was CONSIDERED AND REJECTED.** Measured precisely:
+  **4 of 25** shipped indicators are strictly DESCENDING in stress (breadth, frontier_premium,
+  inference_demand, energisation_delay — for those a higher raw value means *less* stress), and **1
+  more** (depreciation_subsidy) has a flat first segment while otherwise ascending. So the rule breaks
+  4 under both `<` and `<=`, and a 5th under `<` only; loosening the comparison does not rescue it.
+  The rule would have mis-scored five correct indicators while appearing to be a safety check. An
+  earlier version of this note said "5 are descending", which conflated *descending* with *breaks my
+  check* — a strict `<` flags both. A targeted assertion on the shipped `funding_stress` ladder
+  replaced it, because the indicator's unit test carries its own copy of the ladder and so cannot catch
+  a config-side inversion.
 - **C2 and C3 remain unbuilt**, as ranked. C3's "11 days stale" was resolved as *weekly cadence*, not a
   stalled feed, which removes it from contention as a fast channel.
 - **The `credit_hy` anchor remains unreproducible** (Finding 2) and is now known to be unfixable from
