@@ -322,12 +322,62 @@ stages right now. That is not the same as being safe."
     // Direction of travel. Written in plain words, and it must never imply a
     // trend the tool refused to compute — when there is no delta, this says so
     // and explains why, rather than staying silent.
+    // HOW MUCH OF THIS SCORE COULD HAVE MOVED AT ALL.
+    //
+    // Computed BEFORE the direction match because it qualifies every branch of it: a change of
+    // any size means something different when most of the weight is pinned to an older date.
+    // CONTEXT ONLY, derived — never an input to the composite.
+    let cadence = match &r.freshness {
+        Some(f) if f.total_weight > 0.0 && f.frozen_weight > 0.0 => {
+            let live_pct = (100.0 * f.live_weight / f.total_weight).round();
+            let oldest = f
+                .oldest_change
+                .clone()
+                .unwrap_or_else(|| "an earlier date".into());
+            let age = f.oldest_change_days.unwrap_or(0);
+            format!(
+                " How much of this could have moved: {:.0}% of the score's weight changed \
+within the last {} days. The other {:.0}% has not moved since {} ({} days ago), because {} of \
+{} inputs are quarterly-cadence data that only change when new filings arrive. So a small change \
+means the FAST half of the model was quiet — it is not evidence that the slow half is safe, \
+because the slow half has not been re-measured.",
+                live_pct,
+                f.window_days,
+                100.0 - live_pct,
+                oldest,
+                age,
+                f.frozen_indicators,
+                f.frozen_indicators + f.live_indicators
+            )
+        }
+        Some(f) if f.total_weight > 0.0 => format!(
+            " How much of this could have moved: all of it — every input changed within the last \
+{} days, so a flat reading here reflects measurements that are genuinely being refreshed rather \
+than pinned to an older date.",
+            f.window_days
+        ),
+        // No history, or no history read: there is nothing to say about freshness, and
+        // inventing a figure would be worse than silence.
+        _ => String::new(),
+    };
+
     let direction_of_travel = match &r.trend.delta {
         Some(d) => {
             let change = match d.direction {
                 crate::model::Direction::Flat => {
-                    "barely changed, which is worth saying plainly: the numbers are stable, not \
-getting better or worse"
+                    // "the numbers are stable" was a FALSE CLAIM and is removed. Measured
+                    // 2026-10-16: 49% of the weight had not moved since 2026-09-17 because
+                    // those inputs are quarterly filings, so the score CANNOT move much
+                    // between filing seasons. Calling a pinned instrument "stable" asserts
+                    // something about the world that the data does not support.
+                    //
+                    // DELIBERATELY NOT CROSS-REFERENCED. An earlier version said "read the
+                    // 'how much of this could have moved' note below", which DANGLED whenever
+                    // freshness was unavailable and pointed the reader at a note that was not
+                    // there. The nuance belongs to the cadence clause, which states it only
+                    // when it has the data to know.
+                    "barely changed, though whether that reflects a quiet world or an instrument \
+that cannot move yet is a separate question"
                 }
                 crate::model::Direction::Rising => {
                     "has got worse, meaning more of the warning signs are showing than before"
@@ -363,13 +413,14 @@ change worth paying attention to.",
             format!(
                 "Comparing today with {} ({} days ago): the overall score {} ({} points).{} That \
 comparison is only made against a previous reading taken under the same conditions, so an \
-apples-to-apples comparison is guaranteed{}.",
+apples-to-apples comparison is guaranteed{}.{}",
                 d.baseline_date,
                 d.elapsed_days.round() as i64,
                 change,
                 format_args!("{:+.1}", d.composite_delta),
                 mover,
-                phase
+                phase,
+                cadence
             )
         }
         None => {
@@ -382,13 +433,15 @@ apples-to-apples comparison is guaranteed{}.",
             // words of near-identical refusal). The specifics belong in the technical detail,
             // which is collapsed; this block states the situation in plain terms and says where
             // the detail is. It must stay short enough to actually be read.
-            "This report cannot yet say whether things are getting better or worse — there is no \
-earlier reading it is willing to compare against. It will not compare two readings taken under \
-different conditions, because the difference would then reflect the conditions rather than the \
-market. Rather than show you a number that means nothing, it says nothing and tells you why; the \
-exact reason is in the collapsed note below and in the caveats at the foot of this page. Run it \
-again on another day and a comparison will appear."
-                .to_string()
+            format!(
+                "This report cannot yet say whether things are getting better or worse — there is \
+no earlier reading it is willing to compare against. It will not compare two readings taken \
+under different conditions, because the difference would then reflect the conditions rather \
+than the market. Rather than show you a number that means nothing, it says nothing and tells you \
+why; the exact reason is in the collapsed note below and in the caveats at the foot of this \
+page. Run it again on another day and a comparison will appear.{}",
+                cadence
+            )
         }
     };
 
@@ -784,5 +837,155 @@ mod tests {
             )
         };
         assert_eq!(summarize(&mk()), summarize(&mk()));
+    }
+
+    // -----------------------------------------------------------------------
+    // Cadence: a flat score must never be described as stability
+    // -----------------------------------------------------------------------
+
+    fn fresh(
+        live_w: f64,
+        frozen_w: f64,
+        oldest: &str,
+        age: i64,
+        live_n: usize,
+        frozen_n: usize,
+    ) -> crate::history::Freshness {
+        crate::history::Freshness {
+            live_indicators: live_n,
+            frozen_indicators: frozen_n,
+            live_weight: live_w,
+            frozen_weight: frozen_w,
+            total_weight: live_w + frozen_w,
+            window_days: 7,
+            newest_change: Some("2026-10-15".into()),
+            oldest_change: Some(oldest.into()),
+            oldest_change_days: Some(age),
+            frozen_ids: vec!["backlog_quality".into()],
+        }
+    }
+
+    /// A FLAT delta, which is the branch that used to lie.
+    fn flat_trend() -> crate::model::Trend {
+        crate::model::Trend {
+            points: vec![],
+            delta: Some(crate::model::TrendDelta {
+                baseline_date: "2026-10-15".into(),
+                baseline_composite: 40.0,
+                baseline_coverage: 1.0,
+                composite_delta: 0.1,
+                elapsed_days: 1.0,
+                direction: crate::model::Direction::Flat,
+                phase_now: "mid".into(),
+                phase_then: "mid".into(),
+                phase_changed: false,
+                indicators: vec![],
+            }),
+            reason: None,
+            warnings: vec![],
+            recorded: false,
+        }
+    }
+
+    #[test]
+    fn a_flat_comparison_never_claims_the_numbers_are_stable() {
+        // THE FALSE CLAIM THIS REMOVES. The flat branch read "the numbers are stable, not getting
+        // better or worse". Measured 2026-10-16 that was false: 49% of the weight had not moved
+        // since 2026-09-17, so the instrument was PINNED, and "stable" asserted something about
+        // the world that the data did not support.
+        let mut r = report(vec![ind("a", 10.0, Some(50.0))], 40.0, Some([30.0, 72.0]));
+        r.trend = flat_trend();
+        r.freshness = Some(fresh(93.0, 90.0, "2026-09-17", 29, 11, 12));
+
+        let s = summarize(&r);
+        assert!(
+            !s.direction_of_travel.contains("the numbers are stable"),
+            "a pinned instrument must never be described as stable: {}",
+            s.direction_of_travel
+        );
+        assert!(
+            s.direction_of_travel.contains("could have moved"),
+            "the cadence note must accompany a flat reading: {}",
+            s.direction_of_travel
+        );
+        assert!(
+            s.direction_of_travel.contains("49%"),
+            "the pinned SHARE must be stated: {}",
+            s.direction_of_travel
+        );
+        assert!(
+            s.direction_of_travel.contains("2026-09-17"),
+            "the date the slow half last moved must be named: {}",
+            s.direction_of_travel
+        );
+        assert!(
+            s.direction_of_travel.contains("12 of 23"),
+            "the COUNT of pinned inputs must be named, not only their weight: {}",
+            s.direction_of_travel
+        );
+    }
+
+    #[test]
+    fn the_no_comparison_branch_still_states_the_cadence() {
+        // When no trend can be computed the reader has even less to go on, so the cadence
+        // note matters MORE here, not less.
+        let mut r = report(vec![ind("a", 10.0, Some(50.0))], 40.0, Some([30.0, 72.0]));
+        r.freshness = Some(fresh(93.0, 90.0, "2026-09-17", 29, 11, 12));
+
+        let s = summarize(&r);
+        assert!(
+            s.direction_of_travel.contains("could have moved"),
+            "the cadence note must appear when no comparison was made: {}",
+            s.direction_of_travel
+        );
+        assert!(
+            s.direction_of_travel.contains("49%"),
+            "{}",
+            s.direction_of_travel
+        );
+    }
+
+    #[test]
+    fn the_cadence_note_is_absent_rather_than_invented_without_freshness() {
+        // No archive was read, so there is nothing to say about freshness. Silence is correct;
+        // a guessed figure would be worse than no figure.
+        let mut r = report(vec![ind("a", 10.0, Some(50.0))], 40.0, Some([30.0, 72.0]));
+        r.trend = flat_trend();
+        r.freshness = None;
+
+        let s = summarize(&r);
+        assert!(
+            !s.direction_of_travel.contains("could have moved"),
+            "no freshness must mean no cadence claim: {}",
+            s.direction_of_travel
+        );
+        // AND NO DANGLING POINTER TO IT. An earlier version cross-referenced "the note below",
+        // which sent the reader to a note that did not exist whenever freshness was unavailable.
+        assert!(
+            !s.direction_of_travel.contains("note below"),
+            "the text must not point at a cadence note that is not there: {}",
+            s.direction_of_travel
+        );
+    }
+
+    #[test]
+    fn a_fully_live_score_says_so_instead_of_implying_everything_is_pinned() {
+        // The complement: with nothing frozen, the clause must not claim a pinned share. Otherwise
+        // the fix would satisfy its own test by always crying staleness, which is its own failure.
+        let mut r = report(vec![ind("a", 10.0, Some(50.0))], 40.0, Some([30.0, 72.0]));
+        r.trend = flat_trend();
+        r.freshness = Some(fresh(183.0, 0.0, "2026-10-15", 1, 24, 0));
+
+        let s = summarize(&r);
+        assert!(
+            s.direction_of_travel.contains("all of it"),
+            "a fully live score must say so: {}",
+            s.direction_of_travel
+        );
+        assert!(
+            !s.direction_of_travel.contains("has not moved since"),
+            "nothing is pinned, so no pinned date may be claimed: {}",
+            s.direction_of_travel
+        );
     }
 }
