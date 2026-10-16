@@ -35,7 +35,22 @@ pub struct Fetcher {
     /// dead waiting and the tool appears to hang. An optional source must never
     /// be able to stall the run.
     dead_hosts: RefCell<std::collections::HashSet<String>>,
+    /// Total time this run has spent sleeping off HTTP 429s.
+    ///
+    /// Bounded, and the bound is the point. On 2026-10-16 a single starved source stretched a run to
+    /// roughly ten minutes against a 900 s systemd cap — the 45 s backoff was correct in principle but
+    /// unbounded in practice, so a throttled host could spend the whole run's budget being polite to
+    /// it. A source that is rate-limiting us must degrade to a DECLARED gap quickly, not hold the run
+    /// open; the stale-cache fallback is what makes that safe to do.
+    backoff_spent: Cell<Duration>,
 }
+
+/// The most a single run will ever spend waiting on rate limits, across all hosts.
+///
+/// Deliberately small relative to the 900 s systemd `TimeoutStartSec`: the run has real work to do and
+/// a throttled source is not it. Two backoffs are enough to clear the short-window case; past that the
+/// window is long enough that waiting is the wrong strategy and the stale cache is the right one.
+pub const MAX_BACKOFF_PER_RUN: Duration = Duration::from_secs(120);
 
 /// Query parameters whose VALUES must never be logged or embedded in output.
 /// An API key in a URL is the classic leak path: it lands in request logs,
@@ -135,6 +150,7 @@ impl Fetcher {
             offline,
             cache_dir,
             dead_hosts: RefCell::new(std::collections::HashSet::new()),
+            backoff_spent: Cell::new(Duration::ZERO),
         }
     }
 
@@ -187,7 +203,55 @@ impl Fetcher {
                 }
             }
         }
-        self.get(url, user_agent)
+        // STALE-WHILE-THROTTLED, AND DECLARED.
+        //
+        // When the network refuses (429 and friends), serve the cached copy from BEFORE the TTL rather
+        // than returning a gap — and say how old it is. A week-old docket count is a far better input
+        // than a missing one: CourtListener filings move by a filing or two per day against
+        // year-over-year bases in the hundreds. What this replaces was measured on 2026-10-16:
+        // `distress_events` reported a GAP on every run for days, and `opposition_pressure` silently
+        // dropped a query for sixteen runs. A declared stale value is honest; a gap and a silent subset
+        // are not.
+        match self.get(url, user_agent) {
+            Ok(s) => Ok(s),
+            Err(e) => {
+                if let Some(stale) = self.stale_cache_body(url) {
+                    self.log.borrow_mut().push(format!(
+                        "CACHE stale ({}) {} :: served after a fetch failure, so this value is NOT current",
+                        stale.0,
+                        redact_url(url)
+                    ));
+                    return Ok(String::from_utf8_lossy(&stale.1).to_string());
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// The cached body for `url` together with a human-readable age, if one exists and is non-empty.
+    ///
+    /// Used only as a fallback after a fetch has already failed, so the caller can serve a declared-stale
+    /// value instead of a gap.
+    fn stale_cache_body(&self, url: &str) -> Option<(String, Vec<u8>)> {
+        let p = self.cache_path(url)?;
+        let bytes = std::fs::read(&p).ok()?;
+        if bytes.is_empty() {
+            return None;
+        }
+        let age = std::fs::metadata(&p)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.elapsed().ok())
+            .map(|d| {
+                let h = d.as_secs_f64() / 3600.0;
+                if h < 48.0 {
+                    format!("{:.1}h old", h)
+                } else {
+                    format!("{:.1}d old", h / 24.0)
+                }
+            })
+            .unwrap_or_else(|| "age unknown".to_string());
+        Some((age, bytes))
     }
 
     /// Fetch binary content with a TTL, for archives that change slowly.
@@ -217,7 +281,21 @@ impl Fetcher {
                 }
             }
         }
-        self.get_bytes(url, user_agent)
+        // Same stale-while-throttled fallback as `get_with_ttl`, for archives.
+        match self.get_bytes(url, user_agent) {
+            Ok(b) => Ok(b),
+            Err(e) => {
+                if let Some(stale) = self.stale_cache_body(url) {
+                    self.log.borrow_mut().push(format!(
+                        "CACHE stale ({}) {} :: served after a fetch failure, so this value is NOT current",
+                        stale.0,
+                        redact_url(url)
+                    ));
+                    return Ok(stale.1);
+                }
+                Err(e)
+            }
+        }
     }
 
     fn cache_path(&self, url: &str) -> Option<std::path::PathBuf> {
@@ -370,6 +448,23 @@ impl Fetcher {
                     // Sleeping for a fixed, generous interval is deliberately cruder than exponential
                     // backoff: the goal is to outlast a fixed window, not to probe for its edge.
                     last_err = "HTTP 429 rate limited".into();
+                    let spent = self.backoff_spent.get();
+                    if spent >= MAX_BACKOFF_PER_RUN {
+                        // The bound. Past it, waiting is the wrong strategy: the window is longer than
+                        // any pause this run can afford, and the stale-cache fallback in
+                        // `get_with_ttl` is the better answer. Giving up here is what keeps a throttled
+                        // host from spending the run's whole budget — measured at ~10 minutes against a
+                        // 900 s cap on 2026-10-16.
+                        self.log.borrow_mut().push(format!(
+                            "RATE-LIMITED({}) {} :: giving up, the run's {}s backoff budget is spent",
+                            attempt,
+                            redact_url(url),
+                            MAX_BACKOFF_PER_RUN.as_secs()
+                        ));
+                        break;
+                    }
+                    self.backoff_spent
+                        .set(spent + Duration::from_secs(RATE_LIMIT_BACKOFF_SECS));
                     self.log.borrow_mut().push(format!(
                         "RATE-LIMITED({}) {} :: sleeping {}s before retry",
                         attempt,
@@ -589,5 +684,88 @@ mod tests {
             f.log.borrow()
         );
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    // ---- stale-while-throttled, and the backoff bound ----------------------
+
+    fn stale_was_served(f: &Fetcher) -> bool {
+        f.log.borrow().iter().any(|l| l.contains("CACHE stale"))
+    }
+
+    #[test]
+    fn an_expired_entry_is_served_when_the_fetch_FAILS_and_it_says_how_old_it_is() {
+        // THE FIX FOR THE GAP. `distress_events` reported a GAP on every run for days because the host
+        // refused the request and there was nothing to fall back on. A declared-stale value is the
+        // honest alternative to a gap — but only because the log NAMES the age, so a reader can see the
+        // figure is not current. Without the declaration this would be a silent substitution, which is
+        // the very failure this whole line of work exists to remove.
+        //
+        // `example.invalid` is reserved by RFC 2606 and never resolves, so the fetch fails for real
+        // rather than being simulated.
+        let dir = scratch("stalefallback");
+        let f = ttl_fetcher(&dir);
+        let url = "https://example.invalid/ttl-stale-fallback";
+        std::fs::write(f.cache_path(url).unwrap(), b"CACHED-BODY").unwrap();
+
+        let got = f.get_with_ttl(url, "ua", std::time::Duration::from_secs(0));
+        assert_eq!(
+            got.as_deref().ok(),
+            Some("CACHED-BODY"),
+            "the expired cache must be served when the network refuses: {:?}",
+            f.log.borrow()
+        );
+        assert!(
+            stale_was_served(&f),
+            "serving a stale value MUST be declared, with its age: {:?}",
+            f.log.borrow()
+        );
+        assert!(
+            f.log.borrow().iter().any(|l| l.contains("NOT current")),
+            "the declaration must say the value is not current: {:?}",
+            f.log.borrow()
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn an_empty_cached_file_is_not_served_as_a_stale_fallback_either() {
+        // The same empty-body guard, on the new path. A truncated write must not become a served value
+        // simply because the network happened to fail.
+        let dir = scratch("staleempty");
+        let f = ttl_fetcher(&dir);
+        let url = "https://example.invalid/ttl-stale-empty";
+        std::fs::write(f.cache_path(url).unwrap(), b"").unwrap();
+
+        let got = f.get_with_ttl(url, "ua", std::time::Duration::from_secs(0));
+        assert!(
+            got.is_err(),
+            "an empty cache file must not be served as a stale fallback, got {got:?}"
+        );
+        assert!(
+            !stale_was_served(&f),
+            "and it must not be declared as a served stale value: {:?}",
+            f.log.borrow()
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn the_rate_limit_budget_is_small_enough_to_leave_the_run_room_to_finish() {
+        // Guards the RELATIONSHIP, not the number. On 2026-10-16 an unbounded 45 s backoff stretched one
+        // run to roughly ten minutes against the deploy unit's 900 s cap, which is the difference
+        // between a degraded report and no report at all. If someone raises this constant, this test
+        // should make them say why.
+        let systemd_cap = Duration::from_secs(900);
+        assert!(
+            MAX_BACKOFF_PER_RUN * 3 < systemd_cap,
+            "the whole backoff budget ({:?}) must be a small fraction of the run's {:?} cap, \
+             leaving room for the actual fetching",
+            MAX_BACKOFF_PER_RUN,
+            systemd_cap
+        );
+        assert!(
+            MAX_BACKOFF_PER_RUN >= Duration::from_secs(RATE_LIMIT_BACKOFF_SECS),
+            "the budget must admit at least one full backoff, or the first 429 would be a hard failure"
+        );
     }
 }
