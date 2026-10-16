@@ -1372,6 +1372,19 @@ pub fn render(r: &Report) -> String {
             esc(&g.reason)
         ));
     }
+    // SOURCE FAILURES BELONG IN THE DOCUMENT, not only on the console — the console is not where anyone
+    // reads this, and on 2026-10-16 the reason `distress_events` had been GAPping for days existed only in
+    // a log line from a command the daily job does not run. Rendered into the existing list so no new
+    // template placeholder is needed.
+    for f in &r.failures {
+        gaps.push_str(&format!(
+            "<li><b>SOURCE FAILURE</b> — <code>{}</code> did not deliver: {} <i>({})</i>. A missing input, \
+             not a zero: this is why an indicator above may be absent.</li>",
+            esc(&f.source),
+            esc(&f.reason),
+            esc(&f.endpoint)
+        ));
+    }
     if gaps.is_empty() {
         gaps.push_str("<li>None — all configured indicators produced a reading.</li>");
     }

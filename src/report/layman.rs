@@ -566,6 +566,7 @@ mod tests {
             })
             .collect();
         Report {
+            failures: Vec::new(),
             tool: "bubble-watch".into(),
             version: "0".into(),
             generated_at: "2026-09-17T00:00:00Z".into(),

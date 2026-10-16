@@ -685,6 +685,16 @@ pub struct Report {
     /// in weeks.
     #[serde(default)]
     pub freshness: Option<crate::history::Freshness>,
+    /// Sources that were asked for data and did not deliver it this run.
+    ///
+    /// Carried in the REPORT and not only on the console, because the console is not where anyone reads
+    /// this. Measured 2026-10-16: `distress_events` GAPped for days and the only record of WHY was in a
+    /// log line printed by a command the daily job does not run. A reader of the document must be able to
+    /// see that a number is missing because a source failed, and which source, without shell access.
+    ///
+    /// `default` so that a report written before this field existed still deserialises.
+    #[serde(default)]
+    pub failures: Vec<SourceFailure>,
     /// How fast the measured inputs are moving, and in which direction.
     ///
     /// CONTEXT ONLY — never an input to the composite. Present because every indicator here scores a

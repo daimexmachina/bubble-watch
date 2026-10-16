@@ -442,6 +442,7 @@ pub fn build_with_history(
         confidence: confidence.to_string(),
         sub_scores,
         sub_question_labels,
+        failures: obs.failures.clone(),
         freshness,
         velocity,
         phase: phase.id().to_string(),
