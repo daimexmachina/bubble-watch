@@ -2545,10 +2545,26 @@ impl Indicator for DistressEvents {
             };
         };
         if ctx.obs.insolvency.is_empty() {
+            // NAME THEM. "no counts were retrieved" tells a reader that something went wrong; it does
+            // not tell them WHICH configured queries produced nothing, so they cannot tell a genuinely
+            // quiet docket from a source that refused every request. Measured 2026-10-16: this indicator
+            // GAPped on every run for days while its exact URL returned HTTP 200 and `count: 61` when
+            // called by hand — the failure was the host's rate limiter, not the query, and the message
+            // gave no way to know that.
+            let configured: Vec<&str> = crate::sources::courtlistener::insolvency_queries()
+                .iter()
+                .map(|(label, _)| *label)
+                .collect();
             return Reading::Unavailable {
-                reason: "no insolvency docket counts were retrieved, so whether AI-exposed \
-                         companies are failing is unknown rather than zero"
-                    .into(),
+                reason: format!(
+                    "all {} configured insolvency queries returned nothing usable ({}), so whether \
+                     AI-exposed companies are failing is UNKNOWN rather than zero. This is a retrieval \
+                     failure, not an empty docket: the same queries return valid counts when called \
+                     directly, and the host rate-limits this tool at roughly five requests per window \
+                     while the model makes ten.",
+                    configured.len(),
+                    configured.join(", ")
+                ),
             };
         }
 
@@ -3522,7 +3538,7 @@ mod tests {
         };
         match DistressEvents.evaluate(&ctx) {
             Reading::Unavailable { reason } => assert!(
-                reason.contains("unknown rather than zero"),
+                reason.to_lowercase().contains("unknown rather than zero"),
                 "must refuse rather than read the opposition vector: {reason}"
             ),
             other => panic!("expected Unavailable, got {other:?}"),
@@ -3693,6 +3709,42 @@ mod tests {
                 );
             }
             other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_total_failure_names_every_query_that_returned_nothing() {
+        // A GAP that says only "nothing was retrieved" cannot be told apart from a genuinely quiet
+        // docket. Measured 2026-10-16: this indicator GAPped on every run for days while its exact URL
+        // returned HTTP 200 and `count: 61` when called by hand — the host's rate limiter was the cause
+        // and the message gave no way to know that. Naming the queries is what makes the next person's
+        // diagnosis start from the truth.
+        let cfg = shipped();
+        let obs = Observations::default(); // no insolvency data at all
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match DistressEvents.evaluate(&ctx) {
+            Reading::Unavailable { reason } => {
+                assert!(
+                    reason.contains("chapter11_ai"),
+                    "the gap must NAME the queries: {reason}"
+                );
+                assert!(
+                    reason.contains("chapter11_compute"),
+                    "every configured query, not just the first: {reason}"
+                );
+                assert!(
+                    reason.contains("2 configured"),
+                    "and say how many were configured: {reason}"
+                );
+                assert!(
+                    reason.to_lowercase().contains("retrieval failure"),
+                    "and distinguish a retrieval failure from an empty docket: {reason}"
+                );
+            }
+            other => panic!("expected Unavailable, got {other:?}"),
         }
     }
 }
