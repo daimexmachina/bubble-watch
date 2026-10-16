@@ -84,6 +84,27 @@ pub fn pipeline_with_history(
     // Merge load warnings with the trend the report computed for itself.
     report.trend.warnings.append(&mut warnings);
 
+    // RECORDING IS REFUSED WHILE OFFLINE, and this is a data-integrity rule rather than a convenience.
+    //
+    // An offline run reads whatever is in the local cache; it does not consult the world. Appending it
+    // to the archive therefore files a MEASUREMENT that was never taken — and worse, files it under
+    // today's date, where it is indistinguishable from the real daily run. Measured 2026-10-16: the
+    // archive held FOURTEEN rows for that day against one for every other day, several of them
+    // duplicates from offline diagnostic runs with identical composites, and nothing anywhere said
+    // which row was the measurement.
+    //
+    // The flag stays opt-out for the caller; the refusal lives here so no command can forget it.
+    let record_requested = record;
+    let record = record && !offline;
+    if record_requested && !record {
+        report.trend.warnings.push(
+            "NOT RECORDED: this run was offline, so it read the local cache rather than the world. \
+             Filing it would have put a measurement that was never taken into the archive, under \
+             today's date, where it could not be told apart from the real daily run. Re-run without \
+             --offline to record a measurement."
+                .to_string(),
+        );
+    }
     if record {
         let point = history::point_from(
             &report.indicators,

@@ -139,6 +139,15 @@ enum Cmd {
         /// Directory holding the run archive.
         #[arg(long, default_value = "data/history")]
         history_dir: PathBuf,
+        /// Do not append this run to the archive.
+        ///
+        /// WHY THIS EXISTS. `report` has had this flag all along and `site` had not, so re-rendering the
+        /// dashboard to LOOK at it — which is a read, not a measurement — silently appended a second
+        /// row for the same day. The archive is the measurement history; a display refresh should not be
+        /// able to write to it. Discovered 2026-10-16 when regenerating the dashboard to see the day's
+        /// fixes and finding no way to avoid polluting the series.
+        #[arg(long)]
+        no_record: bool,
     },
     /// Report which recent days have NO archive row.
     ///
@@ -554,15 +563,20 @@ fn run(cli: &Cli) -> Result<(), String> {
             finish_code(&r);
             Ok(())
         }
-        Cmd::Site { out, history_dir } => {
-            // Generate today's run and record it, then rebuild the whole site so
-            // the dashboard reflects this run immediately.
+        Cmd::Site {
+            out,
+            history_dir,
+            no_record,
+        } => {
+            // Generate today's run, then rebuild the whole site so the dashboard reflects it
+            // immediately. Recording is now opt-out: a re-render to LOOK at the dashboard is a read,
+            // and it must not be able to append to the measurement archive.
             let (r, _) = bubble_watch::pipeline_with_history(
                 &cfg,
                 cli.offline,
                 cache.clone(),
                 history_dir,
-                true,
+                !*no_record,
             );
             let dir = out.clone().unwrap_or_else(|| PathBuf::from("site"));
             gen_site(&dir, history_dir, &r)?;
