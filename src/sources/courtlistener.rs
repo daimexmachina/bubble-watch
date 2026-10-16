@@ -131,10 +131,28 @@ pub fn count_window(
 
 /// How long a docket count stays usable, in seconds.
 ///
-/// One day. The underlying quantity is a count of filings in a 365-day window, so it moves by at most
-/// a filing or two per day; refetching it more often buys nothing and spends the request budget that
-/// the channel is already losing.
-pub const COURTLISTENER_TTL_SECS: u64 = 24 * 60 * 60;
+/// SEVEN DAYS, and the number comes from the host's own refusal message rather than from taste.
+///
+/// Measured 2026-10-16 by calling this host's search endpoint directly:
+///
+/// ```text
+/// HTTP 429  {"detail":"Request was throttled. Expected available in 76078 seconds."}
+/// ```
+///
+/// 76,078 seconds is about 21 HOURS. So the limit is not a short burst window that a retry can wait
+/// out — it is roughly five requests per day — and the model makes ten (five queries x two date windows
+/// each). At a 24-hour TTL every daily run spent the whole quota re-fetching data it already had, the
+/// same five queries won every time, and `distress_events` never got a turn. No backoff can fix a
+/// 21-hour window, which is why the earlier 45 s pause changed nothing.
+///
+/// With a seven-day TTL the ten requests are spread: the first run caches the five it can, the next run
+/// caches the five it could not reach, and the remaining days cost nothing because all ten are still
+/// fresh. The channel heals in about two runs instead of never.
+///
+/// Seven days is defensible on the data itself, not just on the quota: this is a count of filings in a
+/// 365-day window, so it moves by a filing or two per day against bases in the hundreds. A week-old
+/// count is well inside the cadence of the thing being measured.
+pub const COURTLISTENER_TTL_SECS: u64 = 7 * 24 * 60 * 60;
 
 /// The year-over-year change in filings for one tracked query.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -273,5 +291,26 @@ mod tests {
                 "{label} must anchor on the data-centre phrase: {q}"
             );
         }
+    }
+
+    #[test]
+    fn the_ttl_outlasts_the_hosts_own_stated_throttle_window() {
+        // Guards the RELATIONSHIP that the fix depends on, so the constant cannot drift back to
+        // something that cannot work. CourtListener refuses this host with
+        //
+        //     {"detail":"Request was throttled. Expected available in 76078 seconds."}
+        //
+        // which is about 21 HOURS -- measured 2026-10-16. The model makes ten requests (five queries x
+        // two date windows) against a quota of roughly five per day, so a TTL shorter than a couple of
+        // days guarantees the same queries win the quota on every run and the rest never get a turn.
+        // That is precisely how `distress_events` GAPped for days.
+        const MEASURED_WINDOW_HOURS: u64 = 21;
+        let window = MEASURED_WINDOW_HOURS * 60 * 60;
+        assert!(
+            COURTLISTENER_TTL_SECS >= window * 2,
+            "the TTL ({COURTLISTENER_TTL_SECS}s) must comfortably outlast the {MEASURED_WINDOW_HOURS}h \
+             throttle window ({window}s), or every run re-spends the whole quota on data it already \
+             had and the queries that lose the race never recover"
+        );
     }
 }
