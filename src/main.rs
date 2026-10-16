@@ -408,12 +408,7 @@ fn run(cli: &Cli) -> Result<(), String> {
                     s.detail
                 );
             }
-            if !obs.failures.is_empty() {
-                println!("\nFailures ({}):", obs.failures.len());
-                for f in &obs.failures {
-                    println!("  [{}] {} :: {}", f.source, f.endpoint, f.reason);
-                }
-            }
+            note_failures(&obs);
             if cli.verbose {
                 println!("\nRequest log:");
                 for line in f.log.borrow().iter() {
@@ -479,13 +474,15 @@ fn run(cli: &Cli) -> Result<(), String> {
             history_dir,
             no_record,
         } => {
-            let (r, _) = bubble_watch::pipeline_with_history(
+            let (r, obs) = bubble_watch::pipeline_with_history(
                 &cfg,
                 cli.offline,
                 cache.clone(),
                 history_dir,
                 !*no_record,
             );
+            // The daily job runs THIS command, so this is the one place a failure has to be visible.
+            note_failures(&obs);
             std::fs::create_dir_all(out).map_err(|e| e.to_string())?;
             let json_path = out.join(format!("{}.json", name));
             let html_path = out.join(format!("{}.html", name));
@@ -792,6 +789,25 @@ fn finish_code(r: &bubble_watch::model::Report) {
     if r.coverage < 0.5 {
         std::process::exit(4);
     }
+}
+
+/// Print the per-source fetch failures, if any.
+///
+/// WHY THIS IS SHARED RATHER THAN INLINE. It existed only in `Cmd::Sources`, while the DAILY job runs
+/// `Cmd::Report` — so the one command that runs unattended was the one that stayed silent about
+/// failures. Measured 2026-10-16: `distress_events` GAPped on every run for days and the `report` output
+/// said nothing about why, which cost most of a day of diagnosis. A report that cannot say what failed
+/// is not a report.
+fn note_failures(obs: &bubble_watch::model::Observations) {
+    if obs.failures.is_empty() {
+        return;
+    }
+    println!();
+    println!("SOURCE FAILURES ({}):", obs.failures.len());
+    for f in &obs.failures {
+        println!("  ! [{}] {} :: {}", f.source, f.endpoint, f.reason);
+    }
+    println!("  These are retrieval failures, NOT zeros. An indicator that rests on one will GAP.");
 }
 
 fn print_human(r: &bubble_watch::model::Report) {
