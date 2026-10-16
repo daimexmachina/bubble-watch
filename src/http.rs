@@ -148,6 +148,78 @@ impl Fetcher {
         self.last_call.set(Some(Instant::now()));
     }
 
+    /// Fetch, serving a cached copy while it is fresh — even ONLINE.
+    ///
+    /// WHY THIS EXISTS. Online mode otherwise refetches every URL on every run. That is right for a
+    /// live market series and wrong for a source that changes weekly or monthly, and on 2026-10-16 it
+    /// broke a channel outright: measured against CourtListener, this host is throttled at roughly
+    /// **five requests per window** while the model makes **ten** (five docket queries x two date
+    /// windows each). The last five were starved with HTTP 429, and `distress_events` sits 7th-10th, so
+    /// it returned a GAP on every run while `opposition_pressure` — which needs only five — looked
+    /// healthy. Nothing was wrong with the new queries; they simply never got a turn.
+    ///
+    /// A TTL means those ten requests are spent ONCE and a same-day re-run costs nothing. The threshold
+    /// is per CALL, not global: a price series wants no cache at all, a court docket count is fine for a
+    /// day. The cached file's mtime IS the fetch time, so no extra bookkeeping is needed.
+    pub fn get_with_ttl(
+        &self,
+        url: &str,
+        user_agent: &str,
+        ttl: std::time::Duration,
+    ) -> Result<String, String> {
+        if !self.offline {
+            if let Some(p) = self.cache_path(url) {
+                let fresh = std::fs::metadata(&p)
+                    .and_then(|m| m.modified())
+                    .map(|t| t.elapsed().map(|age| age < ttl).unwrap_or(false))
+                    .unwrap_or(false);
+                if fresh {
+                    if let Ok(bytes) = std::fs::read(&p) {
+                        if !bytes.is_empty() {
+                            self.log.borrow_mut().push(format!(
+                                "CACHE fresh ({}) {}",
+                                ttl.as_secs(),
+                                redact_url(url)
+                            ));
+                            return Ok(String::from_utf8_lossy(&bytes).to_string());
+                        }
+                    }
+                }
+            }
+        }
+        self.get(url, user_agent)
+    }
+
+    /// Fetch binary content with a TTL, for archives that change slowly.
+    pub fn get_bytes_with_ttl(
+        &self,
+        url: &str,
+        user_agent: &str,
+        ttl: std::time::Duration,
+    ) -> Result<Vec<u8>, String> {
+        if !self.offline {
+            if let Some(p) = self.cache_path(url) {
+                let fresh = std::fs::metadata(&p)
+                    .and_then(|m| m.modified())
+                    .map(|t| t.elapsed().map(|age| age < ttl).unwrap_or(false))
+                    .unwrap_or(false);
+                if fresh {
+                    if let Ok(bytes) = std::fs::read(&p) {
+                        if !bytes.is_empty() {
+                            self.log.borrow_mut().push(format!(
+                                "CACHE fresh ({}) {}",
+                                ttl.as_secs(),
+                                redact_url(url)
+                            ));
+                            return Ok(bytes);
+                        }
+                    }
+                }
+            }
+        }
+        self.get_bytes(url, user_agent)
+    }
+
     fn cache_path(&self, url: &str) -> Option<std::path::PathBuf> {
         let dir = self.cache_dir.as_ref()?;
         // Small FNV-1a hash keeps filenames filesystem-safe and stable.
@@ -288,6 +360,24 @@ impl Fetcher {
                     ));
                     return Err(FetchError::Rejected(msg));
                 }
+                Err(ureq::Error::Status(429, _)) => {
+                    // RATE LIMITED — the one status where retrying at the ordinary inter-request gap
+                    // makes things worse. Measured against CourtListener (2026-10-16): five requests
+                    // succeed, the sixth and every request after it are refused with 429, and a retry
+                    // 30 seconds later is STILL refused. So the ordinary `min_gap` is far too short to
+                    // clear this, and a naive retry loop just re-spends the same refused requests.
+                    //
+                    // Sleeping for a fixed, generous interval is deliberately cruder than exponential
+                    // backoff: the goal is to outlast a fixed window, not to probe for its edge.
+                    last_err = "HTTP 429 rate limited".into();
+                    self.log.borrow_mut().push(format!(
+                        "RATE-LIMITED({}) {} :: sleeping {}s before retry",
+                        attempt,
+                        redact_url(url),
+                        RATE_LIMIT_BACKOFF_SECS
+                    ));
+                    std::thread::sleep(std::time::Duration::from_secs(RATE_LIMIT_BACKOFF_SECS));
+                }
                 Err(e) => {
                     // ureq embeds the URL in its error display, so the key would
                     // otherwise reach the log through this path too.
@@ -340,6 +430,15 @@ fn host_of(url: &str) -> String {
 pub const UA_EDGAR: &str = "bubble-watch/0.1 (research; contact: research@example.invalid)";
 pub const UA_WEB: &str =
     "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 Chrome/120 Safari/537.36";
+
+/// How long to sleep after an HTTP 429 before retrying.
+///
+/// 45 seconds, chosen from measurement rather than symmetry: against CourtListener on 2026-10-16 the
+/// fifth request succeeded, the sixth was refused, and a retry more than 30 seconds later was STILL
+/// refused — so the window is longer than 30s and anything shorter than that is wasted. Sleeping out a
+/// fixed window is deliberately cruder than exponential backoff; the goal is to outlast the throttle,
+/// not to probe for its edge.
+pub const RATE_LIMIT_BACKOFF_SECS: u64 = 45;
 pub const UA_FRED: &str = "Mozilla/5.0 (compatible; bubble-watch/0.1)";
 
 #[cfg(test)]
@@ -416,5 +515,79 @@ mod tests {
     fn redacted_rejection_text_still_explains_itself() {
         let rej = FetchError::Rejected("HTTP 400 — Variable api_key is not set".into());
         assert!(rej.message().contains("api_key is not set"));
+    }
+
+    // ---- the TTL cache ----------------------------------------------------
+
+    fn ttl_fetcher(dir: &std::path::Path) -> Fetcher {
+        // online=true, so this is the ONLINE path exercising a cache read — the whole point.
+        Fetcher::new(false, Some(dir.to_path_buf()))
+    }
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let d = std::env::temp_dir().join(format!("bw-ttl-{}-{}", name, std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn cache_was_served(f: &Fetcher) -> bool {
+        f.log.borrow().iter().any(|l| l.contains("CACHE fresh"))
+    }
+
+    #[test]
+    fn a_fresh_cache_entry_is_served_without_touching_the_network() {
+        // THE FIX FOR THE STARVATION BUG. Without this, every online run re-spends its whole request
+        // budget, and a source throttled below the number of requests the model makes starves whichever
+        // queries come last. Asserted via the LOG rather than the return value so the test never
+        // performs a network call.
+        let dir = scratch("fresh");
+        let f = ttl_fetcher(&dir);
+        let url = "https://example.invalid/ttl-fresh";
+        std::fs::write(f.cache_path(url).unwrap(), b"CACHED-BODY").unwrap();
+
+        let _ = f.get_with_ttl(url, "ua", std::time::Duration::from_secs(3600));
+        assert!(
+            cache_was_served(&f),
+            "a freshly written entry must be served from cache, not refetched: {:?}",
+            f.log.borrow()
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_STALE_cache_entry_is_not_served() {
+        // TTL of zero: everything is stale. Without this, the freshness comparison could be inverted or
+        // dropped entirely and the test above would still pass — which is the failure mode that would
+        // make this cache hide live data instead of protecting a rate limit.
+        let dir = scratch("stale");
+        let f = ttl_fetcher(&dir);
+        let url = "https://example.invalid/ttl-stale";
+        std::fs::write(f.cache_path(url).unwrap(), b"CACHED-BODY").unwrap();
+
+        let _ = f.get_with_ttl(url, "ua", std::time::Duration::from_secs(0));
+        assert!(
+            !cache_was_served(&f),
+            "a stale entry must NOT be served: {:?}",
+            f.log.borrow()
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn an_EMPTY_cached_file_is_never_served_as_if_it_were_a_response() {
+        // An empty body is a silent hole, not a response. Serving it would turn a truncated write into a
+        // parse failure somewhere far away, or worse into a zero.
+        let dir = scratch("empty");
+        let f = ttl_fetcher(&dir);
+        let url = "https://example.invalid/ttl-empty";
+        std::fs::write(f.cache_path(url).unwrap(), b"").unwrap();
+
+        let _ = f.get_with_ttl(url, "ua", std::time::Duration::from_secs(3600));
+        assert!(
+            !cache_was_served(&f),
+            "an empty cache file must be treated as a miss: {:?}",
+            f.log.borrow()
+        );
+        std::fs::remove_dir_all(&dir).ok();
     }
 }

@@ -115,9 +115,26 @@ pub fn count_window(
     filed_after: &str,
     filed_before: &str,
 ) -> Result<u64, String> {
-    let body = f.get(&search_url(query, filed_after, filed_before), UA_WEB)?;
+    // DOCKET COUNTS ARE CACHED FOR A DAY, and this is load-bearing rather than an optimisation.
+    // Measured 2026-10-16: this host is throttled at roughly five requests per window while the model
+    // makes ten (five queries x two date windows each). The five that lose are the last five, which is
+    // where `distress_events` sits, so it reported a GAP on every single run while `opposition_pressure`
+    // — needing only five — looked healthy. Caching means the ten are spent once and a re-run costs
+    // nothing. A docket count does not change minute to minute; a day is well inside its cadence.
+    let body = f.get_with_ttl(
+        &search_url(query, filed_after, filed_before),
+        UA_WEB,
+        std::time::Duration::from_secs(COURTLISTENER_TTL_SECS),
+    )?;
     parse_count(&body)
 }
+
+/// How long a docket count stays usable, in seconds.
+///
+/// One day. The underlying quantity is a count of filings in a 365-day window, so it moves by at most
+/// a filing or two per day; refetching it more often buys nothing and spends the request budget that
+/// the channel is already losing.
+pub const COURTLISTENER_TTL_SECS: u64 = 24 * 60 * 60;
 
 /// The year-over-year change in filings for one tracked query.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
