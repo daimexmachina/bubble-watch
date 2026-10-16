@@ -709,6 +709,199 @@ fn build_delta(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Freshness
+// ---------------------------------------------------------------------------
+
+/// How recently an indicator must have moved to be counted as LIVE.
+///
+/// Seven days: the timer runs daily, so a week is long enough that a weekly-cadence source
+/// still reads as live, and short enough that a quarterly source cannot. The threshold is
+/// published rather than implied because the same data would be described differently at a
+/// one-day or a thirty-day window, and a reader cannot audit a number whose cut-off is hidden.
+pub const FRESHNESS_WINDOW_DAYS: i64 = 7;
+
+/// How much of the composite reflects a change that actually happened recently, and how
+/// far back the unchanged part of it reaches.
+///
+/// THE DEFECT THIS ADDRESSES. The composite is a weighted average over indicators with
+/// very different CADENCES. Measured on 2026-10-15 it read 40.5/100 while 14 of 24
+/// indicators — weight 100 of 183, i.e. **55%** — had not moved in weeks, because they are
+/// fed by quarterly filings and the next vintage was not due until November. Two things
+/// went wrong at once, and neither was visible:
+///
+///   * The headline presented a September constant, blended with a live market reading,
+///     as though the whole number had been measured that day.
+///   * Because more than half the weight was pinned, the score could move only a fraction
+///     as fast as the information flowing into it. Across 2026-09-27 -> 2026-10-15 the
+///     indicators moved a gross 2.80 composite points and the score moved a net -0.33,
+///     so 88% of the movement was absorbed rather than reported.
+///
+/// The fix is disclosure, NOT reweighting: weighting frozen inputs differently would
+/// change what a published, audited number means. CONTEXT ONLY — never an input to the
+/// composite, and a test asserts the composite is byte-identical with and without it.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Freshness {
+    /// Indicators whose value differs from the previous recorded run.
+    pub live_indicators: usize,
+    /// Indicators whose value has not moved within the window.
+    pub frozen_indicators: usize,
+    /// Weight that moved within the window.
+    pub live_weight: f64,
+    /// Weight that did not move — the part of the score that is pinned to an older date.
+    pub frozen_weight: f64,
+    pub total_weight: f64,
+    /// The window in days, so the threshold is STATED rather than implied by the wording.
+    pub window_days: i64,
+    /// The most recent date on which any indicator moved.
+    pub newest_change: Option<String>,
+    /// The oldest last-changed date among measured indicators: how far back the unchanged
+    /// part of the score reaches. A reader needs this to judge whether the score describes
+    /// this week or last month.
+    pub oldest_change: Option<String>,
+    /// Days from `oldest_change` to the run date.
+    pub oldest_change_days: Option<i64>,
+    /// Per-indicator last-changed date, for the ones that are frozen. Named so a reader can
+    /// see WHICH inputs are old rather than only how much weight they carry.
+    pub frozen_ids: Vec<String>,
+}
+
+/// Compute freshness for the run being reported.
+///
+/// `today` is the run's own date (YYYY-MM-DD). The comparison sequence is the archive's
+/// daily series with the current run appended, so a change that happened today counts as
+/// live.
+///
+/// An indicator that has NEVER changed across the whole archive is reported against the
+/// earliest date in the archive rather than being dropped: "unchanged for as long as we
+/// have records" is a real and important state, and silently omitting it would overstate
+/// how live the score is.
+pub fn freshness(
+    archive: &[TrendPoint],
+    readings: &[IndicatorReading],
+    today: &str,
+    window_days: i64,
+) -> Freshness {
+    // Current run's stresses and weights, from the same readings the composite used.
+    let mut current: BTreeMap<String, f64> = BTreeMap::new();
+    let mut weights: BTreeMap<String, f64> = BTreeMap::new();
+    for r in readings {
+        if r.weight <= 0.0 {
+            continue; // declared blind spot, never scored
+        }
+        if let Reading::Scored { stress, .. } = &r.reading {
+            current.insert(r.id.clone(), *stress);
+            weights.insert(r.id.clone(), r.weight);
+        }
+    }
+
+    let daily = daily_series(archive);
+    let mut seq: Vec<&BTreeMap<String, f64>> = daily.iter().map(|p| &p.stresses).collect();
+    let mut dates: Vec<String> = daily.iter().map(|p| p.date.clone()).collect();
+
+    // A re-run whose date is already archived must not be compared against its own
+    // identical twin.
+    //
+    // VALUE-WISE THIS IS MOSTLY HARMLESS, and the first version of this comment claimed
+    // otherwise. The walk compares VALUES, so it continues past an equal neighbour and still
+    // finds an earlier change; duplicating a row cannot fabricate a change, and the
+    // never-changed floor does not move either. Falsification showed the claim was wrong.
+    //
+    // Where it DOES matter is the FIRST day of the archive: dropping the only prior point is
+    // what lets the code report "no history yet" instead of dating an unchanged value to
+    // today and calling a first run live.
+    if dates.last().map(|d| d == today).unwrap_or(false) {
+        seq.pop();
+        dates.pop();
+    }
+    let prior_days = dates.len();
+    seq.push(&current);
+    dates.push(today.to_string());
+
+    let mut live_weight = 0.0;
+    let mut frozen_weight = 0.0;
+    let mut live_indicators = 0usize;
+    let mut frozen_ids: Vec<String> = Vec::new();
+    let mut newest: Option<String> = None;
+    let mut oldest: Option<String> = None;
+
+    for (id, w) in &weights {
+        // Walk back to the most recent index where this indicator's value differs from the
+        // one before it. `None` means it has not changed anywhere in the archive.
+        let mut last_change: Option<String> = None;
+        let mut i = seq.len();
+        while i >= 2 {
+            i -= 1;
+            let a = seq[i].get(id);
+            let b = seq[i - 1].get(id);
+            if a != b {
+                last_change = Some(dates[i].clone());
+                break;
+            }
+        }
+        // Never moved: floor it at the earliest date we hold, so it cannot be counted live.
+        let changed_at = last_change
+            .clone()
+            .unwrap_or_else(|| dates.first().cloned().unwrap_or_else(|| today.to_string()));
+
+        let age = days_between(&changed_at, today).unwrap_or(0.0);
+        if age <= window_days as f64 {
+            live_weight += w;
+            live_indicators += 1;
+        } else {
+            frozen_weight += w;
+            frozen_ids.push(id.clone());
+        }
+
+        match &newest {
+            None => newest = Some(changed_at.clone()),
+            Some(n) if changed_at > *n => newest = Some(changed_at.clone()),
+            _ => {}
+        }
+        match &oldest {
+            None => oldest = Some(changed_at.clone()),
+            Some(o) if changed_at < *o => oldest = Some(changed_at.clone()),
+            _ => {}
+        }
+    }
+
+    let total_weight: f64 = weights.values().sum();
+    let oldest_change_days = oldest
+        .as_ref()
+        .and_then(|d| days_between(d, today))
+        .map(|d| d as i64);
+
+    // When the archive is brand new there is nothing to compare against, so every
+    // indicator is reported at its own date and none is claimed to be live.
+    if prior_days == 0 {
+        return Freshness {
+            live_indicators: 0,
+            frozen_indicators: weights.len(),
+            live_weight: 0.0,
+            frozen_weight: total_weight,
+            total_weight,
+            window_days,
+            newest_change: None,
+            oldest_change: None,
+            oldest_change_days: None,
+            frozen_ids: weights.keys().cloned().collect(),
+        };
+    }
+
+    Freshness {
+        live_indicators,
+        frozen_indicators: frozen_ids.len(),
+        live_weight,
+        frozen_weight,
+        total_weight,
+        window_days,
+        newest_change: newest,
+        oldest_change: oldest,
+        oldest_change_days,
+        frozen_ids,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1373,5 +1566,156 @@ mod tests {
     fn doctor_spans_a_month_boundary_correctly() {
         let rows = vec![doc_row("2026-10-01"), doc_row("2026-09-30")];
         assert_eq!(missing_dates(&rows, "2026-10-01", 3), vec!["2026-09-29"]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Freshness
+    // -----------------------------------------------------------------------
+
+    /// A point carrying explicit per-indicator stresses.
+    fn fp(date: &str, stresses: &[(&str, f64)]) -> TrendPoint {
+        let mut p = point(date, 40.0, 1.0, "mid");
+        p.stresses = stresses
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), *v))
+            .collect();
+        p
+    }
+
+    fn reading(id: &str, weight: f64, stress: f64) -> IndicatorReading {
+        scored(id, weight, stress)
+    }
+
+    #[test]
+    fn freshness_splits_live_from_frozen_weight() {
+        // `moved` changes today; `still` has held its value for eight days.
+        let archive = vec![
+            fp("2026-10-05", &[("moved", 10.0), ("still", 30.0)]),
+            fp("2026-10-08", &[("moved", 10.0), ("still", 30.0)]),
+        ];
+        let readings = vec![reading("moved", 10.0, 55.0), reading("still", 30.0, 30.0)];
+        let f = freshness(&archive, &readings, "2026-10-15", 7);
+
+        assert_eq!(f.live_indicators, 1, "only `moved` changed today");
+        assert_eq!(f.frozen_indicators, 1);
+        assert!((f.live_weight - 10.0).abs() < 1e-9, "{}", f.live_weight);
+        assert!((f.frozen_weight - 30.0).abs() < 1e-9, "{}", f.frozen_weight);
+        assert!((f.total_weight - 40.0).abs() < 1e-9);
+        assert_eq!(f.oldest_change.as_deref(), Some("2026-10-05"));
+        assert_eq!(f.frozen_ids, vec!["still".to_string()]);
+    }
+
+    #[test]
+    fn freshness_reports_an_unchanged_indicator_at_the_earliest_date_we_hold() {
+        // THE FAILURE THIS GUARDS: an indicator that has never moved being omitted, which
+        // would make the score look more live than it is.
+        let archive = vec![
+            fp("2026-09-01", &[("dead", 20.0)]),
+            fp("2026-09-20", &[("dead", 20.0)]),
+        ];
+        let readings = vec![reading("dead", 20.0, 20.0)];
+        let f = freshness(&archive, &readings, "2026-10-15", 7);
+
+        assert_eq!(f.live_indicators, 0);
+        assert_eq!(f.frozen_indicators, 1);
+        assert!((f.frozen_weight - 20.0).abs() < 1e-9);
+        assert_eq!(
+            f.oldest_change.as_deref(),
+            Some("2026-09-01"),
+            "an never-moving indicator must be dated from the start of the record, not dropped"
+        );
+    }
+
+    #[test]
+    fn freshness_does_not_compare_a_rerun_against_itself() {
+        // THE TRAP, and the FALSIFICATION THAT SHOWED THE FIRST VERSION WAS VACUOUS.
+        //
+        // The first version used a two-day-old archive and asserted that a change made today
+        // counted as live. Removing the same-day drop entirely left it PASSING — the walk
+        // compares values, so it stepped past the identical twin and found the change anyway.
+        // The test could not fail on the thing it named.
+        //
+        // The case where the same-day drop actually changes the answer is the FIRST day of the
+        // record. Without the drop, a re-run on the only archived date is compared against
+        // itself, every indicator reads unchanged, the never-changed floor dates it to TODAY,
+        // and the run is reported as fully live when there is no history at all. That is the
+        // observable this asserts, and it is the one that moves.
+        let archive = vec![fp("2026-10-15", &[("a", 10.0)])]; // only entry is today, unchanged
+        let readings = vec![reading("a", 10.0, 10.0)];
+        let f = freshness(&archive, &readings, "2026-10-15", 7);
+
+        assert_eq!(
+            f.live_indicators, 0,
+            "a re-run with no earlier day must not be reported as live"
+        );
+        assert!(
+            f.oldest_change.is_none(),
+            "with no earlier day there is no change to date: {:?}",
+            f.oldest_change
+        );
+        assert!(
+            (f.frozen_weight - 10.0).abs() < 1e-9,
+            "all weight must read frozen, not live: {}",
+            f.frozen_weight
+        );
+    }
+
+    #[test]
+    fn freshness_does_not_compare_a_rerun_against_itself_when_a_change_is_real() {
+        // The complement, so the fix above cannot be satisfied by freezing everything: when
+        // the previous DAY differs, a re-run must still count its change as live.
+        let archive = vec![
+            fp("2026-10-13", &[("a", 10.0)]),
+            fp("2026-10-15", &[("a", 77.0)]), // an earlier run TODAY, already at the new value
+        ];
+        let readings = vec![reading("a", 10.0, 77.0)];
+        let f = freshness(&archive, &readings, "2026-10-15", 7);
+
+        assert_eq!(f.live_indicators, 1);
+        assert_eq!(f.newest_change.as_deref(), Some("2026-10-15"));
+    }
+
+    #[test]
+    fn freshness_claims_nothing_when_there_is_no_history() {
+        // With no prior day there is nothing to compare against, so no indicator may be
+        // called live and no oldest-date may be invented.
+        let readings = vec![reading("a", 10.0, 50.0)];
+        let f = freshness(&[], &readings, "2026-10-15", 7);
+
+        assert_eq!(f.live_indicators, 0);
+        assert_eq!(f.frozen_indicators, 1);
+        assert!(f.newest_change.is_none());
+        assert!(f.oldest_change.is_none());
+        assert!((f.frozen_weight - 10.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn freshness_excludes_weight_zero_declared_blind_spots() {
+        // `public_attention` is declared at weight 0 and never scored. Counting it would
+        // inflate the indicator COUNT, which is what a reader uses to judge how much of the
+        // model is live.
+        //
+        // THE FIRST VERSION ASSERTED THE WRONG OBSERVABLE: it checked `total_weight == 10.0`,
+        // and a weight-0 entry cannot change a sum (0 * x == 0), so removing the exclusion left
+        // the test PASSING. Falsification caught it. The observable that moves is the count.
+        let archive = vec![fp("2026-10-05", &[("a", 10.0)])];
+        let readings = vec![reading("a", 10.0, 10.0), reading("blind", 0.0, 10.0)];
+        let f = freshness(&archive, &readings, "2026-10-15", 7);
+
+        assert!(
+            (f.total_weight - 10.0).abs() < 1e-9,
+            "weight-0 must not enter the total: {}",
+            f.total_weight
+        );
+        assert_eq!(
+            f.live_indicators + f.frozen_indicators,
+            1,
+            "only the scored indicator may be counted; a weight-0 blind spot must not appear"
+        );
+        assert!(
+            !f.frozen_ids.iter().any(|id| id == "blind"),
+            "a declared blind spot must never be listed as a frozen input: {:?}",
+            f.frozen_ids
+        );
     }
 }

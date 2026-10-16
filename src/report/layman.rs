@@ -513,6 +513,7 @@ mod tests {
             coverage: 1.0,
             sub_scores: vec![],
             sub_question_labels: vec![],
+            freshness: None,
             confidence: "high".into(),
             phase: "early".into(),
             phase_label: "Early".into(),

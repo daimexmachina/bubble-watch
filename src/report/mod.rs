@@ -87,6 +87,27 @@ pub fn build_with_history(
         })
         .collect();
 
+    // How much of this score is LIVE. CONTEXT ONLY, never an input to the composite.
+    //
+    // The composite blends indicators on different cadences, so a flat reading can mean
+    // "nothing happened" or "most of this weight cannot move until the next filings". Those
+    // two demand opposite responses, and without this field the headline cannot tell them
+    // apart. Measured 2026-10-15: 55% of weight had not moved in weeks while the headline read
+    // 40.5 as though it had been measured that day.
+    //
+    // Only computed when the caller actually read the archive: with no history there is
+    // nothing to compare against, and claiming a freshness figure would invent one.
+    let freshness = if history_consulted && !archive.is_empty() {
+        Some(crate::history::freshness(
+            archive,
+            &readings,
+            &crate::history::date_of(generated_at),
+            crate::history::FRESHNESS_WINDOW_DAYS,
+        ))
+    } else {
+        None
+    };
+
     let composite = comp_opt.unwrap_or(0.0);
     let confidence = crate::score::confidence(
         coverage,
@@ -365,10 +386,14 @@ pub fn build_with_history(
                 ),
                 None => String::new(),
             };
+            // Two clauses that stop one blended number from being misread. Both are
+            // DERIVED from readings already made; neither is an input to the composite.
+            let split = question_split_note(&sub_scores);
+            let fresh = freshness_note(freshness.as_ref());
             format!(
                 "Composite bubble-stress {:.1}/100 ({} phase) on {:.0}% weighted coverage, {} \
                  confidence. {} of {} weight available; {} indicator(s) unavailable and contributing \
-                 nothing.{}",
+                 nothing.{}{}{}",
                 c,
                 phase.id(),
                 coverage * 100.0,
@@ -376,6 +401,8 @@ pub fn build_with_history(
                 available_weight,
                 total_weight,
                 unavailable.len(),
+                split,
+                fresh,
                 dir
             )
         }
@@ -396,6 +423,7 @@ pub fn build_with_history(
         confidence: confidence.to_string(),
         sub_scores,
         sub_question_labels,
+        freshness,
         phase: phase.id().to_string(),
         phase_label: phase.label().to_string(),
         phase_detail: phase.detail().to_string(),
@@ -446,11 +474,78 @@ pub fn build_with_history(
     }
 }
 
+/// Name the two endpoints the single composite blends, because they answer opposite
+/// questions on opposite clocks.
+///
+/// WHY THIS CLAUSE EXISTS. Read alone, "40.5/100" invites the reading "the system is 40%
+/// stressed". That is not what it says. The number is the weighted average of a quarterly
+/// PRECONDITION reading and a daily REALISATION reading, and on 2026-10-15 those were 54.3
+/// and 25.2. So a calm market dragged the average ~14 points below the fragility it was
+/// averaged against — and the calmer the market, the more the average understates the
+/// precondition. Reporting the blend without its endpoints makes the score look reassuring
+/// precisely when it is early.
+///
+/// CONTEXT ONLY — derived from `sub_scores`, which is itself proven never to enter the
+/// composite.
+fn question_split_note(subs: &[crate::score::SubScore]) -> String {
+    let get = |k: &str| subs.iter().find(|s| s.key == k).and_then(|s| s.score);
+    let (Some(st), Some(pr)) = (get("strain"), get("pricing")) else {
+        return String::new();
+    };
+    format!(
+        " THIS IS AN AVERAGE OF TWO DIFFERENT CLOCKS. The PRECONDITION (spending & \
+         balance-sheet strain, quarterly) reads {:.1}; the REALISATION (market pricing, daily) \
+         reads {:.1}. Read the strain figure as the WARNING and the pricing figure as the \
+         CONFIRMATION: a calm market pulls this average DOWN while the fragility it is averaged \
+         against is unchanged, which is what being EARLY looks like rather than evidence of \
+         safety.",
+        st, pr
+    )
+}
+
+/// Say how much of the score is live, and how far back its unchanged part reaches.
+///
+/// WHY THIS CLAUSE EXISTS. "Direction of travel: flat" is only informative if a reader knows
+/// whether the inputs COULD have moved. Measured 2026-10-15: 55% of the model's weight is
+/// quarterly-cadence data that had not changed in weeks, so the score could move only a
+/// fraction as fast as the information reaching it, and a flat reading said nothing about
+/// whether the world was quiet. Without this, "flat" reads as "stable" when it may mean
+/// "most of this cannot move until November".
+///
+/// CONTEXT ONLY — never an input to the composite.
+fn freshness_note(f: Option<&crate::history::Freshness>) -> String {
+    let Some(f) = f else {
+        return String::new();
+    };
+    if f.total_weight <= 0.0 {
+        return String::new();
+    }
+    let live_pct = 100.0 * f.live_weight / f.total_weight;
+    let frozen_pct = 100.0 * f.frozen_weight / f.total_weight;
+    let oldest = match (&f.oldest_change, f.oldest_change_days) {
+        (Some(d), Some(age)) => format!("{} ({} day(s) ago)", d, age),
+        (Some(d), None) => d.clone(),
+        _ => "an unknown date".to_string(),
+    };
+    format!(
+        " FRESHNESS: only {:.0}% of this weight moved within the last {} day(s); the other \
+         {:.0}% has not changed since {}, so that part of the score is pinned to that date \
+         rather than measured today, and {} of {} indicators are quarterly-cadence data that \
+         cannot move again until the next filings. A flat headline therefore does NOT mean the \
+         world was quiet.",
+        live_pct,
+        f.window_days,
+        frozen_pct,
+        oldest,
+        f.frozen_indicators,
+        f.frozen_indicators + f.live_indicators
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::model::Provenance;
-
     fn cfg() -> Config {
         Config::load(std::path::Path::new("config/indicators.toml"))
             .unwrap_or_else(|_| panic!("shipped config must load"))
@@ -767,5 +862,87 @@ mod tests {
                 );
             }
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // The two headline clauses
+    // -----------------------------------------------------------------------
+
+    fn sub(key: &str, score: f64, weight: f64) -> crate::score::SubScore {
+        crate::score::SubScore {
+            key: key.into(),
+            score: Some(score),
+            weight,
+            available_weight: weight,
+            measured: 5,
+            total: 5,
+            coverage: 1.0,
+        }
+    }
+
+    #[test]
+    fn the_split_note_names_the_warning_and_the_confirmation_separately() {
+        // THE MISREADING THIS PREVENTS. "40.5/100" alone reads as "the system is 40% stressed".
+        // It is actually the average of a 54.3 precondition and a 25.2 realisation, so the calm
+        // leg drags the number ~14 points below the fragility it is averaged against.
+        let subs = vec![sub("pricing", 25.2, 70.0), sub("strain", 54.3, 64.0)];
+        let n = question_split_note(&subs);
+
+        assert!(n.contains("PRECONDITION"), "{n}");
+        assert!(n.contains("REALISATION"), "{n}");
+        assert!(
+            n.contains("54.3") && n.contains("25.2"),
+            "BOTH endpoints must be named, or the reader still cannot see the blend: {n}"
+        );
+        assert!(
+            n.contains("WARNING") && n.contains("CONFIRMATION"),
+            "the note must say which to read as the warning: {n}"
+        );
+    }
+
+    #[test]
+    fn the_split_note_is_silent_rather_than_wrong_when_a_group_is_missing() {
+        // A group can be absent when its sources are all down. Inventing a figure would be
+        // worse than saying nothing, so the clause must vanish.
+        assert_eq!(question_split_note(&[]), "");
+        assert_eq!(question_split_note(&[sub("strain", 54.3, 64.0)]), "");
+    }
+
+    #[test]
+    fn the_freshness_note_states_the_live_share_the_oldest_date_and_the_count() {
+        let f = crate::history::Freshness {
+            live_indicators: 10,
+            frozen_indicators: 14,
+            live_weight: 83.0,
+            frozen_weight: 100.0,
+            total_weight: 183.0,
+            window_days: 7,
+            newest_change: Some("2026-10-15".into()),
+            oldest_change: Some("2026-09-17".into()),
+            oldest_change_days: Some(29),
+            frozen_ids: vec!["backlog_quality".into()],
+        };
+        let n = freshness_note(Some(&f));
+
+        assert!(n.contains("FRESHNESS"), "{n}");
+        assert!(n.contains("45%"), "the live share must be stated: {n}");
+        assert!(
+            n.contains("2026-09-17"),
+            "the date the frozen part last moved must be named: {n}"
+        );
+        assert!(
+            n.contains("14 of 24"),
+            "the COUNT of frozen inputs must be named, not only their weight: {n}"
+        );
+        assert!(
+            n.contains("does NOT mean"),
+            "the clause must kill the 'flat = stable' inference explicitly: {n}"
+        );
+    }
+
+    #[test]
+    fn the_freshness_note_is_silent_without_history() {
+        // No archive means no comparison, so there is no freshness to claim.
+        assert_eq!(freshness_note(None), "");
     }
 }

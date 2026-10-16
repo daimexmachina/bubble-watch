@@ -668,6 +668,15 @@ pub struct Report {
     /// Tuple: (key, plain, label, role).
     #[serde(default)]
     pub sub_question_labels: Vec<(String, String, String, String)>,
+    /// How much of this score is LIVE, and how far back its unchanged part reaches.
+    ///
+    /// CONTEXT ONLY — never an input to the composite. Present because the composite blends
+    /// indicators on different CADENCES, so a flat headline can mean "nothing changed" or
+    /// "most of this weight cannot change until the next filing season", and those two
+    /// readings demand opposite responses. Measured 2026-10-15: 55% of weight had not moved
+    /// in weeks.
+    #[serde(default)]
+    pub freshness: Option<crate::history::Freshness>,
     pub phase: String,
     pub phase_label: String,
     pub phase_detail: String,
