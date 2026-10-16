@@ -97,6 +97,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "inference_demand" => Some(Box::new(fundamentals::InferenceDemand)),
         "energisation_delay" => Some(Box::new(fundamentals::EnergisationDelay)),
         "opposition_pressure" => Some(Box::new(fundamentals::OppositionPressure)),
+        "distress_events" => Some(Box::new(fundamentals::DistressEvents)),
         "public_attention" => Some(Box::new(fundamentals::PublicAttention)),
         _ => None,
     }
@@ -125,6 +126,7 @@ pub const IMPLEMENTED: &[&str] = &[
     "issuance",
     "primary_market_supply",
     "backlog_quality",
+    "distress_events",
 ];
 
 #[cfg(test)]

@@ -65,7 +65,7 @@ Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial cove
 Tests:
 
 ```bash
-cargo test                                         # 434 tests, no network required
+cargo test                                         # 438 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -180,8 +180,9 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `depreciation_subsidy` | 6 | Depreciation-rate extension while the asset base grows | SEC EDGAR |
 | `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
 | `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
+| `distress_events` | 6 | AI-exposed company insolvencies, counted from **filed court dockets** — not from coverage of them. Covers private companies EDGAR cannot see (Character.ai's Chapter 11 returns 0 EDGAR hits but is on the docket) | CourtListener |
 
-Weight totals 190 across the 24 scored indicators, and **there are no declared gaps left**.
+Weight totals 196 across the 25 scored indicators, and **there are no declared gaps left**.
 
 ### `circularity` — a former blind spot, now scored
 

@@ -2470,6 +2470,110 @@ impl Indicator for EnergisationDelay {
     }
 }
 
+/// AI-exposed companies that have entered INSOLVENCY — counted from filed court dockets.
+///
+/// WHY THIS EXISTS, and why it is not the news channel. Daim observed that Oracle is one example
+/// rather than the pattern, citing Character.ai's Chapter 11 and Firmus pulling its IPO, and asked
+/// for such events to be captured as they happen. Measured before building:
+///
+///   * EDGAR full-text returns **0 hits** for "Character Technologies" — Character.ai is private and
+///     not an SEC registrant, so the tool's filing-based channels cannot see it at all.
+///   * CourtListener returns the **petition itself**, filed 2026-10-12 in the District of Delaware.
+///   * AI-related Chapter 11: **3** EDGAR hits against **622** dockets.
+///
+/// A liquidation is a filed court document, which is the class this model already justifies scoring
+/// ("a docket is a recorded event and can be scored"). It is not commentary: the petition exists on
+/// the day, is public record, and is citable. This is the same reasoning behind
+/// `narrative_saturation` (a filing census) and `opposition_pressure` (a docket count).
+///
+/// DIRECTION IS ONE-WAY HERE, unlike `opposition_pressure`, which is genuinely two-sided: rising
+/// AI-company insolvencies are not counter-evidence to the bubble thesis, they are the thesis being
+/// realised. So a HIGHER change = HIGHER stress, with no inverted reading offered.
+///
+/// THREE LIMITS, EACH MEASURED AND EACH STATED IN THE OUTPUT:
+///   1. US ONLY. Firmus withdrew on the ASX and appears in no US docket. A non-US insolvency is a
+///      declared blind spot, never a zero.
+///   2. RECAP IS CROWD-SOURCED, so coverage is incomplete and sometimes delayed. Every count is a
+///      FLOOR: the output says "at least N", never "N".
+///   3. SPARSE BY CONSTRUCTION. AI-related insolvency is rare, so this reads near zero most of the
+///      time and jumps when something happens. That is correct behaviour for a distress channel, and
+///      it means a percentage change computed from a handful of filings is noisy — which is why the
+///      raw counts are printed beside it.
+pub struct DistressEvents;
+
+impl Indicator for DistressEvents {
+    fn id(&self) -> &'static str {
+        "distress_events"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let Some(ic) = ctx.cfg.indicator(self.id()) else {
+            return Reading::Unavailable {
+                reason: "not configured".into(),
+            };
+        };
+        if ctx.obs.insolvency.is_empty() {
+            return Reading::Unavailable {
+                reason: "no insolvency docket counts were retrieved, so whether AI-exposed \
+                         companies are failing is unknown rather than zero"
+                    .into(),
+            };
+        }
+
+        // Weight by filing VOLUME, as `opposition_pressure` does and for the same reason: with a thin
+        // base, one filing moves a percentage by tens of points, so an unweighted mean would let the
+        // noisiest series dominate the reading.
+        let recent: u64 = ctx.obs.insolvency.iter().map(|c| c.recent_count).sum();
+        let prior: u64 = ctx.obs.insolvency.iter().map(|c| c.prior_count).sum();
+        if prior == 0 {
+            return Reading::Unavailable {
+                reason: "the prior-year insolvency docket total was zero, so a change cannot be \
+                         taken from it without inventing a base"
+                    .into(),
+            };
+        }
+        let change_pct = (recent as f64 - prior as f64) / prior as f64 * 100.0;
+        let stress = crate::score::interpolate(change_pct, &ic.anchors);
+
+        let parts: Vec<String> = ctx
+            .obs
+            .insolvency
+            .iter()
+            .map(|c| {
+                format!(
+                    "{} {:+.*}% ({} vs {})",
+                    c.query, 1, c.yoy_pct, c.recent_count, c.prior_count
+                )
+            })
+            .collect();
+
+        Reading::Scored {
+            stress,
+            value: change_pct,
+            unit: "pct change in insolvency dockets, trailing 365 days vs the 365 before".into(),
+            detail: format!(
+                "AI-exposed insolvency dockets filed AT LEAST {} times in the trailing year against \
+                 AT LEAST {} in the year before, a change of {:+.1}%. BY QUERY: {}. READ THE COUNTS, \
+                 NOT ONLY THE PERCENTAGE: the base is small by construction, so a handful of extra \
+                 filings moves this figure by tens of points. DIRECTION IS ONE-WAY — rising \
+                 insolvencies are the bubble thesis being realised, not counter-evidence, so there is \
+                 no inverted reading of this indicator. LIMITS, MEASURED: (1) US ONLY — a non-US \
+                 failure such as Firmus withdrawing on the ASX appears in no US docket and is a \
+                 declared blind spot, not a zero; (2) RECAP IS CROWD-SOURCED, so every count above is \
+                 a FLOOR and the true number is at least what is stated; (3) the counts are docket \
+                 filings and will lag the event by days.",
+                recent, prior, change_pct, parts.join("; ")
+            ),
+            provenance: crate::model::Provenance {
+                source: "courtlistener".into(),
+                endpoint: crate::sources::courtlistener::SEARCH_URL.into(),
+                as_of: crate::history::date_of(&ctx.obs.retrieved_at),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3318,10 +3422,141 @@ mod tests {
                 );
                 assert!(
                     !reason.contains("No RPO concept reported by: STALE_CO"),
-                    "a REJECTED series must not be reported as a filer that publishes no \\
+                    "a REJECTED series must not be reported as a filer that publishes no \
                      such concept — the distinction is the fix: {reason}"
                 );
             }
+        }
+    }
+
+    // ---- distress_events --------------------------------------------------
+
+    fn dockets(cfgs: &[(&str, f64, u64, u64)]) -> Vec<crate::sources::courtlistener::DocketChange> {
+        cfgs.iter()
+            .map(
+                |(q, pct, r, p)| crate::sources::courtlistener::DocketChange {
+                    query: (*q).to_string(),
+                    yoy_pct: *pct,
+                    recent_count: *r,
+                    prior_count: *p,
+                },
+            )
+            .collect()
+    }
+
+    fn shipped() -> Config {
+        // The SHIPPED config, deliberately: this exercises the real anchors and the real group
+        // assignment, which a hand-built fixture would silently disagree with.
+        Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("shipped config must load")
+    }
+
+    #[test]
+    fn distress_events_never_reads_the_opposition_channel() {
+        // THE GUARD THAT MATTERS MOST. `opposition_pressure` SUMS every entry in obs.courtlistener. If
+        // distress_events were fed from that vector instead of its own, liquidations would be scored as
+        // "organised opposition to the buildout" — a different claim about a different thing — and
+        // opposition_pressure's published meaning would silently change with it.
+        //
+        // This asserts the isolation in the direction that would otherwise be invisible: data present in
+        // `courtlistener` and absent from `insolvency` must leave this indicator UNAVAILABLE.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.courtlistener = dockets(&[("lawsuit", 12.0, 300, 268), ("injunction", -4.0, 40, 42)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match DistressEvents.evaluate(&ctx) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("unknown rather than zero"),
+                "must refuse rather than read the opposition vector: {reason}"
+            ),
+            other => panic!("expected Unavailable, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn distress_events_refuses_a_zero_prior_base_instead_of_inventing_an_explosion() {
+        // A prior count of zero makes any percentage undefined. Reporting +inf% or +100% would invent
+        // explosive growth from a base that never existed — and would do it in the alarming direction.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.insolvency = dockets(&[("chapter11_ai", 0.0, 7, 0)]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match DistressEvents.evaluate(&ctx) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("without inventing a base"),
+                "must refuse a zero base: {reason}"
+            ),
+            other => panic!("expected Unavailable, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rising_insolvency_is_more_stress_never_less() {
+        // DIRECTION IS ONE-WAY for this channel, unlike opposition_pressure which is genuinely
+        // two-sided. More AI companies failing must never read as better.
+        let cfg = shipped();
+        let score = |recent: u64, prior: u64| {
+            let mut obs = Observations::default();
+            obs.insolvency = dockets(&[("chapter11_ai", 0.0, recent, prior)]);
+            let ctx = Ctx {
+                obs: &obs,
+                cfg: &cfg,
+            };
+            match DistressEvents.evaluate(&ctx) {
+                Reading::Scored { stress, .. } => stress,
+                other => panic!("expected Scored, got {other:?}"),
+            }
+        };
+        let fewer = score(10, 20); // -50%
+        let flat = score(20, 20); // 0%
+        let more = score(40, 20); // +100%
+        assert!(
+            fewer < flat && flat < more,
+            "stress must rise with insolvency: {fewer} / {flat} / {more}"
+        );
+    }
+
+    #[test]
+    fn distress_events_states_its_floor_and_its_us_only_limit_on_every_run() {
+        // RECAP is crowd-sourced, so every count is a FLOOR and the text must say "at least N" rather
+        // than "N". And a non-US failure (Firmus, on the ASX) is a declared blind spot, not a zero.
+        // Both must travel with the number every time, not sit in a config comment.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.insolvency = dockets(&[
+            ("chapter11_ai", 0.0, 9, 6),
+            ("chapter11_compute", 0.0, 20, 15),
+        ]);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match DistressEvents.evaluate(&ctx) {
+            Reading::Scored { detail, .. } => {
+                assert!(
+                    detail.contains("AT LEAST"),
+                    "the floor must be stated: {detail}"
+                );
+                assert!(
+                    detail.contains("US ONLY"),
+                    "the geography limit must be stated: {detail}"
+                );
+                assert!(
+                    detail.contains("CROWD-SOURCED"),
+                    "the reason for the floor must be stated: {detail}"
+                );
+                assert!(
+                    detail.contains("9") && detail.contains("6"),
+                    "the raw counts must be printed beside the percentage: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
         }
     }
 }

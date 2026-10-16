@@ -438,6 +438,36 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }
     }
 
+    // Insolvency dockets. A SEPARATE loop writing to `obs.insolvency`, never to
+    // `obs.courtlistener`: `opposition_pressure` sums that vector, so mixing liquidations into it
+    // would silently change a published score's meaning.
+    for (label, query) in courtlistener::insolvency_queries() {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        match courtlistener::year_over_year_pct(f, query, &today, 365) {
+            Ok(Some((pct, recent, prior))) => obs.insolvency.push(courtlistener::DocketChange {
+                query: label.to_string(),
+                yoy_pct: pct,
+                recent_count: recent,
+                prior_count: prior,
+            }),
+            // A zero prior window makes the percentage undefined. Recorded as a gap rather than
+            // reported as explosive growth from a base that never existed.
+            Ok(None) => obs.failures.push(SourceFailure {
+                source: "courtlistener-insolvency".into(),
+                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason:
+                    "prior-year insolvency docket count was zero, so the year-over-year change \
+                         is undefined and is reported as a gap rather than as growth"
+                        .into(),
+            }),
+            Err(e) => obs.failures.push(SourceFailure {
+                source: "courtlistener-insolvency".into(),
+                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason: e,
+            }),
+        }
+    }
+
     // Public ATTENTION (Wikipedia pageviews). Deliberately weight 0 upstream: the
     // series is fetched and reported so a reader can see whether the public is
     // looking, but it never touches the composite. One request per article.

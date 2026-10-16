@@ -413,6 +413,14 @@ pub struct Observations {
     /// CourtListener docket counts, year over year, one entry per tracked query.
     #[serde(default)]
     pub courtlistener: Vec<crate::sources::courtlistener::DocketChange>,
+    /// INSOLVENCY dockets, kept apart from `courtlistener` on purpose.
+    ///
+    /// `opposition_pressure` sums every entry in `courtlistener`, so insolvency filings placed there
+    /// would be scored as "organised opposition to the buildout" — a different claim about a different
+    /// thing. This vector feeds `distress_events` instead, and leaves the published
+    /// `opposition_pressure` meaning untouched.
+    #[serde(default)]
+    pub insolvency: Vec<crate::sources::courtlistener::DocketChange>,
     pub failures: Vec<SourceFailure>,
     pub retrieved_at: String,
 }

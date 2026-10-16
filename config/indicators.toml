@@ -127,7 +127,7 @@
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "2.6"
+schema_version = "2.7"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -1049,6 +1049,58 @@ anchor_note = "SCORED ON THE YEAR-OVER-YEAR CHANGE IN FILING COUNT, ASCENDING, W
 # is a MORE lagging channel than tone, so the prior is that it would fail identically.
 # The gate is not applied to it yet, so the honest state is "unproven", not "scored".
 #
+# `distress_events` added at weight 6.0: the first indicator of AI-exposed companies
+# actually FAILING. Total weight 190 -> 196, so runs archived under 2.6 are
+# non-comparable and the trend code refuses across the boundary automatically.
+# METHODOLOGY CHANGED 2026-10-16 — schema_version 2.6 -> 2.7.
+#
+# WHY IT WAS ADDED. Daim's correction: Oracle is one example, not the pattern. He cited
+# Character.ai's Chapter 11 and Firmus pulling its IPO, and asked for such events to be
+# captured as they happen. Measured before building, and the measurement decided WHERE:
+#
+#   EDGAR full-text, "Character Technologies" -> 0 hits. Character.ai is PRIVATE and not an
+#   SEC registrant, so every filing-based channel in this tool is blind to it. Firmus
+#   withdrew on the ASX and appears in no US filing either.
+#   CourtListener, "Character Technologies" -> 24 dockets, the first being the Chapter 11
+#   petition itself, filed 2026-10-12 in the District of Delaware. AI-related Chapter 11:
+#   3 EDGAR hits against 622 dockets.
+#
+# So the events ARE capturable, but from a court docket rather than a filing — which is the
+# class this model already justifies scoring: "a docket is a recorded event and can be
+# scored". It is not commentary. (The media gate run on 2026-10-16 showed commentary TRAILS:
+# media volume -> credit and media volume -> ORCL price both failed their lead/lag gates on
+# differenced series. An event is a different thing from a story about an event.)
+#
+# IT READS A SEPARATE OBSERVATION VECTOR (`obs.insolvency`), NOT `obs.courtlistener`.
+# `opposition_pressure` sums every entry in the latter, so mixing liquidations into it would
+# silently re-score a published indicator as reporting "organised opposition" when it was
+# reporting company failures.
+#
+# DIRECTION IS ONE-WAY, unlike opposition_pressure which is genuinely two-sided: rising
+# insolvencies are the thesis being realised, not counter-evidence. No inverted reading.
+#
+# THE ANCHORS ARE SET ON A PERCENTAGE CHANGE WHOSE BASE IS SMALL BY CONSTRUCTION — several
+# filings move it by tens of points — so they are deliberately WIDE, and the raw counts are
+# printed beside the percentage so a reader can see whether a large change rests on three
+# filings or thirty. NOT measured from a distribution like funding_stress's: RECAP coverage is
+# crowd-sourced and incomplete, so the historical counts are a floor, and a distribution built
+# on a floor would be a distribution on a moving floor.
+#
+# THREE LIMITS, STATED IN THE INDICATOR'S OWN OUTPUT: US ONLY (a non-US failure such as Firmus
+# is a declared blind spot, never a zero); RECAP IS CROWD-SOURCED so every count is a FLOOR and
+# the text says "at least N"; and the channel is SPARSE by construction, so it reads near zero
+# most of the time and jumps when something happens.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "distress_events"
+group = "pricing"
+label = "AI-exposed company insolvencies (filed court dockets)"
+weight = 6.0
+unit = "pct change in insolvency dockets, trailing 365 days vs the 365 before"
+source = "courtlistener-insolvency"
+rationale = "The first indicator of AI-exposed companies actually failing, counted from filed court dockets rather than from coverage of them. Added because Oracle is one example rather than the pattern: Character.ai's Chapter 11 (Case 26-11603, D. Delaware, petition 2026-10-12) and Firmus pulling its ASX IPO are the kind of event this model should register as it happens. WHERE THE DATA COMES FROM WAS DECIDED BY MEASUREMENT: EDGAR full-text returns ZERO hits for 'Character Technologies' because Character.ai is private and not an SEC registrant, and no US source sees Firmus at all, while CourtListener returns the Chapter 11 petition itself — AI-related Chapter 11 runs 3 EDGAR hits against 622 dockets. A docket is a recorded event and can be scored, which is the same justification this model already uses for opposition_pressure and narrative_saturation. DIRECTION IS ONE-WAY: rising insolvencies are the bubble thesis being realised, not counter-evidence, so unlike opposition_pressure there is no inverted reading. LIMITS, EACH MEASURED AND REPEATED IN THE OUTPUT: US ONLY, so a non-US failure is a declared blind spot and never a zero; RECAP IS CROWD-SOURCED, so every count is a FLOOR and the text says 'at least N'; the channel is SPARSE by construction, so a percentage change from a handful of filings is noisy and the raw counts are printed beside it. NOT A LEADING INDICATOR and no predictive claim is made — a petition is dated the day it is filed, which is contemporaneous, not prior."
+anchors = [[-50.0, 25.0], [0.0, 40.0], [50.0, 55.0], [100.0, 68.0], [200.0, 82.0], [400.0, 95.0]]
+# ---------------------------------------------------------------------------
 # THE MEASUREMENT IS A WEEK AGAINST A WEEK, DELIBERATELY. Pageviews carry a strong
 # weekday cycle, so a day-against-day comparison would measure the calendar. Comparing
 # the trailing 7 complete days against the 7 before cancels the cycle by construction;

@@ -55,6 +55,26 @@ pub fn tracked_queries() -> Vec<(&'static str, &'static str)> {
     ]
 }
 
+/// Insolvency dockets — a SEPARATE list from `tracked_queries()`, deliberately.
+///
+/// WHY SEPARATE AND NOT APPENDED. `opposition_pressure` reads every entry in `obs.courtlistener`
+/// and SUMS the counts. Adding bankruptcy queries to that shared list would silently change a
+/// published score — the indicator would start reporting liquidations as "organised opposition to
+/// the buildout", which is a different claim. These feed `obs.insolvency` instead, so
+/// `opposition_pressure` keeps exactly the meaning it had.
+///
+/// WHY THESE QUERIES. Measured 2026-10-16: EDGAR full-text returns ZERO hits for "Character
+/// Technologies" because Character.ai is private and not an SEC registrant, while CourtListener
+/// returns the Chapter 11 petition itself, filed 2026-10-12 in D. Delaware. A private company's
+/// liquidation is visible in a court docket and invisible in a filing. These queries are the
+/// cheapest way to see that class.
+pub fn insolvency_queries() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("chapter11_ai", "\"chapter 11\" \"artificial intelligence\""),
+        ("chapter11_compute", "\"chapter 11\" \"data center\""),
+    ]
+}
+
 /// Build a date-bounded docket-search URL.
 ///
 /// Spaces become `+` and embedded quotes are percent-encoded, so the phrase is
