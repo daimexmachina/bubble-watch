@@ -30,7 +30,24 @@ use crate::model::{CompanyFacts, Observations};
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CompanyExposure {
     pub ticker: String,
-    /// Total long-term debt divided by TTM operating cash flow.
+    /// Long-term notes payable divided by TTM operating cash flow.
+    ///
+    /// DEFINITION, STATED BECAUSE IT IS NOT "TOTAL DEBT" AND THE DIFFERENCE IS MATERIAL. This is the
+    /// NARROW long-term figure: for ORCL that is `LongTermNotesPayable` (~$122.3bn), and for the other
+    /// filers `LongTermDebtNoncurrent`. It therefore EXCLUDES the current portion of debt, which for
+    /// ORCL is about $7bn — Oracle's TOTAL combined debt (`DebtLongtermAndShorttermCombinedAmount`) is
+    /// ~$129.5bn, about 6% higher. Measured against Oracle's own history, this narrow ratio reads
+    /// 2.68x where a total-debt ratio reads ~2.8x.
+    ///
+    /// The label previously said "Total long-term debt", which invited a reader to compare this against
+    /// any other debt figure — including the total-debt basis used in the concentration research — and
+    /// obtain a different answer for the same company. Two definitions cannot share one name. When
+    /// quoting this number, quote the tag with it.
+    ///
+    /// The denominator is TTM, not the fiscal-year figure, so this also differs from an FY-based ratio
+    /// for the same company at the same date. At a FISCAL YEAR END the two denominators coincide
+    /// (four trailing quarters ARE the fiscal year), which is the only cadence at which this ratio and
+    /// an FY-based series may be compared.
     pub debt_to_cfo: Option<f64>,
     /// Debt falling due within one year, over cash flow. The timing question.
     pub near_term_to_cfo: Option<f64>,

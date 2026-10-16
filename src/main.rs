@@ -929,7 +929,10 @@ fn print_human(r: &bubble_watch::model::Report) {
         println!("PER-COMPANY EXPOSURE (context only - never enters the composite)");
         println!(
             "{:<8}{:>11}{:>11}{:>9}{:>14}{:>11}",
-            "COMPANY", "debt/CFO", "due<1y/CFO", "leases", "commitments", "RPO/rev"
+            "COMPANY", "LTnotes/CFO", "due<1y/CFO", "leases", "commitments", "RPO/rev"
+        );
+        println!(
+            "  NOTE: LTnotes/CFO is long-term notes payable (ORCL files LongTermNotesPayable, others \n  LongTermDebtNoncurrent) over TTM cash flow. It is NOT total debt - the current portion is \n  excluded, about 6% of Oracle's borrowing. Do not compare it with a total-debt figure."
         );
         for e in &r.exposure {
             let fmt = |v: Option<f64>, partial: bool| match v {

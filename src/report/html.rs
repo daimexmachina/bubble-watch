@@ -484,13 +484,19 @@ fn exposure_card(r: &Report) -> String {
          <p style='margin:0 0 10px;font-size:13px'>Ratios to operating cash flow, most exposed first. \
          This answers a different question from the score above &mdash; who carries the risk, rather than how \
          bubble-like the configuration is &mdash; so it is <b>never folded into the composite</b>.</p>\
-         <div class='scrollx'><table class='exp'><thead><tr><th>#</th><th>Company</th><th>debt/CFO</th>\
+         <div class='scrollx'><table class='exp'><thead><tr><th>#</th><th>Company</th><th>LT&nbsp;notes/CFO</th>\
          <th>due&nbsp;&lt;1y/CFO</th><th>leases/CFO</th><th>commitments/CFO</th>\
          <th>RPO/revenue</th></tr></thead><tbody>{rows}</tbody></table></div>\
          <p class='mut' style='margin:12px 0 0;font-size:12px'>A missing figure is <b>named</b>, never shown as \
          0.00: an absent disclosure is not a small number. Near-term debt is the &ldquo;who is tested first&rdquo; \
          column, and for this cohort it is small for every company, so a maturity wall is not the \
-         mechanism in this cycle &mdash; the unconditional commitments are.</p></div>",
+         mechanism in this cycle &mdash; the unconditional commitments are.</p>\
+         <p class='mut' style='margin:8px 0 0;font-size:12px'><b>The first column is NOT total debt.</b> \
+         It is long-term notes payable (Oracle files this as <code>LongTermNotesPayable</code>; other filers \
+         as <code>LongTermDebtNoncurrent</code>) over trailing-twelve-month cash flow, so it EXCLUDES the \
+         current portion &mdash; about 6% of Oracle&rsquo;s borrowing, whose total combined debt is nearer \
+         $129.5bn than $122.3bn. Two definitions must not share one name: quote the tag with the number, \
+         and do not compare this column against a total-debt figure for the same company.</p></div>",
         rows = rows
     )
 }
@@ -2103,5 +2109,45 @@ mod tests {
         let mut bare = r.clone();
         bare.sub_scores.clear();
         assert!(sub_questions_card(&bare).is_empty());
+    }
+
+    #[test]
+    fn the_exposure_card_states_that_its_first_column_is_NOT_total_debt() {
+        // THE CONFUSION THIS PREVENTS. The column was headed "debt/CFO" and the field was documented as
+        // "Total long-term debt". Neither said that the number is LONG-TERM NOTES PAYABLE — so a reader
+        // could set it beside Oracle's ~$129.5bn total combined debt and get a different answer for the
+        // same company, with nothing on the page explaining why. Measured: the narrow ratio reads 2.68x
+        // where a total-debt ratio reads ~2.8x, and a fiscal-year basis reads 3.83x.
+        //
+        // This guards the WORDING, because the wording IS the fix here: no arithmetic changed, so nothing
+        // else in the suite would fail if the disclosure were deleted.
+        let mut r = report_with_sub_scores(vec![]);
+        r.exposure = vec![crate::exposure::CompanyExposure {
+            ticker: "ORCL".into(),
+            debt_to_cfo: Some(2.68),
+            near_term_to_cfo: Some(0.16),
+            lease_to_cfo: Some(0.76),
+            commitments_to_cfo: Some(0.75),
+            rpo_to_revenue: Some(9.83),
+            notes: vec![],
+        }];
+        let h = exposure_card(&r);
+
+        assert!(
+            h.contains("NOT total debt"),
+            "the card must say outright that the column is not total debt"
+        );
+        assert!(
+            h.contains("LongTermNotesPayable"),
+            "the card must name the tag Oracle actually files, not just 'debt'"
+        );
+        assert!(
+            h.contains("129.5"),
+            "the card must give the total-debt figure it is NOT, so the reader can see the gap"
+        );
+        assert!(
+            !h.contains("<th>debt/CFO</th>"),
+            "the ambiguous 'debt/CFO' header must not come back"
+        );
     }
 }
