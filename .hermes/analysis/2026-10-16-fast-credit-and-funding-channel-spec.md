@@ -24,19 +24,36 @@ All eight candidates probed keylessly against `fredgraph.csv` on 2026-10-16:
 | STLFSI4 | St. Louis Fed financial stress | 2026-10-09 | 1711 | full, **weekly** |
 | NFCI | Chicago Fed financial conditions | 2026-10-09 | 2910 | full, **weekly** |
 
-**FINDING 1 — the ICE BofA credit indices are licence-windowed to ~3 years.** `fredgraph.csv`
-returns full history for non-ICE series (CP from 1997, NFCI from 1971) but a hard rolling window for
-ICE indices: every ICE call returned exactly 795 rows starting 2023-10-17, and an explicit
-`cosd=1997-01-01` (or `cosd`+`coed`) is **ignored**. The `.txt` "Table Data" endpoint returns HTML,
-not observations. So any new ICE-based indicator anchored on this transport can only be anchored to
-a recent distribution.
+**FINDING 1 — the ICE BofA credit indices are licence-windowed to ~3 years, and it is FRED's own
+restriction, not the transport.** `fredgraph.csv` returns full history for non-ICE series but a hard
+rolling window for ICE indices: every call returned exactly 795 rows starting 2023-10-17, and an
+explicit `cosd=1997-01-01` (or `cosd`+`coed`) is **ignored**. The `.txt` "Table Data" endpoint returns
+HTML, not observations.
 
-**FINDING 2 — a pre-existing reproducibility gap, flagged not fixed.** `credit_hy`'s rationale cites
-"HY OAS has had a ~3.0% median" over the post-2009 record, but the tool's own transport can only
-hold **3 years** of that series. The stated anchor therefore cannot be reproduced from the data the
-tool actually retrieves. This does not change the current reading; it means the anchor is inherited
-from outside the tool. Resolving it needs a free FRED API key (`api_key is not set` today), which
-would also unlock `observation_start` for the full ICE history.
+**CORRECTION (measured with the key, 2026-10-16): a valid key does NOT lift this.** With `FRED_API_KEY`
+loaded from `~/.hermes/.env` — confirmed working, HTTP 200 — and `observation_start=1900-01-01`:
+
+```
+series         type   status     rows  first        last
+BAMLH0A0HYM2   ICE    200         794  2023-10-17   2026-10-15
+BAMLH0A3HYC    ICE    200         794  2023-10-17   2026-10-15
+BAMLC0A4CBBB   ICE    200         794  2023-10-17   2026-10-15
+DGS10          non    200      16,902  1962-01-02   2026-10-14
+DCPF1M         non    200       7,763  1997-01-02   2026-10-05
+NFCI           non    200       2,910  1971-01-08   2026-10-09
+```
+
+The key plainly unlocks deep history in general — `DGS10` comes back to **1962** — while the ICE
+indices stay pinned at 794 rows. So the cap is enforced **server-side by FRED for licensing**, and it
+is permanent, not a transport default. Any new ICE-based indicator is therefore anchored to a recent
+distribution, and that must be declared.
+
+**FINDING 2 — a pre-existing reproducibility gap, flagged not fixed, and NOT fixable with a key.**
+`credit_hy`'s rationale cites "HY OAS has had a ~3.0% median" over the post-2009 record, but the ICE
+series only ever returns 3 years (Finding 1), so the stated anchor cannot be reproduced from the data
+the tool retrieves. **CORRECTION: an earlier version of this spec said a free FRED API key "would fix
+it". That was wrong** — the key is already configured and working, and the series is capped regardless.
+Reproducing that anchor needs a *different source* for long HY OAS history, not a credential.
 
 **FINDING 3 — the funding channel is entirely absent from the model.** There is no money-market
 indicator at all. Measured SOFR−IORB (a standard funding-pressure gauge: secured overnight funding
@@ -79,22 +96,43 @@ config explicitly names.
 
 ## 3. Proposed candidates (ranked)
 
-**C1 — `funding_stress` (recommended first).** SOFR − IORB, daily, current to 2026-10-16 (the most
-current series of all eight probed). Full available history (2021+). Genuinely new channel.
-*Anchoring limitation:* the series starts 2021, so it contains no GFC or COVID reference point. It
-would be anchored on its own observed distribution (p99 ≈ +0.12, max +0.32) **declared as such**,
-with the short window stated in the rationale rather than dressed up as a full-cycle calibration.
+**C1 — `funding_stress` (recommended first), REVISED to SOFR − EFFR.** The first draft proposed
+SOFR − IORB. Measurement changed that: **IORB only begins 2021-07-29**, so SOFR − IORB cannot see the
+September 2019 repo spike or March 2020, and carries no genuine funding-crisis reference point at all.
+Substituting **EFFR** (from 2000) extends the spread back to 2018-04 and puts two documented events
+inside the window. Measured over 2,132 observations, 2018-04-03 → 2026-10-15:
+
+```
+last   +0.010     (calm)
+median -0.010     p95 +0.070     p99 +0.180
+max    +2.950 on 2019-09-17      <- the September 2019 repo-market seizure
+        +0.750 on 2019-01-02     +0.600 on 2018-12-31     +0.450 on 2019-09-30
+        +0.360 on 2025-10-31     +0.310 on 2019-04-30
+2020-03-17 +0.290   2023-03-15  0.000
+```
+
+That ladder is anchorable in the project's sense: a **real** funding crisis at the top (+2.95), the
+year-end and quarter-end turns as known seasonality, the 2025-10 cluster, and calm near zero. Daily
+and current (SOFR to 2026-10-15, EFFR to 2026-10-14). *Anchoring limitation, DECLARED:* the window
+starts 2018, so it still contains no GFC point; that must be stated in the rationale rather than
+implied away. `IORB` remains the most current series available (2026-10-16) but is unusable here for
+the reason above.
 
 **C2 — `credit_tail`.** CCC−HY dispersion (BAMLH0A3HYC vs BAMLH0A0HYM2). Directly measures the tail
-claim (ii). *Anchoring limitation:* the 3-year window means the anchor covers only recent episodes;
-must be declared.
+claim (ii). *Anchoring limitation:* the 3-year ICE window (Finding 1) means the anchor covers only
+recent episodes; must be declared.
 
-**C3 — `cp_funding`.** Commercial paper spread (DCPF1M vs a T-bill). Has the **longest history of any
-candidate** (1997+, so it contains the GFC and COVID) but its last observation was **2026-10-05, 11
-days stale**, so it is not a fast indicator on current evidence. Worth a separate probe of why.
+**C3 — `cp_funding`.** Commercial paper spread vs a T-bill. Has the **longest history of any
+candidate** (DCPN30 and DCPF1M both from 1997, so a real GFC and COVID anchor) — **but CORRECTION:
+it is WEEKLY in practice, not daily.** DCPF1M's last ten observations are mostly empty, with real
+values only on 2026-09-25 and 2026-10-05; the "11 days stale" noted earlier is that weekly cadence,
+not a stalled feed. `DCPN30` is the most current of the family (2026-10-14). So C3 trades speed for
+anchor depth: it is the best-anchored funding series and the worst as a *fast* one. Worth its own
+probe rather than being ranked as if it were daily.
 
 **Rejected or deferred:** STLFSI4 and NFCI are weekly, so they cannot be the *fast* channel; both are
-composite indices that would also overlap the existing indicators.
+also composite indices that would overlap the existing indicators. `DCPB1M` returns HTTP 400 (no
+such series).
 
 ## 4. What is needed to proceed
 
@@ -102,10 +140,19 @@ composite indices that would also overlap the existing indicators.
    indicator changes the total weight, which orphans cross-version comparison and needs a
    `schema_version` bump (precedent: 175 → 183 → 2.5). Anchors set what the score MEANS, so this is an
    owner decision, not a loop's.
-2. **A decision on the free FRED API key.** Without it, every ICE-based credit indicator is capped
-   at a 3-year anchor (Finding 1), and `credit_hy`'s existing anchor stays unreproducible
-   (Finding 2). With it, both are fixable. No key value should be pasted into chat — the project's
-   convention is that credentials are entered by the owner, never handled by the loop.
+2. **No longer a key decision — the key already exists and works.** Daim was right: `FRED_API_KEY`
+   is configured in `~/.hermes/.env` (32 chars) and returns HTTP 200. An earlier draft of this spec
+   claimed no key was configured, quoting a stale comment in `src/sources/fred.rs` ("api_key is not
+   set") instead of checking — that comment is out of date and should be corrected in the source.
+   **Measured consequence: the key does NOT lift the ICE cap** (Finding 1: 200 OK, still 794 rows,
+   with `observation_start=1900-01-01`). So the open question is no longer "enter a key" but
+   **"source long HY OAS history from somewhere other than FRED"**, for two separate purposes: a
+   reproducible anchor for the existing `credit_hy` (Finding 2), and a longer window for C2 if the
+   tail indicator is built.
+3. **Correction required in the source.** `src/sources/fred.rs` documents `400 api_key is not set` as
+   observed behaviour. That is no longer true and it misleads a reader into thinking the keyed
+   transport is unavailable — it is the transport the tool is already using. Should be updated with
+   the date it was verified.
 
 ## 5. Not concluded
 

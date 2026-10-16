@@ -11,6 +11,11 @@
 //! | `fred.stlouisfed.org/graph/fredgraph.csv`  | **0/9** — read timeouts, HTTP/2 `INTERNAL_ERROR`; sometimes 200 in 0.13 s, then nothing |
 //! | `api.stlouisfed.org/fred/...`              | **5/5** at ~0.15 s, returning a clean `400 api_key is not set` |
 //!
+//! CORRECTION (2026-10-16): that 400 was measured while no key was configured, and it still
+//! misleads — it reads as though the keyed API were unavailable, when it is in fact the transport
+//! the tool now uses. `FRED_API_KEY` is present in `~/.hermes/.env` and returns 200. Anyone reading
+//! the old line will wrongly conclude the key path is broken and "fix" the wrong thing.
+//!
 //! So the CSV path is flaky from here, while the keyed JSON API host is
 //! consistently reachable. A key is therefore not a nicety — it routes the
 //! requests through the transport that actually works.
@@ -18,9 +23,26 @@
 //! ## Ordering
 //!
 //! 1. **Keyed JSON API v2** (`api.stlouisfed.org`) when `FRED_API_KEY` is set.
-//!    Also returns the **full history**, unlike the CSV path.
 //! 2. **Anonymous CSV** (`fredgraph.csv`) as a keyless fallback. Serves only a
 //!    ~3-year trailing window; `cosd`/`coed` do not widen it (verified).
+//!
+//! ## The key does NOT widen every series (measured 2026-10-16)
+//!
+//! An earlier version of this header claimed the keyed path "also returns the full history, unlike
+//! the CSV path". That is true for most series and FALSE for the ICE BofA credit indices, which is
+//! exactly where it matters here. With the key loaded and `observation_start=1900-01-01`:
+//!
+//! ```text
+//! BAMLH0A0HYM2  (ICE)  200 OK    794 rows  2023-10-17 -> 2026-10-15   <- capped anyway
+//! BAMLH0A3HYC   (ICE)  200 OK    794 rows  2023-10-17 -> 2026-10-15   <- capped anyway
+//! DGS10       (non-ICE) 200 OK 16,902 rows  1962-01-02 -> 2026-10-14
+//! DCPF1M      (non-ICE) 200 OK  7,763 rows  1997-01-02 -> 2026-10-05
+//! ```
+//!
+//! The cap is enforced **server-side by FRED for licensing**, so no credential or parameter lifts
+//! it. Consequence for this project: `credit_hy` reads an ICE series, so only ~3 years of it are
+//! obtainable from FRED at any price, and its stated post-2009 anchor is therefore inherited rather
+//! than reproducible from what this tool can retrieve. Reproducing it needs a different source.
 //!
 //! FRED is never *required*: every failure becomes a reported coverage gap, and
 //! the dependent credit indicators degrade to `Unavailable` rather than being
