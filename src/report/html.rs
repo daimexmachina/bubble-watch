@@ -748,6 +748,55 @@ pub fn render_dashboard(
                 .to_string()
         });
 
+    // REPORTED BUT NOT COUNTED.
+    //
+    // The dashboard is a SCORED-indicator summary: the archive stores only scored stresses, so a
+    // weight-0 channel has never had anywhere to appear. Measured 2026-10-17: `public_attention` had
+    // been invisible on this page since the day it was added, and the two channels added that morning
+    // (the debt-funded builders' drawdown and data-centre withdrawal coverage) were likewise absent --
+    // even though the borrowers series read -56.7% below its own 52-week highs while the scored
+    // `credit_hy` read a calm 3.23%. A reader of the dashboard could see the calm number and not the
+    // contradiction.
+    //
+    // These are rendered in their OWN card, explicitly labelled, because the failure mode to avoid is
+    // not "showing an unscored number" -- it is showing an unscored number in a way that lets someone
+    // read it as an input. The heading, the badge and the footnote all say the same thing three times.
+    let mut unscored_rows = String::new();
+    if let Some(r) = latest {
+        for i in &r.indicators {
+            if i.weight != 0.0 || i.reading.stress().is_none() {
+                continue;
+            }
+            let value = i
+                .reading
+                .value()
+                .map(|v| format!("{:+.1}", v))
+                .unwrap_or_else(|| "—".into());
+            unscored_rows.push_str(&format!(
+                "<tr><td>{label}</td><td class='num'>{value}</td><td class='dt'>{unit}</td></tr>",
+                label = esc(&i.label),
+                value = value,
+                unit = esc(i.reading.unit().unwrap_or("")),
+            ));
+        }
+    }
+    let unscored = if unscored_rows.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "<div class='card'><h3 style='margin-top:0;font-size:15px'>Reported but NOT counted              <span class='phase' style='background:#6b6b6b;color:#fff'>weight 0</span></h3>\
+             <p class='dt' style='margin:0 0 10px'>These channels are MEASURED AND DISPLAYED but carry \
+             zero weight: they are excluded from the score above and from its coverage, and they cannot \
+             move either. They are here because a channel that is only visible in a file nobody opens \
+             is not really reported. They acquire weight only if a pre-registered lead/lag test passes \
+             — the sibling sentiment channel was tested that way and FAILED (peak at lag +7, p = 0.36), \
+             so the honest status for every series below is UNPROVEN, not 'not yet counted'.</p>\
+             <table><thead><tr><th>Channel</th><th>Reading</th><th>Unit</th></tr></thead>\
+             <tbody>{rows}</tbody></table></div>",
+            rows = unscored_rows
+        )
+    };
+
     format!(
         r##"<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
@@ -871,6 +920,7 @@ svg .latest {{ fill:#6a1b9a; }}
 <div class="sub">{n} recorded run(s) · newest {newest} · bubble-watch {ver}</div>
 
 {headline}
+{unscored}
 
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Score over recorded runs</h3>
@@ -909,6 +959,7 @@ timing information.</p>
         newest = esc(points.last().map(|p| p.date.as_str()).unwrap_or("—")),
         ver = esc(super::VERSION),
         headline = headline,
+        unscored = unscored,
         series = series,
         ind_charts = ind_charts,
         rows = body_rows
@@ -2029,6 +2080,51 @@ mod tests {
             &cfg,
             "2026-09-26T00:00:00Z",
         )
+    }
+
+    #[test]
+    fn a_weight_zero_channel_is_shown_in_its_own_card_and_never_among_the_score() {
+        // THE GAP THIS CLOSES. The dashboard is a SCORED-indicator summary and the archive stores only
+        // scored stresses, so a weight-0 channel had nowhere to appear: measured 2026-10-17,
+        // `public_attention` had been invisible on this page since the day it was added, and the two
+        // channels added that morning were absent too. That mattered, because the borrowers series read
+        // -56.7% below its own 52-week highs while the SCORED `credit_hy` read a calm 3.23% — a reader
+        // could see the calm number and never the contradiction.
+        let readings = vec![
+            reading("credit_hy", 12.0, 25.4, "pricing"),
+            reading("leveraged_builder_stress", 0.0, 0.0, "pricing"),
+        ];
+        let r = report_with_sub_scores(readings);
+        let h = render_dashboard(&[], Some(&r), 30, &|_| false);
+        assert!(
+            h.contains("Reported but NOT counted"),
+            "a weight-0 channel must get its own explicitly-labelled card"
+        );
+        assert!(
+            h.contains("leveraged_builder_stress"),
+            "and the channel must be NAMED in it, not merely counted"
+        );
+        assert!(
+            h.contains("weight 0"),
+            "the badge must say the weight, so nobody reads it as an input"
+        );
+        assert!(
+            h.contains("excluded from the score"),
+            "and the card must say what weight 0 MEANS"
+        );
+    }
+
+    #[test]
+    fn the_not_counted_card_is_absent_when_every_indicator_carries_weight() {
+        // The complement, so the card cannot be satisfied by appearing unconditionally — which would
+        // make it furniture that readers learn to skip.
+        let readings = vec![reading("credit_hy", 12.0, 25.4, "pricing")];
+        let r = report_with_sub_scores(readings);
+        let h = render_dashboard(&[], Some(&r), 30, &|_| false);
+        assert!(
+            !h.contains("Reported but NOT counted"),
+            "with no weight-0 channel present, the card must not appear"
+        );
     }
 
     fn reading(id: &str, weight: f64, stress: f64, group: &str) -> crate::model::IndicatorReading {
