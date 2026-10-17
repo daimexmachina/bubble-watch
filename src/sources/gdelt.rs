@@ -182,6 +182,17 @@ pub fn tracked_queries() -> Vec<(&'static str, &'static str)> {
     vec![
         ("datacenter_moratorium", "\"data center\" moratorium"),
         ("ai_bubble_tone", "\"AI bubble\""),
+        // THE LOCAL LAYER, which the model previously declared unmeasurable. `opposition_pressure`
+        // counts court filings, and filings FELL 17% year over year -- while US data-centre projects
+        // were being withdrawn at a rate that reached $260bn of cancellations in 2026, roughly 4x the
+        // 2024-25 figure, killed at the LOCAL permitting stage where no docket exists.
+        //
+        // Measured 2026-10-16: this query returned 340 daily points over 12 months, mean 0.00464,
+        // max 0.05450 -- real coverage, keyless. "withdrawn" was chosen over "cancelled"/"canceled"
+        // because it is the word both the reporting and the developer statements actually use, and
+        // because a single spelling covers the whole story. GDELT rejects parenthesised queries, so
+        // alternatives cannot be OR'd into one request.
+        ("datacenter_withdrawn", "\"data center\" withdrawn"),
     ]
 }
 

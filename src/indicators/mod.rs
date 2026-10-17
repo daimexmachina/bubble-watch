@@ -99,6 +99,8 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "opposition_pressure" => Some(Box::new(fundamentals::OppositionPressure)),
         "distress_events" => Some(Box::new(fundamentals::DistressEvents)),
         "public_attention" => Some(Box::new(fundamentals::PublicAttention)),
+        "buildout_opposition_news" => Some(Box::new(fundamentals::BuildoutOppositionNews)),
+        "leveraged_builder_stress" => Some(Box::new(fundamentals::LeveragedBuilderStress)),
         _ => None,
     }
 }

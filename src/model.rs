@@ -406,6 +406,15 @@ pub struct Observations {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gdelt_tone: Option<Vec<crate::sources::gdelt::TimelinePoint>>,
 
+    /// News volume for data-centre plans being WITHDRAWN — the local opposition layer.
+    ///
+    /// Added 2026-10-16. `opposition_pressure` measures court filings and they FELL 17% year over year,
+    /// while $260bn of US data-centre projects were called off in 2026 at the local permitting stage,
+    /// where no docket exists. This series is the free, keyless proxy for the layer the model had
+    /// declared a blind spot.
+    #[serde(default)]
+    pub gdelt_withdrawn: Option<Vec<crate::sources::gdelt::TimelinePoint>>,
+
     /// Public ATTENTION from Wikipedia pageviews, one entry per tracked article.
     /// UNSCORED: the indicator reading it carries weight 0, so this can never move
     /// the composite. It exists so a reader can see whether the public is looking.

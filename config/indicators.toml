@@ -1194,3 +1194,39 @@ role = "THE RESISTANCE. Whether the buildout is being fought: filed legal challe
 plain = "Is anyone fighting the buildout, and how loud is the public conversation about it?"
 rationale = "A docket is a recorded event and can be scored; salience is a transmission channel and is not. The split is visible in the weights."
 
+
+# ============================================================================
+# The two channels added 2026-10-16, BOTH WEIGHT 0 AND DELIBERATELY UNSCORED.
+#
+# The composite read 39.9/100 "mid" on the day the Philadelphia Semiconductor Index finished its
+# longest losing streak since 2008 (-11.4% on the week, >20% off its June peak, ~$2trn of US chip
+# market value erased) while the model's own report called credit spreads "near the TIGHTEST levels
+# on record". Both were true; the pair was misleading, because the model measured broad
+# investment-grade credit and a court-filing proxy, and the stress was in AI-specific credit and
+# local permitting. These two entries measure those, and neither may move the headline until a
+# pre-registered gate says it should.
+# ============================================================================
+
+[[indicator]]
+id = "buildout_opposition_news"
+group = "opposition"
+label = "Data-centre WITHDRAWALS in the news (the local layer)"
+weight = 0.0
+unit = "% change in news volume for data-centre withdrawals, trailing 30 days vs the 30 before"
+source = "gdelt"
+# EMPTY ON PURPOSE, as with public_attention and for the same reason: with weight 0 no anchor is ever
+# consulted, and supplying a scale here would imply the series is scoreable.
+anchors = []
+rationale = "NEWS SALIENCE OF DATA-CENTRE WITHDRAWALS, from the free GDELT doc API (query: \"data center\" withdrawn), measured over a 12-month daily window. WHY IT EXISTS: `opposition_pressure` counts COURT FILINGS and they FELL 17% year over year, while $260bn of US data-centre projects were called off in 2026 — roughly 4x the 2024-25 figure of $64bn — almost entirely at the LOCAL permitting stage, where no docket exists. The model had already declared this layer a blind spot in its own text ('Legistar needs a commercial licence, Socrata returned 0 datasets, FERC has no public endpoint … this is therefore a LOWER BOUND on opposition'). It turned out to be the layer where the money dies, so a falling filing count was being read as easing opposition when it was actually relocation of it. WEIGHT 0 BY DESIGN: excluded from both the composite and the coverage fraction. WHY NOT SCORED: no pre-registered lead/lag gate has been run against this series, and the sibling sentiment channel FAILED its gate — peak correlation at lag +7 (tone follows price), observed 0.221 against a 2000-shuffle empirical null p90 of 0.264, p = 0.36 — so the prior is unfavourable and the honest status is UNPROVEN. LIMITS: (1) 'withdrawn' is one word for a story that also says cancelled, blocked, rejected; GDELT rejects parenthesised queries so alternatives cannot be OR'd into one request — this is a LOWER BOUND; (2) news volume measures salience, which rises both when a story is important and when it is merely being discussed; (3) the corpus is global, so non-US withdrawals are included and not separable; (4) a 30-against-30 comparison needs at least 60 points and the series is REFUSED rather than partially compared below that."
+anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS INTENTIONALLY EMPTY AND NO ANCHOR IS EVER CONSULTED. This entry exists so the series is fetched, reported and rendered; it is arithmetically incapable of moving the composite or the coverage fraction, because score::composite excludes weight-0 indicators from both. It is NOT a placeholder awaiting a scale. If a future version wants to score withdrawal salience, the pre-registered lead/lag gate must be run FIRST — the sibling sentiment channel was tested that way and FAILED (lag +7, p = 0.36)."
+
+[[indicator]]
+id = "leveraged_builder_stress"
+group = "pricing"
+label = "Debt-funded AI builders — drawdown (the BORROWERS, not the lenders)"
+weight = 0.0
+unit = "% below 52-week high, equal-weighted across debt-funded AI builders"
+source = "yahoo"
+anchors = []
+rationale = "THE EQUITY DRAWDOWN OF THE DEBT-FUNDED AI BUILDERS — CoreWeave, Nebius, IREN, Applied Digital, TeraWulf and Core Scientific — each measured against its OWN 52-week high and equal-weighted. WHY IT EXISTS: the model tracked the FINANCIERS of the buildout (ARCC, OWL, BX) and never the BORROWERS, and the borrowers are where the stress prices first. Measured 2026-10-16: CoreWeave's 5-year credit default swaps exceeded 1,140 basis points (last ~1,038, +164% year over year) on more than $51bn of debt; its 2031 notes yielded 15.78%; S&P Global treats 1,000bps and above as credit DISTRESS — while this model's own SCORED `credit_hy` indicator read 25/100 'calm', because BAA10Y is broad investment-grade credit sitting at its 2nd percentile since 1986 and contains no AI-specific signal at all. Analysts including D.A. Davidson's Gil Luria call these names 'the subprime tranche of the AI trade'. WHY EQUITIES RATHER THAN SPREADS: individual CDS and bond quotes are not available from a free keyless source, whereas every one of these names is listed and its price is free. This is a PROXY, and the proxy is stated. WEIGHT 0 BY DESIGN. WHY NOT SCORED: no lead/lag gate has been run, and adding a channel because its narrative is compelling is precisely how a model acquires a trailing indicator carrying real weight. REFUSES ON THIN COVERAGE: fewer than 3 of the 6 series retrieved is a company story, not a complex story, so the indicator returns a gap rather than describing one name as a cohort. LIMITS: (1) equities price the market's view of borrower risk, not the credit market's own — the two can diverge; (2) the cohort is a judgement and is not exhaustive: Nscale (which alone holds $103.4bn of contracted value), Crusoe and Lambda are private and absent; (3) a drawdown from a 52-week high is not a level, so a name that has always traded weak reads identically to one that has just collapsed; (4) overlap with the model's existing exposures means this is corroboration, not independent evidence."
+anchor_note = "WEIGHT 0 — EMPTY ANCHORS ON PURPOSE. This series is fetched, reported and rendered, and is arithmetically incapable of moving the composite or the coverage fraction. It is not unfinished work awaiting a scale: the borrowers channel is measured so a reader can SEE the stress, and it acquires weight only if a pre-registered lead/lag gate passes. The gate has not been run, so the honest status is UNPROVEN."

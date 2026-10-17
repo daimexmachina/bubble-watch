@@ -2643,6 +2643,238 @@ impl Indicator for DistressEvents {
     }
 }
 
+// ===========================================================================
+// THE TWO CHANNELS ADDED 2026-10-16 — both WEIGHT 0, both unscored on purpose.
+//
+// Why they exist. The composite read 39.9/100 "mid" on 2026-10-16, the day the Philadelphia
+// Semiconductor Index completed its longest losing streak since 2008 (-11.4% on the week, >20% off
+// its June peak, roughly $2trn of US chip market value erased) — and the model's own report said
+// credit spreads were "near the TIGHTEST levels on record". Both statements were true and the pair
+// was misleading, because the model measured broad investment-grade credit and a court-filing proxy
+// while the stress sat in AI-SPECIFIC credit and LOCAL permitting.
+//
+// Neither is scored. Weight 0 means `score::composite` excludes them from both the composite and the
+// coverage fraction, so they cannot move the headline. That is deliberate: the sibling sentiment
+// channel was tested against a pre-registered lead/lag gate and FAILED (peak at lag +7, p = 0.36),
+// and no equivalent gate has been run for these. The honest status is UNMEASURED, not scored.
+// ===========================================================================
+
+/// News volume for data-centre plans being WITHDRAWN — the local-opposition layer.
+pub struct BuildoutOppositionNews;
+
+impl Indicator for BuildoutOppositionNews {
+    fn id(&self) -> &'static str {
+        "buildout_opposition_news"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        // Same refusal as `public_attention`: a scale on a weight-0 series invites a later reader to
+        // raise the weight without running the gate.
+        assert!(
+            ic.anchors.is_empty(),
+            "buildout_opposition_news is weight {} and must carry NO anchors, but the config supplies \
+             {}. Do not attach a scale to a weight-0 series.",
+            ic.weight,
+            ic.anchors.len()
+        );
+
+        let Some(pts) = ctx.obs.gdelt_withdrawn.as_ref() else {
+            return Reading::Unavailable {
+                reason:
+                    "no GDELT news series for data-centre withdrawals was retrieved, so whether \
+                         projects are being abandoned at the local level is unknown"
+                        .into(),
+            };
+        };
+        if pts.len() < 60 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "only {} daily news points were returned; a 30-against-30 comparison needs at \
+                     least 60, and comparing over fewer would let a single busy news day set the result",
+                    pts.len()
+                ),
+            };
+        }
+
+        let vals: Vec<f64> = pts.iter().map(|p| p.value).collect();
+        let n = vals.len();
+        let recent: f64 = vals[n - 30..].iter().sum::<f64>() / 30.0;
+        let prior: f64 = vals[n - 60..n - 30].iter().sum::<f64>() / 30.0;
+        if prior <= 0.0 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "the prior 30-day window averaged {:.6}, so a percentage change against it is \
+                     undefined rather than infinite",
+                    prior
+                ),
+            };
+        }
+        let change = (recent - prior) / prior * 100.0;
+        let peak = vals.iter().cloned().fold(f64::MIN, f64::max);
+
+        Reading::Scored {
+            stress: 0.0,
+            value: change,
+            unit: "% change in news volume for data-centre withdrawals, trailing 30 days vs the 30 before"
+                .into(),
+            detail: format!(
+                "Coverage of data-centre projects being WITHDRAWN averaged {:.5} of all news in the \
+                 trailing 30 days against {:.5} in the 30 days before ({:+.1}%); the 12-month peak day \
+                 was {:.5}. WHY THIS CHANNEL EXISTS: `opposition_pressure` counts COURT FILINGS and they \
+                 FELL 17% year over year, while $260 billion of US data-centre projects were called off \
+                 in 2026 — roughly four times the 2024-25 rate — almost entirely at the LOCAL permitting \
+                 stage, where no docket exists and where a supportive White House has limited reach \
+                 because permitting is local. A falling filing count is not evidence that opposition \
+                 eased; it is evidence that opposition moved to a layer this model could not see. That \
+                 layer is now measured. QUERY: \"data center\" withdrawn. WEIGHT 0 BY DESIGN — this \
+                 cannot move the composite or the coverage fraction. WHY NOT SCORED: no lead/lag gate \
+                 has been run against it, and the sibling sentiment channel FAILED its gate (peak at \
+                 lag +7, p = 0.36), so the prior is unfavourable and the honest status is UNPROVEN. \
+                 LIMITS, STATED: (1) 'withdrawn' is one word for a story that also uses 'cancelled', \
+                 'blocked' and 'rejected'; GDELT rejects parenthesised queries, so alternatives cannot \
+                 be OR'd into a single request and this is a LOWER BOUND on the phenomenon; (2) news \
+                 volume measures SALIENCE, which can rise because a story is important or because it is \
+                 merely being discussed; (3) GDELT covers a global news corpus, so non-US withdrawals \
+                 are included and not separable here.",
+                recent, prior, change, peak
+            ),
+            provenance: crate::model::Provenance {
+                source: "gdelt".into(),
+                endpoint: format!("{}+{}", crate::sources::gdelt::TIMELINE_URL, "\"data center\" withdrawn"),
+                as_of: pts.last().map(|p| p.date.clone()).unwrap_or_default(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
+/// Stress in the DEBT-FUNDED AI builders — the borrowers, not the lenders.
+pub struct LeveragedBuilderStress;
+
+/// The tickers whose stress this channel measures, and the labels they are fetched under.
+pub const BUILDER_KEYS: &[(&str, &str)] = &[
+    ("CRWV_1y_d", "CoreWeave"),
+    ("NBIS_1y_d", "Nebius"),
+    ("IREN_1y_d", "IREN"),
+    ("APLD_1y_d", "Applied Digital"),
+    ("WULF_1y_d", "TeraWulf"),
+    ("CORZ_1y_d", "Core Scientific"),
+];
+
+impl Indicator for LeveragedBuilderStress {
+    fn id(&self) -> &'static str {
+        "leveraged_builder_stress"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        assert!(
+            ic.anchors.is_empty(),
+            "leveraged_builder_stress is weight {} and must carry NO anchors, but the config supplies {}.",
+            ic.weight,
+            ic.anchors.len()
+        );
+
+        // Equal-weighted drawdown from each name's own 52-week high. Each series is measured against
+        // ITSELF so that a name that was always weak cannot be hidden by one that ran hard, and so the
+        // figure is a drawdown rather than a level.
+        let mut per_name: Vec<(String, f64)> = Vec::new();
+        for (key, label) in BUILDER_KEYS {
+            let Some(series) = ctx.obs.yahoo.get(*key) else {
+                continue;
+            };
+            let vals = series.values();
+            if vals.len() < 60 {
+                continue;
+            }
+            let high = vals.iter().cloned().fold(f64::MIN, f64::max);
+            let last = *vals.last().unwrap();
+            if high > 0.0 {
+                per_name.push(((*label).to_string(), (last / high - 1.0) * 100.0));
+            }
+        }
+
+        // Refuse on thin coverage. One surviving name is not the complex.
+        if per_name.len() < 3 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "only {} of {} debt-funded builder series were retrieved, which is too few to \
+                     describe the complex rather than one company",
+                    per_name.len(),
+                    BUILDER_KEYS.len()
+                ),
+            };
+        }
+
+        let mean_dd = per_name.iter().map(|(_, d)| d).sum::<f64>() / per_name.len() as f64;
+        let worst =
+            per_name.iter().cloned().fold(
+                ("".to_string(), 0.0_f64),
+                |a, b| if b.1 < a.1 { b } else { a },
+            );
+        let rows: Vec<String> = per_name
+            .iter()
+            .map(|(l, d)| format!("{} {:.0}%", l, d))
+            .collect();
+
+        Reading::Scored {
+            stress: 0.0,
+            value: mean_dd,
+            unit: "% below 52-week high, equal-weighted across debt-funded AI builders".into(),
+            detail: format!(
+                "The debt-funded AI builders are on average {:.1}% below their own 52-week highs \
+                 ({}); the deepest is {} at {:.0}%. WHY THIS CHANNEL EXISTS: the model tracked the \
+                 FINANCIERS of the buildout (ARCC, OWL, BX) and never the BORROWERS — and the borrowers \
+                 are where the stress prices first. Measured 2026-10-16: CoreWeave's 5-year credit \
+                 default swaps exceeded 1,140 basis points (last ~1,038, +164% year over year) on more \
+                 than $51bn of debt, its 2031 notes yielded 15.78%, and S&P Global treats 1,000bps and \
+                 above as credit DISTRESS — while this model's own scored `credit_hy` read 25/100, \
+                 because BAA10Y is broad investment-grade credit at its 2nd percentile since 1986 and \
+                 says nothing about AI-specific credit. Analysts call these names the subprime tranche \
+                 of the AI trade. WEIGHT 0 BY DESIGN — cannot move the composite. WHY NOT SCORED: no \
+                 lead/lag gate has been run, and a channel added on the strength of a narrative is \
+                 exactly how a model acquires a trailing indicator with real weight. LIMITS, STATED: \
+                 (1) these are EQUITIES, so this measures how the market prices the borrowers' risk, not \
+                 their credit spreads — a bond-market series would be closer to the source, and the \
+                 free, keyless substitute is the equity drawdown used here; (2) the cohort is chosen by \
+                 judgement and is not exhaustive — Crusoe, Nscale and Lambda are private and absent, \
+                 and Nscale alone holds $103.4bn of contracted value; (3) a drawdown from a 52-week high \
+                 is not a level, so a name that has always traded weak reads the same as one that has \
+                 just collapsed; (4) the cohort overlaps the model's other exposures, so this is \
+                 corroboration rather than independent evidence.",
+                mean_dd,
+                rows.join(", "),
+                worst.0,
+                worst.1
+            ),
+            provenance: crate::model::Provenance {
+                source: "yahoo".into(),
+                endpoint: format!(
+                    "chart API, 1y daily: {}",
+                    per_name.iter().map(|(l, _)| l.clone()).collect::<Vec<_>>().join(", ")
+                ),
+                as_of: ctx.obs.retrieved_at.clone(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3710,6 +3942,170 @@ mod tests {
             }
             other => panic!("expected Scored, got {other:?}"),
         }
+    }
+
+    // ---- the two channels added 2026-10-16 ---------------------------------
+
+    fn series(vals: &[f64]) -> crate::model::Series {
+        crate::model::Series {
+            provenance: crate::model::Provenance {
+                source: "test".into(),
+                endpoint: "test".into(),
+                as_of: String::new(),
+                retrieved_at: String::new(),
+            },
+            points: vals
+                .iter()
+                .enumerate()
+                .map(|(i, v)| crate::model::Point {
+                    date: format!("2026-{:02}-{:02}", (i / 28) % 12 + 1, i % 28 + 1),
+                    value: *v,
+                })
+                .collect(),
+        }
+    }
+
+    fn timeline(vals: &[f64]) -> Vec<crate::sources::gdelt::TimelinePoint> {
+        vals.iter()
+            .enumerate()
+            .map(|(i, v)| crate::sources::gdelt::TimelinePoint {
+                date: format!("2026-{:02}-{:02}", (i / 28) % 12 + 1, i % 28 + 1),
+                value: *v,
+            })
+            .collect()
+    }
+
+    fn builders(n: usize, drawdown_pct: f64) -> Observations {
+        // n series, each peaking at 100 and ending at 100*(1+dd/100).
+        let mut obs = Observations::default();
+        let keys = [
+            "CRWV_1y_d",
+            "NBIS_1y_d",
+            "IREN_1y_d",
+            "APLD_1y_d",
+            "WULF_1y_d",
+            "CORZ_1y_d",
+        ];
+        for k in keys.iter().take(n) {
+            let mut vals = vec![50.0; 59];
+            vals.push(100.0); // the 52-week high
+            vals.push(100.0 * (1.0 + drawdown_pct / 100.0));
+            obs.yahoo.insert((*k).to_string(), series(&vals));
+        }
+        obs
+    }
+
+    #[test]
+    fn a_short_withdrawal_series_is_refused_rather_than_partially_compared() {
+        // 30-against-30 needs 60 points. Comparing 30 against 3 would let a single busy news day set
+        // the result — the same defect class as scoring a partial week as a complete one.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.gdelt_withdrawn = Some(timeline(&[0.01; 40]));
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match BuildoutOppositionNews.evaluate(&ctx) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("40"),
+                "the refusal must state how many points it got: {reason}"
+            ),
+            other => panic!("expected Unavailable, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_rising_withdrawal_series_reads_as_a_rise_and_says_which_layer_it_is() {
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        // 60 flat at 0.01, then 30 at 0.02 -> the trailing 30-day mean doubles.
+        let mut v = vec![0.01; 60];
+        v.extend(vec![0.02; 30]);
+        obs.gdelt_withdrawn = Some(timeline(&v));
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match BuildoutOppositionNews.evaluate(&ctx) {
+            Reading::Scored { value, detail, .. } => {
+                assert!((value - 100.0).abs() < 0.01, "expected +100%, got {value}");
+                assert!(
+                    detail.contains("LOCAL") || detail.contains("local"),
+                    "the detail must say this is the LOCAL permitting layer: {detail}"
+                );
+                assert!(
+                    detail.contains("court filings") || detail.contains("COURT FILINGS"),
+                    "it must contrast with the filings channel it complements: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_thin_builder_cohort_is_refused_rather_than_described_as_a_complex() {
+        // Two names is a company story, not a cohort story.
+        let cfg = shipped();
+        let obs = builders(2, -40.0);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match LeveragedBuilderStress.evaluate(&ctx) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("2 of 6"),
+                "the refusal must say how thin the cohort was: {reason}"
+            ),
+            other => panic!("expected Unavailable, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn the_builder_drawdown_averages_each_name_against_its_own_high() {
+        let cfg = shipped();
+        let obs = builders(6, -50.0);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match LeveragedBuilderStress.evaluate(&ctx) {
+            Reading::Scored { value, detail, .. } => {
+                assert!(
+                    (value + 50.0).abs() < 0.01,
+                    "each name is 50% below its own high, so the mean must be -50: {value}"
+                );
+                assert!(
+                    detail.contains("BORROWERS"),
+                    "the detail must say this is the borrowers, not the lenders: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_weight_zero_channel_refuses_to_carry_anchors() {
+        // Same rule as public_attention: a scale on a weight-0 series invites a later reader to raise
+        // the weight without running the gate. Enforced by assert! so it cannot be ignored.
+        let mut cfg = shipped();
+        for ic in cfg.indicator.iter_mut() {
+            if ic.id == "leveraged_builder_stress" {
+                ic.anchors = vec![[0.0, 0.0], [1.0, 100.0]];
+            }
+        }
+        let obs = builders(6, -10.0);
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            LeveragedBuilderStress.evaluate(&ctx)
+        }));
+        assert!(
+            res.is_err(),
+            "a weight-0 builder channel with anchors must REFUSE, not quietly ignore the scale"
+        );
     }
 
     #[test]

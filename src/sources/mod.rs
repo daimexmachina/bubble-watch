@@ -78,6 +78,52 @@ pub const YAHOO_SPECS: &[YahooSpec] = &[
         range: "1y",
         interval: "1d",
     },
+    // ---- THE BORROWERS, NOT THE LENDERS -------------------------------------
+    // Added 2026-10-16. The model tracked the FINANCIERS of the AI buildout (ARCC, OWL, BX) and never the
+    // companies doing the borrowing -- which is where the stress actually prices. Measured that day:
+    // CoreWeave's 5-year CDS exceeded 1,140bps (last ~1,038, +164% year over year) on >$51bn of debt, its
+    // 2031 notes yielded 15.78%, and S&P Global treats 1,000bps+ as credit DISTRESS -- while this model's
+    // own `credit_hy` read "near the TIGHTEST spreads on record" (BAA10Y, 2nd percentile since 1986),
+    // because BAA10Y is broad investment-grade credit and says nothing about AI-specific credit.
+    //
+    // These are the debt-funded operators: the "subprime tranche of the AI trade" in D.A. Davidson's
+    // phrasing. They are all listed, so their stress is observable daily at no cost.
+    YahooSpec {
+        key: "CRWV_1y_d",
+        symbol: "CRWV",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "NBIS_1y_d",
+        symbol: "NBIS",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "IREN_1y_d",
+        symbol: "IREN",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "APLD_1y_d",
+        symbol: "APLD",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "WULF_1y_d",
+        symbol: "WULF",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "CORZ_1y_d",
+        symbol: "CORZ",
+        range: "1y",
+        interval: "1d",
+    },
 ];
 
 /// FRED series the model may want. All optional by construction.
@@ -397,9 +443,17 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
             gdelt::Mode::Volume
         };
         match gdelt::fetch_timeline(f, query, mode, "12m") {
-            Ok(points) => match mode {
-                gdelt::Mode::Volume => obs.gdelt_volume = Some(points),
-                gdelt::Mode::Tone => obs.gdelt_tone = Some(points),
+            // Routed by LABEL, not by mode. Keying on mode alone would make every new volume query
+            // overwrite the previous one -- the moratorium series would be fetched and silently discarded.
+            Ok(points) => match label {
+                "datacenter_moratorium" => obs.gdelt_volume = Some(points),
+                "ai_bubble_tone" => obs.gdelt_tone = Some(points),
+                "datacenter_withdrawn" => obs.gdelt_withdrawn = Some(points),
+                other => obs.failures.push(SourceFailure {
+                    source: "gdelt".into(),
+                    endpoint: other.to_string(),
+                    reason: "fetched but no observation field is wired for this label".into(),
+                }),
             },
             Err(e) => obs.failures.push(SourceFailure {
                 source: "gdelt".into(),
