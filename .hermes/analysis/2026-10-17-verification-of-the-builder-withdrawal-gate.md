@@ -23,6 +23,11 @@ environment                               : Python 3.13.5, numpy 2.2.4, scipy 1.
                                             pure-Python Pearson, own Mersenne-Twister shuffle seeds
                                             20261017 / 1 / 7 / 12345 / 987654321 and 5 x 2000 replicate
                                             seeds 555000+k.** §9 states where its numbers differ.
+corrections (§9.6, added later)           : §9.4's two "unreproducible" claims — the predictor's lag-1
+                                            autocorrelation and the "91 %" window overlap — were estimator /
+                                            convention artefacts (separate-means vs single-mean; Jaccard vs
+                                            |A∩B|/|A|). Both §4 values reproduce. Corrected in §9.4, §9.5
+                                            and §9.6; the verdict and §1–§8's own numbers are untouched.
 ```
 
 **Exact commands run** (from the repository root; `verify.py` is reproduced verbatim in Appendix A, so the
@@ -183,7 +188,11 @@ Two checks that the null is doing what it claims:
   `close` field and 0.477 / 0.636 / 0.645 / 0.423 on `adjclose`. The pre-registered 20-day block length is
   *not* the friendliest to the hypothesis in the sense that matters — every length rejects it — but one honest
   caveat: at 60 days there are only 5 chunks and the null is coarse, with p50 = 0.196, *below* the observed
-  0.214. The p-value there is still 0.42. 20 days is also not matched to the longest horizon (40 d), so the
+  0.214. The p-value there is still 0.42. (The sweep confounds block width with chunk count — 26 / 13 / 7 / 5
+  chunks at 10 / 20 / 40 / 60 d, i.e. 25 / 12 / 6 / 4 full blocks plus a trailing remainder — so the widest
+  block is also the coarsest null: at 60 d there are only 5 chunks, i.e. 120 distinct permutations, which is
+  why that null's median can sit below the observed statistic while the p-value stays the decider, exactly as
+  this bullet already says.) 20 days is also not matched to the longest horizon (40 d), so the
   null does not fully randomise the target's own overlapping structure; matching the block to 40 d would be
   the stricter test, and it gives p = 0.638. **The pre-registered null is used as registered; these variants
   are reported as sensitivity only, not substituted.**
@@ -194,9 +203,12 @@ Two checks that the null is doing what it claims:
   its warning that an i.i.d. shuffle is anti-conservative, is **confirmed by direct computation**: the block
   null's p50 is ~3× the i.i.d. null's p50.
 - **The overlapping pairs are nowhere near independent.** The predictor's lag-1 autocorrelation is **+0.934**;
-  the forward 20-day SPY return's is **+0.947** [§9.4: +0.9467 reproduces only on the unadjusted `close`
-  field], with 91 % of consecutive pairs sharing days [§9.4: consecutive 20-day windows share 20 of 21
-  dates, i.e. 95 %, not 91 %]. So the 231
+  the forward 20-day SPY return's is **+0.947**, with 91 % of consecutive pairs sharing days. Both figures
+  hold up: +0.934 is the plain single-mean lag-1 estimator on the cached 251-point series (+0.9341), and 91 %
+  is the Jaccard overlap of consecutive forward windows (20 shared of the 22 dates involved = 90.9 %).
+  *(§9.4 briefly carried two inline annotations here — that +0.9467 "reproduces only on the unadjusted `close`
+  field", and that consecutive windows share 95 %, "not 91 %". Both overstated a 0.001 difference and mistook
+  a Jaccard convention for an error; they are withdrawn and documented in §9.6.)* So the 231
   overlapping pairs carry roughly 12 blocks of independent information, not 231. That is the reason the
   scipy CI in §2 is the wrong interval and the reason the empirical null is the right instrument.
 
@@ -539,20 +551,28 @@ like rather than a method difference.) The conclusion §4 draws from it is unaff
 Reported rather than papered over, per the rules of this task. **None of them touches (a)–(d) or the verdict**,
 and I have not silently adopted either value.
 
+**Post-review update (`t_42e6db25`) — items 1 and 2 below were wrong.** The adversarial method review (which
+reproduced §1–§8 on a third code path and upheld the FAIL) found that the two rows marked "not identified" and
+"95.2 %" are in fact *estimator and convention* differences: §4's +0.934 and its "91 %" both reproduce. The
+rows and the candidate table are corrected in place, and the wrong claims are preserved verbatim, next to the
+corrected readings, in **§9.6**.
+
 | # | claim | mine | cause, as far as I could take it | materiality |
 |---|---|---|---|---|
-| 1 | predictor lag-1 autocorrelation **+0.934** (§4) | **+0.9556** (identical on both price fields) | **Not identified.** ~20 candidate definitions were computed; none returns 0.934. Closest: 0.9387 for the drawdown of the equal-weighted **level index** — a *different* series from the indicator's mean-of-per-name-drawdowns — and 0.9481 for the rank version. Table below. | none: the claim is used only to say "the series is highly persistent"; my value is *higher*, and neither the block null nor the 12-block count depends on it |
-| 2 | "91 % of consecutive pairs sharing days" (§4) | consecutive 20-day windows share 20 of 21 dates = **95.2 %** | wording; no "sharing days" convention I can construct gives 91 % (231/251 = 92.0 % is the share of dates with a full forward window — the nearest figure, and a different quantity) | none |
-| 3 | forward 20-day SPY return autocorrelation **+0.947** (§4) | +0.9457 (`adjclose`), **+0.9467** (`close`) | reproduces only on the **unadjusted** field — consistent with §5.1's finding that §1's target was `quote.close` | none |
+| 1 | predictor lag-1 autocorrelation **+0.934** (§4) | **+0.9341** under the same (single-mean) estimator — **§4 is CORRECT**; the **+0.9556** I first printed was a *different* estimator | **estimator convention, not a discrepancy.** §4's +0.934 is the plain single-mean lag-1 estimator on the cached 251-point series (+0.9341). My +0.9556 was `pearson(pred[:-1], pred[1:])` — a **separate mean** for each lagged half — which is systematically higher on a trending series. The same split at lag 20 confirms it: separate-means **0.3604** (which is what the table below prints) vs single-mean **0.2773**. The "not identified" verdict in this row is **withdrawn** (see §9.6). | none — the claim is used only to say "the series is highly persistent", and the corrected value is the one §4 already states; neither the block null nor the 12-block count depends on it |
+| 2 | "91 % of consecutive pairs sharing days" (§4) | **91 % reproduces** — Jaccard overlap of consecutive forward windows = 20/22 = **90.9 %**; my 95.2 % is the same fact as `\|A∩B\|/\|A\|` = 20/21 | **convention difference, not an error.** Consecutive forward 20-day windows each span 21 dates (`t…t+20`); they share 20 of the 22 dates they jointly involve, so the **Jaccard** overlap `\|A∩B\|/\|A∪B\|` = **90.9 % ≈ 91 %** — exactly §4's figure. My "correction" to 95.2 % was `\|A∩B\|/\|A\|`. The claim that no "sharing days" convention gives 91 % is **withdrawn** (see §9.6). (231/251 = 92.0 % is the share of dates with a full forward window — a different quantity, and not the overlap.) | none |
+| 3 | forward 20-day SPY return autocorrelation **+0.947** (§4) | +0.9455 (`adjclose`) / +0.9465 (`close`) under the standard estimator (+0.9457 / +0.9467 separate-means) | **both fields at the printed precision** — the two fields differ by only 0.0010 and both round to 0.946/0.947 against §4's +0.947; the unadjusted field is only nominally nearer, consistent with §5.1's finding that §1's target was `quote.close` | none |
 | 4 | MC standard errors (p50 0.0027, p90 0.0047, p95 0.0054, p 0.0083, from 20 x 2000) | 0.0013–0.0014, 0.0054–0.0056, 0.0062–0.0070, 0.0078–0.0101 (from 5 x 2000) | different replicate counts and RNG stream; an se estimated from 5 replicates is itself ±~35 %, so these are the same size | none |
 | 5 | simulated power 0.803 / 0.805 / 0.815 (10,000 trials) | 0.8111 / 0.8112 / 0.8236 ± 0.0028 (20,000 trials) | different RNG stream and trial count; differences ≈1.5–2 se of a difference between two runs | none — both bracket the 0.80 design target and the closed-form n is identical |
 
 The autocorrelation candidates, all computed on the cached 251-day series (the indicator's definition is the
-first row):
+first row). **Every value in this table is the Pearson correlation between the two lagged sub-series — a
+*separate mean* for each half — the convention that inflated the lag-1 figure to +0.9556; under the standard
+single-mean estimator that §4 used, the indicator's own definition returns +0.9341.**
 
 | predictor's lag-1 autocorrelation | value |
 |---|---|
-| **equal-weighted expanding drawdown (the indicator's own definition)** | **+0.9556** |
+| **equal-weighted expanding drawdown (the indicator's own definition)** | **+0.9556** *(separate-means; **+0.9341** single-mean, = §4)* |
 | same, unadjusted `close` field (identical series for the six builders) | +0.9556 |
 | log-space drawdown | +0.9508 |
 | linear trend removed | +0.9745 |
@@ -562,24 +582,96 @@ first row):
 | truncated to the first 211 / 231 / 241 / 246 / 250 points | +0.9425 / +0.9494 / +0.9515 / +0.9529 / +0.9550 |
 | mean of the six per-name autocorrelations | +0.9504 |
 | drawdown of the equal-weighted **level index** (a different series) | +0.9387 |
-| predictor's 20-day lag instead of lag-1 | +0.3604 |
+| predictor's 20-day lag instead of lag-1 | +0.3604 *(separate-means; **+0.2773** single-mean)* |
 | autocorrelation of the 12 non-overlapping 20-day block means | +0.4087 |
 | autocorrelation of the daily changes in the forward 20-day return | −0.0044 |
-| **§4's stated value** | **+0.934 — reproduced by none of the above** |
+| **§4's stated value** | **+0.934 — reproduced: +0.9341 under the single-mean estimator §4 used** (the +0.9556 above is the separate-means form of that same series) |
 
 ### 9.5 Verdict after the second route, and what it did not touch
 
 **The FAIL survives the second recomputation, unchanged.** It is not an artefact of the first script: 18 point
 statistics reproduce to the last printed digit, the null agrees within Monte-Carlo error across two RNG
 families, five seeds and four block widths, the two secondary readings in the gate note check out against the
-tool's own report and the sibling gate, and the single number that does not reproduce (the predictor's lag-1
-autocorrelation) is *larger* in my run and is used by neither the pass condition nor the verdict. Nothing here
+tool's own report and the sibling gate, and the one number §9.4 had flagged as not reproducing — the predictor's
+lag-1 autocorrelation — **reproduces too** once the estimator convention is held fixed: §4's +0.934 is the
+single-mean lag-1 value **+0.9341**, and §9.4's +0.9556 was the separate-means Pearson of the same series
+(§9.6). *(Earlier text here read: "the single number that does not reproduce (the predictor's lag-1
+autocorrelation) is larger in my run and is used by neither the pass condition nor the verdict" — withdrawn.)*
+Every §1–§8 number this verification was asked to check therefore reproduces. Nothing here
 is closer to the pass condition than §2–§4 already were.
 
 `config/indicators.toml`, all weights, the composite, the coverage fraction and the scored set are unchanged —
 `git status --short` before this commit shows only this note plus one untracked `.hermes/recon/2026-09-26/`
 directory that an **unrelated recon pass was writing concurrently** (mtime 2026-10-17 16:16, i.e. during this
 run) and that no part of the §1–§9 recomputation reads or writes. This commit stages exactly one path.
+
+### 9.6 Corrections after adversarial review (`t_42e6db25`)
+
+The adversarial method review of this note (task `t_42e6db25`) reproduced §1–§8 on a third, independently
+written code path, upheld the FAIL and all four adjudicated points, and found one **documentation defect** in
+§9.4 — non-material to the verdict — which is corrected here. The wrong claims are listed verbatim beside the
+corrected readings rather than silently overwritten, in keeping with §1–§8's own discipline of publishing the
+seductive result before dismantling it.
+
+The rows and table cells in §9.4, the two `[§9.4: …]` annotations that sat in §4's persistence bullet, and the
+closing sentence of §9.5 were all edited in place; the superseded wording is quoted below. Nothing in §1–§8's
+own numbers and nothing in the verdict changes.
+
+**(a) The predictor's lag-1 autocorrelation — §4 is correct, §9.4 was wrong.** Superseded text (§9.4 item 1
+and the candidate table):
+
+> | 1 | predictor lag-1 autocorrelation **+0.934** (§4) | **+0.9556** (identical on both price fields) |
+> **Not identified.** ~20 candidate definitions were computed; none returns 0.934. Closest: 0.9387 for the
+> drawdown of the equal-weighted **level index** — a *different* series from the indicator's
+> mean-of-per-name-drawdowns — and 0.9481 for the rank version. Table below. | none: the claim is used only to
+> say "the series is highly persistent"; my value is *higher*, and neither the block null nor the 12-block
+> count depends on it |
+>
+> | **§4's stated value** | **+0.934 — reproduced by none of the above** |
+
+Corrected: §4's **+0.934 reproduces.** The plain **single-mean** lag-1 estimator on the same cached 251-point
+series gives **+0.9341**. §9.4's +0.9556 is a *different estimator* — the Pearson correlation between the two
+lagged sub-series, i.e. with a **separate mean** for each half (`pearson(pred[:-1], pred[1:])`). On a trending
+series the separate-means form is systematically higher; the same split at lag 20 gives separate-means
+**0.3604** against single-mean **0.2773**, which is exactly why the §9.4 table prints 0.3604 for its lag-20
+row. **The whole §9.4 candidate table is in the separate-means convention.** The claim that no candidate
+reproduces +0.934 is withdrawn.
+
+Reproduce in six lines from the repo root (from the `data/cache/` bodies): build the equal-weighted mean over
+CRWV/NBIS/IREN/APLD/WULF/CORZ of `(adjclose / expanding-max(adjclose) − 1)·100` on the 251 aligned dates, then
+`m = mean(pred); Σ(pred[i]−m)(pred[i+1]−m) / Σ(pred[i]−m)² = +0.9341` and
+`pearson(pred[:-1], pred[1:]) = +0.9556`. Re-run for this correction: both reproduce, both fields give +0.9341.
+
+**(b) "91 % of consecutive pairs sharing days" — §4 is correct.** Superseded text (§9.4 item 2):
+
+> | 2 | "91 % of consecutive pairs sharing days" (§4) | consecutive 20-day windows share 20 of 21 dates =
+> **95.2 %** | wording; no "sharing days" convention I can construct gives 91 % (231/251 = 92.0 % is the share
+> of dates with a full forward window — the nearest figure, and a different quantity) | none |
+
+Corrected: the two figures are the **same fact under two overlap conventions**, not a discrepancy. Consecutive
+forward 20-day windows each span 21 dates (`t…t+20`); they share **20 of the 22 dates they jointly involve**,
+so the **Jaccard** overlap `|A∩B|/|A∪B|` = 20/22 = **90.9 % ≈ 91 %** — §4's figure. §9.4's 95.2 % is
+`|A∩B|/|A|` = 20/21. **§4's 91 % is right and the "correction" is withdrawn.** (231/251 = 92.0 % is the share
+of dates with a full forward window — a different quantity, not the overlap.)
+
+**(c) Inherited wording.** §4's persistence bullet carried two `[§9.4: …]` annotations asserting "+0.9467
+reproduces only on the unadjusted `close` field" and "consecutive 20-day windows share 20 of 21 dates, i.e.
+95 %, not 91 %"; §9.5 closed with "the single number that does not reproduce (the predictor's lag-1
+autocorrelation) is *larger* in my run and is used by neither the pass condition nor the verdict". Both are
+corrected with (a) and (b) above. The §4 figures +0.947 and +0.934 were always right.
+
+**(d) NIT, §9.4 item 3.** "reproduces only on the unadjusted `close` field" rested on **+0.9455** (`adjclose`)
+vs **+0.9465** (`close`) — a difference of 0.001 that both round to 0.946/0.947 against §4's +0.947. The item
+stands; "only" is softened: §4's value is reproduced on **both** fields at its printed precision, with
+`close` only nominally nearer.
+
+**Optional strengthening of §4 (also applied).** The block-width sweep confounds width with chunk count
+(26 / 13 / 7 / 5 chunks at 10 / 20 / 40 / 60 d, i.e. 25 / 12 / 6 / 4 full blocks plus a trailing remainder),
+so the 60-day null draws from only 120 distinct permutations (5 chunks); its median can sit below the observed
+statistic while p ≈ 0.42 stays the decider. A sentence recording this was added to §4.
+
+**Verdict impact: none.** Neither corrected value enters the pass condition, the null, the 12-block count or
+the power arithmetic, and the FAIL stands. This correction changes only the note's provenance record.
 
 ---
 
@@ -1226,3 +1318,7 @@ hand alignment check (adjclose, 20d forward SPY):
 
 elapsed 17.7s
 ```
+
+**Note (§9.6):** the `lag-1 autocorr predictor = 0.9556` line above is this script's **separate-means** Pearson
+of the two lagged sub-series — the convention that inflates the standard single-mean lag-1 estimator (§4's
++0.934, correctly **+0.9341**). The transcript is left verbatim; see §9.6(a).
