@@ -354,8 +354,10 @@ mod tests {
         let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
             .expect("shipped config must load");
         let mut obs = crate::model::Observations::default();
-        obs.yahoo.insert("RSP_1y_d".into(), series(&vec![100.0; 250]));
-        obs.yahoo.insert("SPY_1y_d".into(), series(&vec![100.0; 250]));
+        obs.yahoo
+            .insert("RSP_1y_d".into(), series(&vec![100.0; 250]));
+        obs.yahoo
+            .insert("SPY_1y_d".into(), series(&vec![100.0; 250]));
         let ctx = Ctx {
             obs: &obs,
             cfg: &cfg,
