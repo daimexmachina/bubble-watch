@@ -27,3 +27,11 @@
 # ignored. Kept ignored rather than deleted so a local `report` run still works.
 /bubble-report.html
 /bubble-report.json
+
+# Reconnaissance RAW ARTIFACTS. Scraped HTML/JS/JSON dumps and probe scripts, ~33MB across 210 files
+# as of 2026-10-17. They are WORKING MATERIAL, not deliverables: the findings belong in
+# .hermes/analysis/*.md, which IS tracked. Added because a `git add -A` swept all of it into a commit
+# -- 82,440 lines, dominated by a single 74k-line scraped JSON -- and the pre-push guard then blocked the
+# push for absolute home paths, a lat/long pair and a token-like string, all of it inside scraped content.
+# The guard was right. The raw dumps should never have been stageable.
+.hermes/recon/

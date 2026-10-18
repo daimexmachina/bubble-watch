@@ -249,7 +249,18 @@ impl Indicator for Breadth {
                 "RSP/SPY ratio {:.4} sits {:+.1}% versus its own 200-day average. \
                  PROXY: relative performance, not an advance/decline line or the percentage \
                  of stocks above their 200-day. Falling below average indicates a narrowing \
-                 rally; above average indicates broad participation.",
+                 rally; above average indicates broad participation. \
+                 IN AN AI-LED SELLOFF THIS READS HEALTHIER, AND THAT IS MECHANICAL RATHER THAN \
+                 REASSURING: the AI names are the cap-weighted heavyweights, so when they fall the \
+                 equal-weight index outperforms by construction and this measure improves. Measured \
+                 2026-10-16: this indicator's own stress FELL 14.6 points across the week while the \
+                 Philadelphia Semiconductor Index completed its longest losing streak since 2008 \
+                 (-11.4% on the week, >20% below its June peak, roughly $2trn of US chip market value \
+                 erased) and Cloudflare, Snowflake and Datadog each fell 6-8% in a single session -- \
+                 against an S&P 500 that fell only 1.97% over five sessions. This is a MARKET-WIDE \
+                 measure and it CANNOT distinguish 'the market is calm' from 'the AI complex is being \
+                 sold while the market is calm'. A reader who takes a rising reading here as evidence \
+                 about AI risk is reading the exact opposite of what the week showed.",
                 ratio, dev
             ),
             provenance: prov_of(rsp),
@@ -327,6 +338,40 @@ mod tests {
                     value: *v,
                 })
                 .collect(),
+        }
+    }
+
+    #[test]
+    fn breadth_declares_that_it_reads_HEALTHIER_during_an_ai_led_selloff() {
+        // THE DEFECT THIS GUARDS, measured 2026-10-16. This indicator's own stress FELL 14.6 points
+        // across that week while the Philadelphia Semiconductor Index completed its longest losing
+        // streak since 2008 (-11.4% on the week, >20% below its June peak) and Cloudflare, Snowflake and
+        // Datadog each fell 6-8% in a single session -- against an S&P 500 down only 1.97% over five
+        // sessions. The reading is CORRECT about what it measures: the equal-weight index outperforms
+        // when the cap-weighted AI heavyweights fall, so breadth genuinely improves. It is misleading
+        // about the question a reader brings to it, and the detail must say so rather than leave the
+        // reader to infer that a rising reading means AI risk is easing. It means close to the reverse.
+        let cfg = crate::config::Config::load(std::path::Path::new("config/indicators.toml"))
+            .expect("shipped config must load");
+        let mut obs = crate::model::Observations::default();
+        obs.yahoo.insert("RSP_1y_d".into(), series(&vec![100.0; 250]));
+        obs.yahoo.insert("SPY_1y_d".into(), series(&vec![100.0; 250]));
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match Breadth.evaluate(&ctx) {
+            Reading::Scored { detail, .. } => {
+                assert!(
+                    detail.contains("AI-LED SELLOFF"),
+                    "the detail must name the case where this reading is mechanical: {detail}"
+                );
+                assert!(
+                    detail.contains("CANNOT distinguish"),
+                    "and must state the limit plainly: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
         }
     }
 
