@@ -39,8 +39,12 @@
 #   So after the restore this script REBUILDS the binary and VERIFIES it with
 #   `bubble-watch artifact-check`, which exits non-zero unless the binary's baked
 #   source fingerprint is the tree beside it. If a plain rebuild does not repair the
-#   artifact, it forces one (`cargo clean -p bubble-watch`) rather than trusting
-#   cargo to have had work to do; if it still cannot be verified, the run FAILS.
+#   artifact — cargo's staleness test is mtime-based, so a source restored WITH its
+#   original mtime reads as up to date and the build is a no-op — it removes the
+#   crate's release artifacts (`cargo clean -p bubble-watch --release`; the bare
+#   `-p` form only cleans the DEV profile and does nothing for the release binary)
+#   and builds again, rather than trusting cargo to have had work to do; if it still
+#   cannot be verified, the run FAILS.
 #
 # USAGE
 #   scripts/falsify.sh <file> <old_substring> <new_substring> <test_filter>
@@ -124,12 +128,17 @@ manifest_verify() {
 #
 # WHY IT IS VERIFIED RATHER THAN ASSUMED. Evidence #2 on the card that filed this defect
 # reported `cargo build --release` printing "Finished in 0.07s" and NOT rebuilding the
-# mutant. That specific no-op did not reproduce here (a plain `cargo build --release` after
-# a falsification took 25.8s and reproduced the pre-experiment binary byte for byte), but
-# the fix must not depend on cargo's mood: the rebuild is followed by `artifact-check`,
-# and if that still fails the crate's artifacts are removed and it is built again. A
-# falsification that cannot leave a trustworthy binary FAILS here instead of finishing
-# with an encouraging line.
+# mutant. That no-op DID reproduce, and it is the normal outcome of exactly the restore
+# this script performs when the restore preserves mtimes: MEASURED 2026-10-17, after a
+# `cp -p` restore a plain `cargo build --release` finished in 0.07s and left the mutant
+# binary byte-identical (artifact-check still MISMATCH, exit 5), while the same content
+# with only a `touch` recompiled for 25.9s and read VERIFIED. (It did NOT reproduce when
+# the restore moved the mtime forward, which is what a plain `cp` does — hence the
+# earlier "that did not reproduce" note, now corrected.) The fix therefore must not
+# depend on cargo's mtime heuristic at all: the rebuild is followed by `artifact-check`,
+# and if that still fails the crate's RELEASE artifacts are removed and it is built
+# again. A falsification that cannot leave a trustworthy binary FAILS here instead of
+# finishing with an encouraging line.
 ARTIFACT_STALE=0
 
 rebuild_artifact() {
@@ -142,10 +151,13 @@ rebuild_artifact() {
     cargo build --release >/dev/null 2>&1 \
         || die "the binary could not be rebuilt after the restore — it may still be the mutant."
     if ! "$BIN" artifact-check >/dev/null 2>&1; then
-        info "the rebuild did not repair the artifact; removing this crate's artifacts and retrying"
-        cargo clean -p bubble-watch >/dev/null 2>&1 || true
+        # `--release` is REQUIRED. Without it `cargo clean -p bubble-watch` cleans the DEV
+        # profile and leaves the release artifact untouched — measured: 4026 files /
+        # 2.0 GiB removed, mutant binary unmoved, and the following rebuild still a no-op.
+        info "the rebuild did not repair the artifact; removing this crate's release artifacts and retrying"
+        cargo clean -p bubble-watch --release >/dev/null 2>&1 || true
         cargo build --release >/dev/null 2>&1 \
-            || die "the binary could not be rebuilt after 'cargo clean -p bubble-watch'."
+            || die "the binary could not be rebuilt after 'cargo clean -p bubble-watch --release'."
     fi
     local verdict
     if ! verdict="$("$BIN" artifact-check 2>&1)"; then

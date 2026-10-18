@@ -809,7 +809,37 @@ run nor hides one.
 and the verdict, and exits `5` when they disagree. It runs BEFORE the config is read, so a scheduler
 can ask it first. `scripts/daily-refresh.sh` rebuilds when the check fails and REFUSES to run
 (exit 5) if it still fails; `scripts/falsify.sh` rebuilds after every verified restore and checks
-the result, forcing `cargo clean -p bubble-watch` if a plain rebuild does not repair it.
+the result, forcing `cargo clean -p bubble-watch --release` if a plain rebuild does not repair it
+(§17.3).
+
+### 17.3 A rebuild that is a no-op is not a rebuild
+
+The guard above is content-based. The build that is supposed to satisfy it is not: cargo decides
+whether to recompile by comparing MTIMEs, and the restore classes this hazard comes from PRESERVE
+them. `cp -p`, `rsync -a`, `tar -x`, `git archive`+extract, or a restored backup bring the mutated
+file back with its ORIGINAL timestamp — OLDER than the mutant artifact already in `target/` — so
+`cargo build --release` reports "Finished" in 0.07s and does nothing. MEASURED on this tree
+2026-10-17: after a `cp -p` restore, a plain `cargo build --release` left
+`target/release/bubble-watch` byte-identical (still built from the mutated source, `artifact-check`
+MISMATCH, exit 5), while the same content with only a `touch` recompiled for 25.9s and read
+VERIFIED. So a clean tree, a passing `--verify` and a `cargo build` that finished are all
+consistent with a mutant binary.
+
+**A correction to `c09254d`.** That commit's message (and the note in `scripts/falsify.sh`) says of
+the card's same observation "that did NOT reproduce: the rebuild took 25.8s", concluding that the
+stale binary survived "because NOTHING RAN A BUILD, not because cargo refused to rebuild". It did
+not reproduce THERE because `scripts/falsify.sh` restores with a plain `cp`, which moves the mtime
+forward; it reproduces whenever the restore preserves it. The conclusion is FALSE for
+preserved-mtime restores, which are exactly the restores this guard exists for.
+
+**So both schedulers FORCE the rebuild rather than ask for it.** If `artifact-check` still fails
+after a plain `cargo build --release`, the crate's release artifacts are removed and it is built
+once more, and the run refuses only if that also fails. `--release` is not optional there:
+MEASURED, `cargo clean -p bubble-watch` without it cleans the DEV profile and leaves the release
+binary exactly where it was (4026 files / 2.0 GiB removed, mutant binary unmoved, the following
+rebuild still a no-op), whereas `cargo clean -p bubble-watch --release` removes the crate's
+release artifacts and its build-script output (30 files / 36.9 MiB in the measured leak), so
+`build.rs` re-runs and re-bakes the fingerprint and the forced build reads VERIFIED.
 
 Exit code `5` covers any run that ASKED to record and did not — including an offline run, which
 records nothing by design. An unattended run therefore cannot fail quietly: the unit fails.

@@ -12,7 +12,13 @@
 # records a failed unit instead of a silent success.
 set -euo pipefail
 
-REPO=/home/daim/workspace/bubble-watch
+REPO="${BUBBLE_WATCH_REPO:-/home/daim/workspace/bubble-watch}"
+# ^ the tree this script acts on. Overridable ONLY so the build guard BELOW can be
+# exercised end-to-end against a COPY of the repo (with its target/ directory) — running
+# this script against the live tree appends a row to data/history/runs.jsonl, which is
+# why the guard had no end-to-end test while it was hard-coded. The default is the real
+# tree, and a `BUBBLE_WATCH_REPO` value that is not a bubble-watch checkout fails the
+# `cd` below or the `artifact-check` after it, not silently.
 cd "$REPO"
 
 # Live run: this is the point of the daily refresh. --offline is deliberately
@@ -45,6 +51,35 @@ if [ ! -x "$BIN" ]; then
 elif ! "$BIN" artifact-check >/dev/null 2>&1; then
   echo "binary does not account for the source tree — rebuilding"
   cargo build --release
+fi
+
+# ... AND REBUILD AGAIN, HARDER, IF THAT DID NOT REPAIR IT.
+#
+# `cargo build` decides whether to recompile by MTIME, and the restore classes this guard
+# exists for PRESERVE mtimes: `cp -p`, `rsync -a`, `tar -x`, `git archive`+extract, or a
+# restored backup bring the source back with its ORIGINAL timestamp, which is OLDER than
+# the mutant artifact already in target/. Cargo then reports "Finished in 0.08s" and the
+# mutant survives the plain rebuild. MEASURED on this tree 2026-10-17: after a `cp -p`
+# restore a plain `cargo build --release` finished in 0.07s, left
+# target/release/bubble-watch byte-identical (still built from the mutated source,
+# artifact-check MISMATCH, exit 5), and the same content with only a `touch` recompiled
+# for 25.9s and read VERIFIED. So "the tree is clean, `--verify` passes and `cargo build`
+# finished" is consistent with a mutant binary — and without the fallback below this
+# script would have run the no-op build and then REFUSED, exit 5, at every 13:32 run from
+# then on, while the archive developed the hole `doctor` exists to report.
+#
+# `--release` IS NOT OPTIONAL HERE. MEASURED: `cargo clean -p bubble-watch` (no --release)
+# cleans the DEV profile and leaves the release artifact exactly where it was — it removed
+# 4026 files / 2.0 GiB and the mutant binary did not move, so the rebuild that followed
+# was still a no-op. With `--release` the crate's release artifacts go (30 files /
+# 36.9 MiB in the measured leak) INCLUDING its build-script output, so build.rs re-runs
+# and re-bakes the source fingerprint; the forced rebuild then reads VERIFIED.
+if ! "$BIN" artifact-check >/dev/null 2>&1; then
+  echo "the rebuild did not repair the artifact — removing this crate's release artifacts and rebuilding" >&2
+  if ! cargo clean -p bubble-watch --release || ! cargo build --release; then
+    echo "REFUSING TO RUN: this crate could not be rebuilt, so $BIN cannot be trusted." >&2
+    exit 5
+  fi
 fi
 
 if ! "$BIN" artifact-check; then
