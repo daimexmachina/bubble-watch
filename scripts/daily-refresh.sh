@@ -45,12 +45,27 @@ BIN="$REPO/target/release/bubble-watch"
 # passes: a row written to `data/history/runs.jsonl` by a binary built from other source
 # is a falsified measurement in the archive, and afterwards it is indistinguishable from
 # a real one.
+#
+# The two plain builds below fail into `5` as well, and NOT into cargo's own code. The header
+# above promises this script exits `5` when the binary "cannot be made to account for the source
+# tree", and with `set -euo pipefail` at the top a bare `cargo build` that fails terminates the
+# script with CARGO'S exit code instead — 101 for a compile error, 127 when cargo is not even on
+# PATH. MEASURED 2026-10-17 (t_7b4362e7): a stand-in cargo exiting 101 drove the FIRST branch and
+# then the SECOND to SCRIPT_EXIT=101, so a scheduler or an operator matching on the documented 5
+# saw 101. The third guard below (the forced rebuild added by 9a5f4db) already exits 5 by hand;
+# these two now agree with it, so the header sentence is true of every branch.
 if [ ! -x "$BIN" ]; then
   echo "no binary at $BIN — building"
-  cargo build --release
+  cargo build --release || {
+    echo "REFUSING TO RUN: $BIN could not be built, so it cannot be trusted." >&2
+    exit 5
+  }
 elif ! "$BIN" artifact-check >/dev/null 2>&1; then
   echo "binary does not account for the source tree — rebuilding"
-  cargo build --release
+  cargo build --release || {
+    echo "REFUSING TO RUN: $BIN could not be rebuilt, so it cannot be trusted." >&2
+    exit 5
+  }
 fi
 
 # ... AND REBUILD AGAIN, HARDER, IF THAT DID NOT REPAIR IT.
