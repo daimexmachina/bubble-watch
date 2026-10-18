@@ -433,6 +433,20 @@ fn history_caveat(n: usize) -> String {
     }
 }
 
+/// "one day before" / "N days before", so a generated sentence never prints a bare number where
+/// a phrase belongs. Used by `credit_tail`, whose maximum does NOT always coincide with the
+/// current reading.
+fn days_before_phrase(days: i64) -> String {
+    match days {
+        0 => "on the same date as".to_string(),
+        1 => "one day before".to_string(),
+        n if n > 1 => format!("{} days before", n),
+        // A future date cannot occur (the maximum is taken from the window that ends at the
+        // current reading), but printing the truth beats printing a placeholder if one ever does.
+        n => format!("{} day(s) after", n.abs()),
+    }
+}
+
 /// Credit TAIL dispersion — the weakest borrowers against the broad high-yield market.
 ///
 /// WHY THIS EXISTS. A crash is a TAIL event: a high-yield index can widen modestly while the
@@ -484,6 +498,26 @@ impl Indicator for CreditTail {
         let oldest = paired.first().map(|(d, _)| *d).unwrap_or(date);
         let d = dist(&paired);
 
+        // THE MAXIMUM IS NOT ALWAYS THE CURRENT READING. Saying it was is a MEASURED falsehood:
+        // on 2026-10-17 the repo's own cache put the window maximum at 9.57 on 2026-10-14 while
+        // the latest PAIRED reading was 9.55 on 2026-10-15, and the sentence printed both dates
+        // while calling the maximum "the CURRENT reading". The intent — the top of the range is a
+        // very recent observation, not a historical extreme — is kept; the premise now states
+        // where the maximum actually sits.
+        let max_clause = if d.max_date == date {
+            "NOTE that the maximum IS the current reading, so the top of the observed range is \
+             not yet a historical extreme."
+                .to_string()
+        } else {
+            format!(
+                "NOTE that the maximum is dated {}, {} the current reading on {}, so the top of \
+                 the observed range is not yet a historical extreme.",
+                d.max_date,
+                days_before_phrase(crate::sources::edgar::days_between(&d.max_date, date)),
+                date
+            )
+        };
+
         Reading::Scored {
             // WEIGHT 0: nothing is scored. The value is measured and rendered; the stress field is
             // 0.0 because no anchor has been agreed, and `assert_unscored` refuses a config that
@@ -501,13 +535,13 @@ impl Indicator for CreditTail {
                  observations, and it has never seen 2008 or 2020. The range below therefore rests \
                  on recent episodes only and cannot be anchored to either crisis. MEASURED over \
                  that window: p1 {:.2}, median {:.2}, p95 {:.2}, p99 {:.2}, maximum {:.2} on {}. \
-                 NOTE that the maximum is the CURRENT reading, so the top of the observed range is \
-                 not yet a historical extreme. WEIGHT 0 BY DESIGN: this cannot move the composite \
+                 {} WEIGHT 0 BY DESIGN: this cannot move the composite \
                  or the coverage fraction, and no anchor ladder is applied — the measured ladder is \
                  PROPOSED in config/indicators.toml and setting it is the owner's decision. NOT A \
                  LEADING INDICATOR and no predictive claim is made: it makes a tail visible, it \
                  does not forecast a turn.",
-                a_id, b_id, spread, date, oldest, date, d.n, d.p1, d.p50, d.p95, d.p99, d.max, d.max_date
+                a_id, b_id, spread, date, oldest, date, d.n, d.p1, d.p50, d.p95, d.p99, d.max, d.max_date,
+                max_clause
             ),
             provenance: crate::model::Provenance {
                 source: "fred".into(),
@@ -1298,6 +1332,83 @@ mod tests {
                 assert!(
                     detail.contains("2008 or 2020"),
                     "the window limitation must name the crises it cannot see: {}",
+                    detail
+                );
+                // The fixture's only paired date IS the maximum, so this run exercises the
+                // same-date branch. The other branch is guarded by
+                // `credit_tail_does_not_call_an_earlier_maximum_the_current_reading`.
+                assert!(
+                    detail.contains("maximum IS the current reading"),
+                    "when the maximum is the current reading the output may say so: {}",
+                    detail
+                );
+            }
+            other => panic!("expected Scored, got {:?}", other),
+        }
+    }
+
+    /// THE MEASURED FALSEHOOD THIS REMOVES. On 2026-10-17 the repo's own cache put the window
+    /// maximum at 9.57 on 2026-10-14 while the latest PAIRED reading was 9.55 on 2026-10-15, and
+    /// the detail string printed both dates while calling the maximum "the CURRENT reading" — a
+    /// sentence that contradicts its own numbers. The intent (the top of the range is a very
+    /// recent observation, not a historical extreme) is kept; where the maximum SITS is now
+    /// stated from the data rather than asserted.
+    #[test]
+    fn credit_tail_does_not_call_an_earlier_maximum_the_current_reading() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "credit_tail".into(),
+            group: Some("pricing".into()),
+            label: "CT".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("BAMLH0A3HYC".into()),
+            fred_series_b: Some("BAMLH0A0HYM2".into()),
+        });
+        let mut obs = Observations::default();
+        obs.fred.insert(
+            "BAMLH0A3HYC".into(),
+            dated(&[("2026-10-14", 9.57), ("2026-10-15", 9.55)]),
+        );
+        obs.fred.insert(
+            "BAMLH0A0HYM2".into(),
+            dated(&[("2026-10-14", 3.00), ("2026-10-15", 3.00)]),
+        );
+
+        match CreditTail.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Scored { value, detail, .. } => {
+                assert!(
+                    (value - 6.55).abs() < 1e-9,
+                    "the newest COMMON date must be read, got {}",
+                    value
+                );
+                // Case-insensitive, because the defect this guards is a CLAIM ("the maximum is
+                // the current reading") and a copy-edit to caps ("IS") must not be able to
+                // smuggle it back past the guard.
+                let lower = detail.to_lowercase();
+                assert!(
+                    !lower.contains("maximum is the current reading")
+                        && !lower.contains("maximum is the most recent reading"),
+                    "the maximum is 6.57 on 2026-10-14 against a current reading of 6.55 on \
+                     2026-10-15, so the output must not call the maximum the current reading: {}",
+                    detail
+                );
+                assert!(
+                    detail.contains("maximum 6.57 on 2026-10-14"),
+                    "the maximum and its own date must be stated: {}",
+                    detail
+                );
+                assert!(
+                    detail.contains("one day before"),
+                    "the position of the maximum must be stated, not left to the reader: {}",
+                    detail
+                );
+                assert!(
+                    detail.contains("the current reading on 2026-10-15"),
+                    "the current reading's date must be named: {}",
                     detail
                 );
             }

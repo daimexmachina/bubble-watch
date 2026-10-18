@@ -141,7 +141,20 @@ of the warning signs are showing."
         .iter()
         .filter(|i| i.weight > 0.0 && i.reading.is_available())
         .count();
-    let declared_gaps = r.indicators.iter().filter(|i| i.weight <= 0.0).count();
+    // A weight-0 channel is DECLARED AND UNSCORED, which is NOT the same as unmeasurable.
+    // Counting every weight-0 entry here made the headline claim the report "cannot measure at
+    // all" things it had in fact measured and rendered. Measured 2026-10-17 on commit d5f0f62
+    // (offline, data/cache): five weight-0 channels, THREE of them carrying a reading —
+    // leveraged_builder_stress, credit_tail (9.55 @2026-10-15) and cp_funding (-0.11 @2026-10-05)
+    // — and the sentence still read "plus 5 things it cannot measure at all". That also
+    // contradicts the dashboard's own weight-0 card, which says of exactly these channels
+    // "These channels are MEASURED AND DISPLAYED but carry zero weight" (report/html.rs).
+    // Only a weight-0 channel that produced NO reading belongs in this clause.
+    let declared_gaps = r
+        .indicators
+        .iter()
+        .filter(|i| i.weight <= 0.0 && !i.reading.is_available())
+        .count();
 
     let the_score = format!(
         "The score today is {:.0} out of 100, which puts it in the {} range. For scale: a score \
@@ -673,6 +686,39 @@ mod tests {
         assert!(
             s.the_score.contains("1 thing it cannot measure"),
             "declared gaps should be acknowledged separately: {}",
+            s.the_score
+        );
+    }
+
+    #[test]
+    fn a_measured_weight_zero_channel_is_not_called_unmeasurable() {
+        // THE FALSE CLAIM THIS REMOVES. Weight 0 means DECLARED AND UNSCORED, not unmeasurable:
+        // the channel is measured, rendered on the weight-0 card and listed in the report, so
+        // telling the reader the report "cannot measure at all" something it just displayed is
+        // the summary contradicting itself. Measured 2026-10-17 on commit d5f0f62 (offline, same
+        // cache): 5 weight-0 channels, 3 of them WITH a reading (leveraged_builder_stress,
+        // credit_tail 9.55 @2026-10-15, cp_funding -0.11 @2026-10-05), and the sentence read
+        // "plus 5 things it cannot measure at all" — wrong for three of the five.
+        let r = report(
+            vec![
+                ind("volatility", 8.0, Some(20.0)),
+                // Weight 0 WITH a reading: measured and rendered, never scored.
+                ind("credit_tail", 0.0, Some(50.0)),
+                // Weight 0 WITHOUT a reading: a genuine gap for this run.
+                ind("foreign_interest", 0.0, None),
+            ],
+            32.4,
+            None,
+        );
+        let s = summarize(&r);
+        assert!(
+            s.the_score.contains("1 thing it cannot measure"),
+            "only the weight-0 channel that produced no reading is unmeasurable: {}",
+            s.the_score
+        );
+        assert!(
+            !s.the_score.contains("2 things it cannot measure"),
+            "a weight-0 channel that produced a reading is MEASURED, not unmeasurable: {}",
             s.the_score
         );
     }
