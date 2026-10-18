@@ -91,7 +91,22 @@ fi
 # and re-bakes the source fingerprint; the forced rebuild then reads VERIFIED.
 if ! "$BIN" artifact-check >/dev/null 2>&1; then
   echo "the rebuild did not repair the artifact — removing this crate's release artifacts and rebuilding" >&2
-  if ! cargo clean -p bubble-watch --release || ! cargo build --release; then
+  # A FAILED `cargo clean` MUST NOT SKIP THE REBUILD. `if ! clean || ! build; then`
+  # is `(!clean) || (!build)`: a clean that fails short-circuits the OR, so the
+  # fallback build below is never attempted and the script exits 5 saying "could not
+  # be rebuilt" — which is not what happened. MEASURED (t_64baf423) with a stand-in
+  # cargo failing only on `clean`: two cargo calls, `build` then the failing `clean`,
+  # and no rebuild attempt — and when a rebuild WOULD have repaired the artifact the
+  # old form still exited 5, so the defect is a FALSE REFUSAL of a repairable daily
+  # run, not only a skipped repair and a misleading message.
+  # So the clean WARNS instead of failing here, and the rebuild's own exit status
+  # decides the refusal. If the clean failed and the rebuild was itself a no-op, the
+  # artifact-check below still catches it and exits 5 — the safety property is the
+  # check's, not the clean's, so the documented exit-code contract is unchanged.
+  if ! cargo clean -p bubble-watch --release; then
+    echo "WARNING: could not remove this crate's release artifacts; rebuilding anyway." >&2
+  fi
+  if ! cargo build --release; then
     echo "REFUSING TO RUN: this crate could not be rebuilt, so $BIN cannot be trusted." >&2
     exit 5
   fi

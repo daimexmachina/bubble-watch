@@ -3,10 +3,16 @@
 //! WHY. `scripts/falsify.sh` mutates a source file, runs `cargo test --release`
 //! (which builds the BINARY target too), then restores and hash-verifies the
 //! SOURCE. The restore is proved; the BINARY is not, and it is left built from the
-//! mutated source. `scripts/daily-refresh.sh` builds only when the binary is
-//! MISSING, so the next timer run executes that binary and records its numbers into
-//! `data/history/runs.jsonl` — a falsified measurement in the archive, with a clean
-//! tree and `--verify` passing.
+//! mutated source. `scripts/daily-refresh.sh` rebuilt only when the binary was
+//! MISSING, so the next timer run would have executed that binary and RECORDED its
+//! numbers into `data/history/runs.jsonl` — a falsified measurement in the archive,
+//! with a clean tree and `--verify` passing.
+//!
+//! THAT IS THE HAZARD IN THE PAST TENSE. This file exists because the guard no
+//! longer behaves that way: `scripts/daily-refresh.sh` rebuilds whenever
+//! `artifact-check` fails, not only when the binary is missing, and REFUSES with
+//! exit 5 when the binary still cannot be made to account for the tree — so the
+//! mutant is never run and no falsified row is ever recorded.
 //!
 //! This script is the only place the *build* can know what it was built from, so
 //! the digest goes in here and `src/build_id.rs` compares it against the tree at

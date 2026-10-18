@@ -834,7 +834,13 @@ preserved-mtime restores, which are exactly the restores this guard exists for.
 
 **So both schedulers FORCE the rebuild rather than ask for it.** If `artifact-check` still fails
 after a plain `cargo build --release`, the crate's release artifacts are removed and it is built
-once more, and the run refuses only if that also fails. `--release` is not optional there:
+once more, and the run refuses only if that also fails. **A removal that itself FAILS is a warning,
+not a refusal**: the repair must still be attempted, and the verdict belongs to the artifact check
+that follows. MEASURED 2026-10-17 (t_64baf423), with a stand-in cargo failing only on `clean`, the
+previous `if ! cargo clean || ! cargo build` short-circuited — the fallback build never ran, and a
+run a rebuild WOULD have repaired was refused with exit 5 instead, under a message saying it "could
+not be rebuilt" when nothing had tried. Exit `5` is unchanged either way; only the false refusal and
+the repair it skipped are. `--release` is not optional there:
 MEASURED, `cargo clean -p bubble-watch` without it cleans the DEV profile and leaves the release
 binary exactly where it was (4026 files / 2.0 GiB removed, mutant binary unmoved, the following
 rebuild still a no-op), whereas `cargo clean -p bubble-watch --release` removes the crate's
