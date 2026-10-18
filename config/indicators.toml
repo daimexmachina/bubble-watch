@@ -1230,3 +1230,83 @@ source = "yahoo"
 anchors = []
 rationale = "THE EQUITY DRAWDOWN OF THE DEBT-FUNDED AI BUILDERS — CoreWeave, Nebius, IREN, Applied Digital, TeraWulf and Core Scientific — each measured against its OWN 52-week high and equal-weighted. WHY IT EXISTS: the model tracked the FINANCIERS of the buildout (ARCC, OWL, BX) and never the BORROWERS, and the borrowers are where the stress prices first. Measured 2026-10-16: CoreWeave's 5-year credit default swaps exceeded 1,140 basis points (last ~1,038, +164% year over year) on more than $51bn of debt; its 2031 notes yielded 15.78%; S&P Global treats 1,000bps and above as credit DISTRESS — while this model's own SCORED `credit_hy` indicator read 25/100 'calm', because BAA10Y is broad investment-grade credit sitting at its 2nd percentile since 1986 and contains no AI-specific signal at all. Analysts including D.A. Davidson's Gil Luria call these names 'the subprime tranche of the AI trade'. WHY EQUITIES RATHER THAN SPREADS: individual CDS and bond quotes are not available from a free keyless source, whereas every one of these names is listed and its price is free. This is a PROXY, and the proxy is stated. WEIGHT 0 BY DESIGN. WHY NOT SCORED: no lead/lag gate has been run, and adding a channel because its narrative is compelling is precisely how a model acquires a trailing indicator carrying real weight. REFUSES ON THIN COVERAGE: fewer than 3 of the 6 series retrieved is a company story, not a complex story, so the indicator returns a gap rather than describing one name as a cohort. LIMITS: (1) equities price the market's view of borrower risk, not the credit market's own — the two can diverge; (2) the cohort is a judgement and is not exhaustive: Nscale (which alone holds $103.4bn of contracted value), Crusoe and Lambda are private and absent; (3) a drawdown from a 52-week high is not a level, so a name that has always traded weak reads identically to one that has just collapsed; (4) overlap with the model's existing exposures means this is corroboration, not independent evidence."
 anchor_note = "WEIGHT 0 — EMPTY ANCHORS ON PURPOSE. This series is fetched, reported and rendered, and is arithmetically incapable of moving the composite or the coverage fraction. It is not unfinished work awaiting a scale: the borrowers channel is measured so a reader can SEE the stress, and it acquires weight only if a pre-registered lead/lag gate passes. The gate has not been run, so the honest status is UNPROVEN."
+
+
+# ============================================================================
+# The credit-and-funding channels added 2026-10-17, BOTH WEIGHT 0 AND
+# DELIBERATELY UNSCORED: C2 `credit_tail` and C3 `cp_funding`.
+#
+# The last two ranked candidates from `2026-10-16-fast-credit-and-funding-channel-spec.md` §3. Its
+# C1 (`funding_stress`) shipped at weight 7.0 on 2026-10-16; these two do NOT follow it into the
+# composite.
+#
+# WHY WEIGHT 0. Spec §4 item 1: anchors set what the score MEANS and adding weight orphans
+# cross-version comparison, so both are an OWNER decision rather than a loop's. Each ships measured,
+# rendered and auditable at weight 0.0, with a ladder MEASURED from the observed distribution and
+# PROPOSED in its rationale but held OUT of `anchors`, which stay empty and are enforced empty by an
+# `assert!` inside each indicator. Total weight is therefore unchanged at 196 and `schema_version` is
+# NOT bumped — a bump is required only when total weight changes.
+#
+# HOW THE NUMBERS WERE MEASURED — one fetch per series, 2026-10-17, through this tool's own keyed
+# FRED transport (the same `Fetcher` the daily run uses), no `observation_start`, full history as
+# returned:
+#
+#   GET https://api.stlouisfed.org/fred/series/observations?series_id=<ID>&file_type=json&api_key=<redacted>
+#
+#   BAMLH0A3HYC   786 rows  2023-10-17 -> 2026-10-15   ICE, licence-capped by FRED
+#   BAMLH0A0HYM2  786 rows  2023-10-17 -> 2026-10-15   ICE, licence-capped by FRED
+#   DCPF1M      6,074 rows  1997-01-02 -> 2026-10-05   full history
+#   DCPN30      7,008 rows  1997-01-02 -> 2026-10-15   full history
+#   DTB3       18,188 rows  1954-01-04 -> 2026-10-15   full history
+#   DTB4WK      6,304 rows  2001-07-31 -> 2026-10-15   full history
+#   DGS3MO     11,280 rows  1981-09-01 -> 2026-10-15   full history
+#
+# Every percentile below is computed on the PAIRED series — COMMON dates only — because reading each
+# leg's own latest value would subtract two different days.
+#
+# A CORRECTION TO THE SPEC, AND IT WAS MEASURED RATHER THAN ASSUMED. The spec §3 and the build card
+# both describe `DCPN30`/`DCPF1M` as "WEEKLY in practice". Through the keyed API that is true of
+# DCPF1M ONLY. Measured 2026-10-17: DCPF1M published 72 values in the trailing year, median gap 3
+# days, longest gap 26 days, latest 2026-10-05 — sparse. DCPN30 is a DAILY series: 7,008
+# observations, median gap 1 day, latest 2026-10-15 — the most current member of the family and not
+# slow at all. So the slow-cadence limitation is real but it belongs to DCPF1M, and it is the reason
+# the PAPER leg of `cp_funding` is DCPF1M: it is the leg for which "best-anchored, worst as a fast
+# one" is literally true. Do not repeat "DCPN30 is weekly" — it is not, and a claim that slow should
+# never be attached to the wrong series.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# C2 `credit_tail` — CCC-and-lower OAS less the broad high-yield OAS.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "credit_tail"
+group = "pricing"
+label = "Credit-tail dispersion (CCC-and-lower vs the high-yield index)"
+weight = 0.0
+unit = "pct points, CCC-and-lower option-adjusted spread less the broad high-yield option-adjusted spread"
+source = "fred"
+fred_series = "BAMLH0A3HYC"
+fred_series_b = "BAMLH0A0HYM2"
+# EMPTY ON PURPOSE, as with public_attention: with weight 0 no anchor is ever consulted, and the
+# indicator asserts the list is empty. The measured ladder is PROPOSED in the rationale below.
+anchors = []
+rationale = "Credit TAIL dispersion: the option-adjusted spread on CCC-and-lower debt (BAMLH0A3HYC) less the broad US high-yield index (BAMLH0A0HYM2). A crash is a TAIL event — a high-yield index can widen modestly while the weakest credits inside it blow out — and the gap between the two is exactly what an index level cannot show. DIRECTION: wider = more dispersion = higher stress. WEIGHT 0.0, MEASURED BUT NOT SCORED: the channel is rendered and auditable and is arithmetically incapable of moving the composite or the coverage fraction. WINDOW LIMITATION, DECLARED HERE AND IN THE INDICATOR'S OWN OUTPUT: the ICE BofA indices are licence-windowed SERVER-SIDE BY FRED — a licensing restriction, not this tool's transport, and a working API key does not lift it — to roughly three years, so the measured window is 2023-10-17 to 2026-10-15, 786 paired observations, and it contains NEITHER 2008 NOR 2020. The anchor therefore rests on recent episodes only and cannot be a full-cycle calibration; a 2008 anchor would need a different source for long credit history. MEASURED DISTRIBUTION over that window: p1 4.42, p25 5.41, median 5.89, p75 6.29, p95 7.63, p99 9.01, maximum 9.57 on 2026-10-14 — and because the maximum is the CURRENT reading, the top of the observed range is not yet a historical extreme. PROPOSED ANCHOR LADDER, NOT APPLIED (p1/p25/p50/p75/p95/p99/max mapped to 5/20/35/55/75/92/100, the mapping stated so it is reproducible): [[4.42,5],[5.41,20],[5.89,35],[6.29,55],[7.63,75],[9.01,92],[9.57,100]]. Setting that ladder, and adding any weight, is an OWNER decision: anchors define what the score means and weight changes total weight, which orphans cross-version comparison. Neither is taken here. NOT A LEADING INDICATOR: no predictive or timing claim is made."
+anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY AND NO ANCHOR IS EVER CONSULTED, which the indicator asserts. The difference from `public_attention` is that a scale HAS been measured and is stated: what is withheld is the authority to apply it. The ladder in the rationale is a measured PROPOSAL held out of `anchors` so it cannot move the composite while the owner decides whether to give this channel weight."
+
+# ---------------------------------------------------------------------------
+# C3 `cp_funding` — commercial paper less a Treasury bill.
+# ---------------------------------------------------------------------------
+[[indicator]]
+id = "cp_funding"
+group = "pricing"
+label = "Commercial-paper funding spread (paper less a Treasury bill)"
+weight = 0.0
+unit = "pct points, 30-day AA financial commercial paper less the 3-month Treasury bill"
+source = "fred"
+fred_series = "DCPF1M"
+fred_series_b = "DTB3"
+# EMPTY ON PURPOSE, as with public_attention: with weight 0 no anchor is ever consulted, and the
+# indicator asserts the list is empty. The measured ladder is PROPOSED in the rationale below.
+anchors = []
+rationale = "The money market's term-funding rate: 30-day AA FINANCIAL commercial paper (DCPF1M) less the 3-month Treasury bill (DTB3). It sits just above zero in normal times and blows out when paper cannot be rolled, so DIRECTION is wider = higher stress. It complements `funding_stress`, which reads the secured OVERNIGHT market; this reads the term market where issuers actually roll paper. T-BILL LEG CHOSEN FROM MEASUREMENT, not convention: DTB3 carries history from 1954, so it can NEVER truncate the paper leg — the paired series spans the paper leg's own full window, 1997-01-02 to 2026-10-05, 6,063 paired observations — and it is the conventional benchmark for the commercial-paper spread. The alternatives, measured over the same paper leg: DTB4WK (4-week bill, the closest tenor to a 30-day paper rate) starts 2001-07-31 and so drops 1,158 observations, giving 4,916 pairs with p99 +1.94 and max +3.84 (2008-10-09); DGS3MO (3-month constant maturity, an investment-basis yield rather than a bill discount rate) gives the same 6,063 pairs with max +3.41 (2008-10-09). DTB3 was taken because the T-bill leg should not be the thing that truncates the anchor window; the DECLARED COST is a tenor mismatch — the paper leg is a 30-day rate and the bill is 3-month — so the spread carries a term-premium component, and the tenor-matched alternative's numbers above are recorded so that cost is visible rather than hidden. CADENCE LIMITATION, DECLARED HERE AND MEASURED AT RUN TIME IN THE OUTPUT: this is the BEST-ANCHORED funding series in the model and the WORST as a FAST one. DCPF1M is not a daily series — measured 2026-10-17, it published 72 values in the trailing year, median gap 3 days, longest gap 26 days, latest observation 2026-10-05 — so its newest paired date is set by the paper leg and is older than the Treasury leg, and it must never be described as a fast channel. WHAT IT IS GOOD FOR IS THE WINDOW: 1997 to 2026, spanning the 2008 financial crisis and the March 2020 COVID spike, which no other funding series here can reach. MEASURED DISTRIBUTION over that window: p1 -0.22, p25 +0.04, median +0.10, p75 +0.32, p95 +0.86, p99 +1.50, maximum +3.43 on 2008-10-09 (the 2008 GFC), with the COVID high +2.29 on 2020-03-24; the latest reading is -0.11, i.e. calm. PROPOSED ANCHOR LADDER, NOT APPLIED (p1/p25/p50/p75/p95/p99/max mapped to 5/20/35/55/75/92/100): [[-0.22,5],[0.04,20],[0.10,35],[0.32,55],[0.86,75],[1.50,92],[3.43,100]]. Setting that ladder, and adding any weight, is an OWNER decision, not a loop's — anchors define what the score means and weight orphans cross-version comparison — and neither is taken here. A CORRECTION TO THE SPEC, MEASURED: the spec calls DCPN30 and DCPF1M jointly 'weekly in practice'; measured, DCPN30 is DAILY (7,008 observations to 2026-10-15) and only DCPF1M is sparse. NOT A LEADING INDICATOR: no predictive or timing claim is made."
+anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY AND NO ANCHOR IS EVER CONSULTED, which the indicator asserts. A scale HAS been measured and is stated here; what is withheld is the authority to apply it. This channel is the model's slowest funding series by design (its paper leg is sparse), so raising its weight would add a number that is right but late — the exact failure mode the weight-0 convention exists to prevent until an owner decides otherwise."

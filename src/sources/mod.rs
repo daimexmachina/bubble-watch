@@ -143,6 +143,15 @@ pub const FRED_SPECS: &[&str] = &[
     // which is the transmission channel the model otherwise cannot see at all.
     "SOFR",
     "EFFR",
+    // Weight-0 measured channels, added 2026-10-17. `BAMLH0A3HYC` is CCC-and-lower OAS and pairs
+    // with `BAMLH0A0HYM2` (already above) for `credit_tail`. `DCPF1M`/`DTB3` are the two legs of
+    // `cp_funding`. `BAMLH0A3HYC` is an ICE index and so is licence-capped to ~3 years by FRED
+    // itself; both funding legs return their full history. Measured 2026-10-17 via the keyed API:
+    // BAMLH0A3HYC 786 rows from 2023-10-17; DCPF1M 6,074 from 1997-01-02; DTB3 18,188 from
+    // 1954-01-04.
+    "BAMLH0A3HYC",
+    "DCPF1M",
+    "DTB3",
 ];
 
 /// Fetch everything. Partial failure is normal and expected: the returned

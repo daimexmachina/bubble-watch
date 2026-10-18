@@ -7,7 +7,7 @@
 //! reading, and the report says so explicitly in its caveats.
 
 use super::{Ctx, Indicator};
-use crate::model::Reading;
+use crate::model::{Reading, Series};
 
 fn credit_reading(ctx: &Ctx, id: &str, _label: &str, what: &str) -> Reading {
     let ic = match ctx.cfg.indicator(id) {
@@ -158,6 +158,157 @@ impl Indicator for CreditIg {
     }
 }
 
+/// Weight-0 series must carry NO anchors, and that is enforced rather than documented.
+///
+/// A scale attached to an unscored series invites exactly one later move — raise the weight and
+/// take the score — without ever running the pre-registered gate the project requires. The
+/// measured-but-unscored channels each refuse that configuration loudly instead of rendering a
+/// number nobody agreed to trust. See `funding_stress`'s siblings in `config/indicators.toml`.
+fn assert_unscored(ic: &crate::config::IndicatorCfg) {
+    assert!(
+        ic.anchors.is_empty(),
+        "{} is weight {} and must carry NO anchors, but the config supplies {}. Do not attach a \
+         scale to a weight-0 series.",
+        ic.id,
+        ic.weight,
+        ic.anchors.len()
+    );
+}
+
+/// Resolve both legs of a configured FRED spread, naming whichever is missing.
+///
+/// A spread has two halves and the failure mode is that ONE of them breaks: a reader told only
+/// that the indicator is "unavailable" cannot tell which. The reason therefore carries the series
+/// id and the transport's own message for it.
+fn spread_legs<'a>(
+    ctx: &'a Ctx,
+    ic: &'a crate::config::IndicatorCfg,
+) -> Result<(&'a Series, &'a Series, &'a str, &'a str), Reading> {
+    let (Some(a_id), Some(b_id)) = (ic.fred_series.as_deref(), ic.fred_series_b.as_deref()) else {
+        return Err(Reading::Unavailable {
+            reason: format!(
+                "indicator '{}' is a spread and needs both fred_series and fred_series_b",
+                ic.id
+            ),
+        });
+    };
+    let missing = |sid: &str| {
+        let why = ctx
+            .obs
+            .failures
+            .iter()
+            .find(|f| f.source == "fred" && f.endpoint == sid)
+            .map(|f| f.reason.clone())
+            .unwrap_or_else(|| "not retrieved".into());
+        Reading::Unavailable {
+            reason: format!(
+                "FRED series {} unavailable ({}) — OPTIONAL source, treated as a coverage gap",
+                sid, why
+            ),
+        }
+    };
+    let Some(a) = ctx.obs.fred.get(a_id) else {
+        return Err(missing(a_id));
+    };
+    let Some(b) = ctx.obs.fred.get(b_id) else {
+        return Err(missing(b_id));
+    };
+    Ok((a, b, a_id, b_id))
+}
+
+/// Pair two FRED legs on COMMON dates and return `fred_series` MINUS `fred_series_b`, oldest
+/// first, newest last.
+///
+/// WHY PAIRING IS NOT OPTIONAL. The two legs have different holiday calendars and different
+/// publication lags, so reading each leg's own latest value would silently subtract two different
+/// days — and on a funding-stress series a one-day mismatch is a large fraction of the signal.
+/// The single implementation here is deliberate: `funding_stress`, `credit_tail` and `cp_funding`
+/// must not each carry their own copy of this rule, because two copies are how one spread acquires
+/// two subtly different definitions.
+fn paired_spread<'a>(a: &'a Series, b: &'a Series) -> Vec<(&'a str, f64)> {
+    let b_by_date: std::collections::BTreeMap<&str, f64> = b
+        .points
+        .iter()
+        .map(|p| (p.date.as_str(), p.value))
+        .collect();
+    a.points
+        .iter()
+        .filter_map(|p| {
+            b_by_date
+                .get(p.date.as_str())
+                .map(|bv| (p.date.as_str(), p.value - *bv))
+        })
+        .collect()
+}
+
+/// Observed distribution of a paired series, so a weight-0 channel can report its own measured
+/// range on every run instead of quoting a figure that was true once.
+struct Dist {
+    n: usize,
+    p1: f64,
+    p50: f64,
+    p95: f64,
+    p99: f64,
+    max: f64,
+    max_date: String,
+}
+
+fn dist(paired: &[(&str, f64)]) -> Dist {
+    let mut vals: Vec<f64> = paired.iter().map(|(_, v)| *v).collect();
+    vals.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let at = |q: f64| {
+        let i = (vals.len() as f64 - 1.0) * q;
+        let lo = i.floor() as usize;
+        let hi = (lo + 1).min(vals.len() - 1);
+        vals[lo] + (vals[hi] - vals[lo]) * (i - lo as f64)
+    };
+    let (max_date, max) = paired
+        .iter()
+        .fold(("".to_string(), f64::MIN), |acc, (d, v)| {
+            if *v > acc.1 {
+                (d.to_string(), *v)
+            } else {
+                acc
+            }
+        });
+    Dist {
+        n: vals.len(),
+        p1: at(0.01),
+        p50: at(0.50),
+        p95: at(0.95),
+        p99: at(0.99),
+        max,
+        max_date,
+    }
+}
+
+/// How often the paired series actually publishes, over the trailing 365 days.
+///
+/// This is measured at run time rather than asserted, because the whole "is this a fast channel"
+/// question is a cadence question and a hard-coded claim about cadence would be the exact
+/// unmeasured assertion this project forbids. Returns `(count, median_gap_days, max_gap_days)`;
+/// `(0, 0, 0)` if the dates will not parse.
+fn trailing_year_cadence(paired: &[(&str, f64)]) -> (usize, i64, i64) {
+    let parse = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+    let Some(last) = paired.last().and_then(|(d, _)| parse(d)) else {
+        return (0, 0, 0);
+    };
+    let cutoff = last - chrono::Duration::days(365);
+    let recent: Vec<chrono::NaiveDate> = paired
+        .iter()
+        .filter_map(|(d, _)| parse(d))
+        .filter(|d| *d >= cutoff)
+        .collect();
+    let mut gaps: Vec<i64> = recent
+        .windows(2)
+        .map(|w| (w[1] - w[0]).num_days())
+        .collect();
+    gaps.sort_unstable();
+    let median = gaps.get(gaps.len() / 2).copied().unwrap_or(0);
+    let max = gaps.last().copied().unwrap_or(0);
+    (recent.len(), median, max)
+}
+
 /// Money-market funding stress: the secured overnight rate less the administered rate.
 ///
 /// WHY THIS EXISTS. The model had no money-market indicator at all. Credit spreads measure the
@@ -198,59 +349,14 @@ impl Indicator for FundingStress {
                 reason: "not configured".into(),
             };
         };
-        let (Some(a_id), Some(b_id)) = (ic.fred_series.as_deref(), ic.fred_series_b.as_deref())
-        else {
-            return Reading::Unavailable {
-                reason: format!(
-                    "indicator '{}' is a spread and needs both fred_series and fred_series_b",
-                    id
-                ),
-            };
+        // Pair on COMMON dates (see `paired_spread`): the two legs have different holiday
+        // calendars and publication lags, and reading each leg's own latest value would subtract
+        // two different days — on a funding-stress series a large fraction of the signal.
+        let (a, b, a_id, b_id) = match spread_legs(ctx, ic) {
+            Ok(v) => v,
+            Err(r) => return r,
         };
-
-        // Name the ACTUAL transport failure for whichever leg is missing, rather than saying
-        // "unavailable" and leaving the reader to guess which half broke.
-        let unavailable = |sid: &str| {
-            let why = ctx
-                .obs
-                .failures
-                .iter()
-                .find(|f| f.source == "fred" && f.endpoint == sid)
-                .map(|f| f.reason.clone())
-                .unwrap_or_else(|| "not retrieved".into());
-            Reading::Unavailable {
-                reason: format!(
-                    "FRED series {} unavailable ({}) — OPTIONAL source, treated as a coverage gap",
-                    sid, why
-                ),
-            }
-        };
-        let Some(a) = ctx.obs.fred.get(a_id) else {
-            return unavailable(a_id);
-        };
-        let Some(b) = ctx.obs.fred.get(b_id) else {
-            return unavailable(b_id);
-        };
-
-        // Pair on COMMON dates. The two legs have different holiday calendars and different
-        // publication lags, so reading each leg's own latest value would silently subtract two
-        // different days — and on a funding-stress series a one-day mismatch is a large fraction of
-        // the signal. Walk back from the newest observation of the first leg to the first date BOTH
-        // legs carry.
-        let b_by_date: std::collections::BTreeMap<&str, f64> = b
-            .points
-            .iter()
-            .map(|p| (p.date.as_str(), p.value))
-            .collect();
-        let paired: Vec<(&str, f64)> = a
-            .points
-            .iter()
-            .filter_map(|p| {
-                b_by_date
-                    .get(p.date.as_str())
-                    .map(|bv| (p.date.as_str(), p.value - *bv))
-            })
-            .collect();
+        let paired = paired_spread(a, b);
 
         let Some((date, spread)) = paired.last().copied() else {
             return Reading::Unavailable {
@@ -324,6 +430,213 @@ fn history_caveat(n: usize) -> String {
         )
     } else {
         String::new()
+    }
+}
+
+/// Credit TAIL dispersion — the weakest borrowers against the broad high-yield market.
+///
+/// WHY THIS EXISTS. A crash is a TAIL event: a high-yield index can widen modestly while the
+/// weakest credits inside it blow out. The difference between the two is the piece an index level
+/// cannot show. This measures CCC-and-lower option-adjusted spread less the broad high-yield
+/// option-adjusted spread — `BAMLH0A3HYC` minus `BAMLH0A0HYM2`, both ICE BofA.
+///
+/// WEIGHT 0, DELIBERATELY UNSCORED. The channel is measured, rendered and auditable, and it is
+/// arithmetically incapable of moving the composite or the coverage fraction. Anchors set what a
+/// score MEANS and adding weight orphans cross-version comparison, so both are the owner's
+/// decision and neither is taken here: the measured ladder is proposed in the config, the weight
+/// stays 0.0, and `assert_unscored` refuses a config that attaches a scale anyway.
+///
+/// THE LIMITATION THAT MATTERS MOST IS THE WINDOW. The ICE BofA indices are licence-windowed
+/// server-side by FRED to roughly three years (measured 2026-10-17: both legs return 786
+/// observations from 2023-10-17), so this series has never seen 2008 or 2020 and cannot be
+/// anchored to either. That is stated in the output on every run rather than implied away.
+pub struct CreditTail;
+
+impl Indicator for CreditTail {
+    fn id(&self) -> &'static str {
+        "credit_tail"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let id = self.id();
+        let Some(ic) = ctx.cfg.indicator(id) else {
+            return Reading::Unavailable {
+                reason: "not configured".into(),
+            };
+        };
+        // Weight 0 or a scale, never both. See `assert_unscored`.
+        assert_unscored(ic);
+        let (a, b, a_id, b_id) = match spread_legs(ctx, ic) {
+            Ok(v) => v,
+            Err(r) => return r,
+        };
+        let paired = paired_spread(a, b);
+
+        let Some((date, spread)) = paired.last().copied() else {
+            return Reading::Unavailable {
+                reason: format!(
+                    "FRED series {} and {} share no observation date, so the dispersion is \
+                     undefined rather than zero",
+                    a_id, b_id
+                ),
+            };
+        };
+        let oldest = paired.first().map(|(d, _)| *d).unwrap_or(date);
+        let d = dist(&paired);
+
+        Reading::Scored {
+            // WEIGHT 0: nothing is scored. The value is measured and rendered; the stress field is
+            // 0.0 because no anchor has been agreed, and `assert_unscored` refuses a config that
+            // supplies one.
+            stress: 0.0,
+            value: spread,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "{} minus {} = {:.2} as of {} — the weakest borrowers versus the broad high-yield \
+                 market. A crash is a TAIL event: the index can widen modestly while the weakest \
+                 credits blow out, and this gap is what an index level cannot show. DIRECTION: \
+                 wider = more dispersion = more stress. WINDOW LIMITATION, DECLARED: the ICE BofA \
+                 indices are licence-windowed SERVER-SIDE BY FRED — a licensing restriction, not \
+                 this tool's transport — to roughly three years, so this window is {} to {}, {} \
+                 observations, and it has never seen 2008 or 2020. The range below therefore rests \
+                 on recent episodes only and cannot be anchored to either crisis. MEASURED over \
+                 that window: p1 {:.2}, median {:.2}, p95 {:.2}, p99 {:.2}, maximum {:.2} on {}. \
+                 NOTE that the maximum is the CURRENT reading, so the top of the observed range is \
+                 not yet a historical extreme. WEIGHT 0 BY DESIGN: this cannot move the composite \
+                 or the coverage fraction, and no anchor ladder is applied — the measured ladder is \
+                 PROPOSED in config/indicators.toml and setting it is the owner's decision. NOT A \
+                 LEADING INDICATOR and no predictive claim is made: it makes a tail visible, it \
+                 does not forecast a turn.",
+                a_id, b_id, spread, date, oldest, date, d.n, d.p1, d.p50, d.p95, d.p99, d.max, d.max_date
+            ),
+            provenance: crate::model::Provenance {
+                source: "fred".into(),
+                endpoint: format!("{} - {}", a_id, b_id),
+                as_of: date.to_string(),
+                retrieved_at: a
+                    .provenance
+                    .retrieved_at
+                    .clone()
+                    .max(b.provenance.retrieved_at.clone()),
+            },
+        }
+    }
+}
+
+/// Commercial-paper funding: the paper rate less a Treasury bill.
+///
+/// WHY THIS EXISTS. `funding_stress` measures the secured OVERNIGHT market; this measures the
+/// term money market where non-bank issuers actually roll paper, and it carries the deepest
+/// history of any funding candidate — which is the whole reason to build it.
+///
+/// WEIGHT 0, DELIBERATELY UNSCORED, for the same reason as `credit_tail`: anchors and weight are
+/// the owner's decision, the measured ladder is proposed in the config, and `assert_unscored`
+/// refuses a config that attaches a scale to a weight-0 series.
+///
+/// THE LEGS, AND WHY THEY WERE CHOSEN FROM THE DATA. `DCPF1M` (30-day AA FINANCIAL commercial
+/// paper) against `DTB3` (3-month Treasury bill, secondary market, discount basis). The T-bill
+/// leg was chosen from measurement: `DTB3` carries history from 1954, so it never truncates the
+/// paper leg — the paired series spans the paper leg's own full window — and it is the
+/// conventional benchmark for the commercial-paper spread. The alternative measured, and the
+/// reason it was not taken, is recorded in the config.
+///
+/// THE CADENCE IS THE LIMITATION, AND IT IS MEASURED AT RUN TIME rather than asserted. The paper
+/// leg is sparse: it is NOT a daily series, its newest common date is set by that leg, and the
+/// channel is therefore the best-anchored and the worst as a FAST one. It must never be described
+/// as a fast channel, and the output says so on every run with the trailing-year numbers to back
+/// it.
+pub struct CpFunding;
+
+impl Indicator for CpFunding {
+    fn id(&self) -> &'static str {
+        "cp_funding"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let id = self.id();
+        let Some(ic) = ctx.cfg.indicator(id) else {
+            return Reading::Unavailable {
+                reason: "not configured".into(),
+            };
+        };
+        // Weight 0 or a scale, never both. See `assert_unscored`.
+        assert_unscored(ic);
+        let (a, b, a_id, b_id) = match spread_legs(ctx, ic) {
+            Ok(v) => v,
+            Err(r) => return r,
+        };
+        let paired = paired_spread(a, b);
+
+        let Some((date, spread)) = paired.last().copied() else {
+            return Reading::Unavailable {
+                reason: format!(
+                    "FRED series {} and {} share no observation date, so the funding spread is \
+                     undefined rather than zero",
+                    a_id, b_id
+                ),
+            };
+        };
+        let oldest = paired.first().map(|(d, _)| *d).unwrap_or(date);
+        let d = dist(&paired);
+        let (year_n, median_gap, max_gap) = trailing_year_cadence(&paired);
+        let a_last = a.points.last().map(|p| p.date.as_str()).unwrap_or("");
+        let b_last = b.points.last().map(|p| p.date.as_str()).unwrap_or("");
+
+        Reading::Scored {
+            // WEIGHT 0: measured and rendered, never scored. See `credit_tail` for the same rule.
+            stress: 0.0,
+            value: spread,
+            unit: ic.unit.clone(),
+            detail: format!(
+                "{} minus {} = {:+.2} as of {} — commercial paper less a Treasury bill, i.e. what \
+                 the money market charges to roll paper against the short risk-free rate. DIRECTION: \
+                 wider = higher stress; the spread sits just above zero in normal times and blows \
+                 out when paper cannot be rolled. CADENCE LIMITATION, DECLARED AND MEASURED AT RUN \
+                 TIME: this is the BEST-ANCHORED funding series in the model and the WORST as a \
+                 FAST one. {} is not a daily series — over the trailing year it published {} \
+                 values, median gap {} days, longest gap {} days — and the newest common date ({}) \
+                 is set by that leg, whose last observation is {} while the Treasury leg runs to \
+                 {}. It is NOT a fast channel and must NOT be read as a daily funding gauge; the \
+                 measured cadence above is the reason. WHAT IT IS GOOD FOR IS THE WINDOW: {} to {}, \
+                 {} paired observations spanning the 2008 financial crisis and the March 2020 COVID \
+                 spike, which no other funding series here can reach. MEASURED over that window: p1 \
+                 {:+.2}, median {:+.2}, p95 {:+.2}, p99 {:+.2}, maximum {:+.2} on {}. WEIGHT 0 BY \
+                 DESIGN: this cannot move the composite or the coverage fraction, and no anchor \
+                 ladder is applied — the measured ladder is PROPOSED in config/indicators.toml and \
+                 setting it is the owner's decision. NOT A LEADING INDICATOR and no predictive \
+                 claim is made.",
+                a_id,
+                b_id,
+                spread,
+                date,
+                a_id,
+                year_n,
+                median_gap,
+                max_gap,
+                date,
+                a_last,
+                b_last,
+                oldest,
+                date,
+                d.n,
+                d.p1,
+                d.p50,
+                d.p95,
+                d.p99,
+                d.max,
+                d.max_date
+            ),
+            provenance: crate::model::Provenance {
+                source: "fred".into(),
+                endpoint: format!("{} - {}", a_id, b_id),
+                as_of: date.to_string(),
+                retrieved_at: a
+                    .provenance
+                    .retrieved_at
+                    .clone()
+                    .max(b.provenance.retrieved_at.clone()),
+            },
+        }
     }
 }
 
@@ -856,6 +1169,362 @@ mod tests {
                 );
             }
             other => panic!("expected Scored, got {:?}", other),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // credit_tail and cp_funding — the two weight-0 measured channels
+    // -----------------------------------------------------------------------
+
+    /// Both new channels ship at weight 0 with NO anchors, and that is asserted rather than
+    /// trusted: a later edit that quietly gives either one weight would change the composite and
+    /// orphan cross-version comparison, which is an owner decision.
+    #[test]
+    fn the_two_new_channels_ship_at_weight_zero_with_no_anchors() {
+        let path = std::path::Path::new("config/indicators.toml");
+        if !path.exists() {
+            return; // unit tests may run from a different cwd
+        }
+        let cfg = Config::load(path).expect("shipped config must parse");
+        for id in ["credit_tail", "cp_funding"] {
+            let ic = cfg
+                .indicator(id)
+                .unwrap_or_else(|| panic!("{} must be configured", id));
+            assert_eq!(ic.weight, 0.0, "{} must ship at weight 0.0", id);
+            assert!(
+                ic.anchors.is_empty(),
+                "{} must ship with EMPTY anchors — the measured ladder belongs in the rationale",
+                id
+            );
+            // The legs must be declared as data, not hardcoded in the indicator.
+            assert!(
+                ic.fred_series.is_some() && ic.fred_series_b.is_some(),
+                "{} is a spread and must name BOTH legs in the config",
+                id
+            );
+        }
+    }
+
+    /// A weight-0 series that carries a scale invites the next reader to raise the weight and score
+    /// it without the owner ever deciding. Both channels must refuse that configuration loudly.
+    /// Two separate tests so a failure names which channel regressed.
+    #[test]
+    #[should_panic(expected = "must carry NO anchors")]
+    fn scoring_credit_tail_without_an_owner_decision_is_refused() {
+        let mut cfg = Config::load(std::path::Path::new("config/indicators.toml")).expect("config");
+        for ic in cfg.indicator.iter_mut() {
+            if ic.id == "credit_tail" {
+                ic.anchors = vec![[4.0, 0.0], [10.0, 100.0]];
+            }
+        }
+        let mut obs = Observations::default();
+        obs.fred.insert(
+            "BAMLH0A3HYC".into(),
+            dated(&[("2026-09-01", 8.0), ("2026-09-02", 8.1)]),
+        );
+        obs.fred.insert(
+            "BAMLH0A0HYM2".into(),
+            dated(&[("2026-09-01", 3.0), ("2026-09-02", 3.1)]),
+        );
+        let _ = CreditTail.evaluate(&ctx_with(&cfg, &obs));
+    }
+
+    #[test]
+    #[should_panic(expected = "must carry NO anchors")]
+    fn scoring_cp_funding_without_an_owner_decision_is_refused() {
+        let mut cfg = Config::load(std::path::Path::new("config/indicators.toml")).expect("config");
+        for ic in cfg.indicator.iter_mut() {
+            if ic.id == "cp_funding" {
+                ic.anchors = vec![[-0.2, 0.0], [3.4, 100.0]];
+            }
+        }
+        let mut obs = Observations::default();
+        obs.fred
+            .insert("DCPF1M".into(), dated(&[("2026-09-01", 4.1)]));
+        obs.fred
+            .insert("DTB3".into(), dated(&[("2026-09-01", 4.0)]));
+        let _ = CpFunding.evaluate(&ctx_with(&cfg, &obs));
+    }
+
+    /// `credit_tail` measures the dispersion on the newest COMMON date and, being weight 0, reports
+    /// it with a stress of 0.0 — the number is rendered, not scored.
+    #[test]
+    fn credit_tail_reports_the_dispersion_and_stays_unscored() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "credit_tail".into(),
+            group: Some("pricing".into()),
+            label: "CT".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("BAMLH0A3HYC".into()),
+            fred_series_b: Some("BAMLH0A0HYM2".into()),
+        });
+        let mut obs = Observations::default();
+        obs.fred.insert(
+            "BAMLH0A3HYC".into(),
+            dated(&[("2026-09-01", 8.00), ("2026-09-02", 8.90)]),
+        );
+        // The HY leg stops a day earlier: the spread must be taken on the common date.
+        obs.fred
+            .insert("BAMLH0A0HYM2".into(), dated(&[("2026-09-01", 3.00)]));
+
+        match CreditTail.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Scored {
+                stress,
+                value,
+                detail,
+                provenance,
+                ..
+            } => {
+                assert_eq!(stress, 0.0, "a weight-0 channel must never carry a score");
+                assert!(
+                    (value - 5.00).abs() < 1e-9,
+                    "must subtract on the newest COMMON date (8.00 - 3.00), got {}",
+                    value
+                );
+                assert_eq!(
+                    provenance.as_of, "2026-09-01",
+                    "the dispersion must be dated at the paired date"
+                );
+                assert!(
+                    detail.contains("licence-windowed"),
+                    "the ICE licence cap must travel with the number: {}",
+                    detail
+                );
+                assert!(
+                    detail.contains("2008 or 2020"),
+                    "the window limitation must name the crises it cannot see: {}",
+                    detail
+                );
+            }
+            other => panic!("expected Scored, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn credit_tail_names_the_missing_leg() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "credit_tail".into(),
+            group: Some("pricing".into()),
+            label: "CT".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("BAMLH0A3HYC".into()),
+            fred_series_b: Some("BAMLH0A0HYM2".into()),
+        });
+        let mut obs = Observations::default();
+        obs.fred
+            .insert("BAMLH0A3HYC".into(), dated(&[("2026-09-01", 8.0)]));
+        match CreditTail.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("BAMLH0A0HYM2"),
+                "the missing leg must be named, got: {}",
+                reason
+            ),
+            other => panic!("expected Unavailable, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn credit_tail_calls_a_disjoint_calendar_undefined_rather_than_zero() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "credit_tail".into(),
+            group: Some("pricing".into()),
+            label: "CT".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("BAMLH0A3HYC".into()),
+            fred_series_b: Some("BAMLH0A0HYM2".into()),
+        });
+        let mut obs = Observations::default();
+        obs.fred
+            .insert("BAMLH0A3HYC".into(), dated(&[("2026-09-01", 8.0)]));
+        obs.fred
+            .insert("BAMLH0A0HYM2".into(), dated(&[("2026-10-01", 3.0)]));
+        match CreditTail.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("share no observation date"),
+                "a fabricated 0.0 would read as a calm tail, got: {}",
+                reason
+            ),
+            other => panic!("expected Unavailable, got {:?}", other),
+        }
+    }
+
+    fn weekly_series(id: &str, start: &str, n: usize, v: f64) -> (String, Series) {
+        let s = chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d").unwrap();
+        let pairs: Vec<(String, f64)> = (0..n)
+            .map(|i| {
+                (
+                    (s + chrono::Duration::days(7 * i as i64))
+                        .format("%Y-%m-%d")
+                        .to_string(),
+                    v,
+                )
+            })
+            .collect();
+        let refs: Vec<(&str, f64)> = pairs.iter().map(|(d, v)| (d.as_str(), *v)).collect();
+        (id.to_string(), dated(&refs))
+    }
+
+    fn daily_series(id: &str, start: &str, n: usize, v: f64) -> (String, Series) {
+        let s = chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d").unwrap();
+        let pairs: Vec<(String, f64)> = (0..n)
+            .map(|i| {
+                (
+                    (s + chrono::Duration::days(i as i64))
+                        .format("%Y-%m-%d")
+                        .to_string(),
+                    v,
+                )
+            })
+            .collect();
+        let refs: Vec<(&str, f64)> = pairs.iter().map(|(d, v)| (d.as_str(), *v)).collect();
+        (id.to_string(), dated(&refs))
+    }
+
+    /// `cp_funding` must declare its cadence MEASURED FROM THE DATA, not assert a remembered figure,
+    /// and the output must not present the channel as fast. The synthetic paper leg publishes once a
+    /// week while the Treasury leg publishes daily — the real shape of DCPF1M against DTB3.
+    #[test]
+    fn cp_funding_measures_its_own_cadence_and_does_not_claim_to_be_fast() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "cp_funding".into(),
+            group: Some("pricing".into()),
+            label: "CP".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("DCPF1M".into()),
+            fred_series_b: Some("DTB3".into()),
+        });
+        let mut obs = Observations::default();
+        let (k, paper) = weekly_series("DCPF1M", "2025-07-01", 60, 5.00);
+        let (k2, bill) = daily_series("DTB3", "2025-07-01", 420, 4.60);
+        obs.fred.insert(k, paper);
+        obs.fred.insert(k2, bill);
+
+        match CpFunding.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Scored {
+                stress,
+                value,
+                detail,
+                ..
+            } => {
+                assert_eq!(stress, 0.0, "a weight-0 channel must never carry a score");
+                assert!(
+                    (value - 0.40).abs() < 1e-9,
+                    "the spread is paper minus bill on the common dates, got {}",
+                    value
+                );
+                assert!(
+                    detail.contains("not a daily series"),
+                    "the cadence limitation must be stated in the output: {}",
+                    detail
+                );
+                assert!(
+                    detail.contains("median gap 7 days"),
+                    "the cadence must be MEASURED from the series, not asserted: {}",
+                    detail
+                );
+                assert!(
+                    detail.contains("NOT a fast channel"),
+                    "the output must refuse the fast-channel reading explicitly: {}",
+                    detail
+                );
+            }
+            other => panic!("expected Scored, got {:?}", other),
+        }
+    }
+
+    /// The newest paired date is set by the SPARSE leg. A run where the paper leg lags must date the
+    /// reading by the paper leg, not by the fresher Treasury leg.
+    #[test]
+    fn cp_funding_dates_the_reading_by_the_sparse_leg() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "cp_funding".into(),
+            group: Some("pricing".into()),
+            label: "CP".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("DCPF1M".into()),
+            fred_series_b: Some("DTB3".into()),
+        });
+        let mut obs = Observations::default();
+        obs.fred.insert(
+            "DCPF1M".into(),
+            dated(&[("2026-09-01", 5.0), ("2026-10-05", 5.1)]),
+        );
+        obs.fred.insert(
+            "DTB3".into(),
+            dated(&[
+                ("2026-09-01", 4.6),
+                ("2026-10-05", 4.6),
+                ("2026-10-15", 4.6),
+            ]),
+        );
+        match CpFunding.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Scored {
+                provenance, detail, ..
+            } => {
+                assert_eq!(
+                    provenance.as_of, "2026-10-05",
+                    "the reading is dated by the sparse paper leg, not the fresher Treasury leg"
+                );
+                assert!(
+                    detail.contains("2026-10-15"),
+                    "the output must show how far the Treasury leg runs ahead: {}",
+                    detail
+                );
+            }
+            other => panic!("expected Scored, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn cp_funding_names_the_missing_leg() {
+        let mut cfg = cfg();
+        cfg.indicator.push(IndicatorCfg {
+            id: "cp_funding".into(),
+            group: Some("pricing".into()),
+            label: "CP".into(),
+            weight: 0.0,
+            unit: "pct".into(),
+            source: "fred".into(),
+            rationale: String::new(),
+            anchors: vec![],
+            fred_series: Some("DCPF1M".into()),
+            fred_series_b: Some("DTB3".into()),
+        });
+        let mut obs = Observations::default();
+        obs.fred
+            .insert("DCPF1M".into(), dated(&[("2026-09-01", 5.0)]));
+        match CpFunding.evaluate(&ctx_with(&cfg, &obs)) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("DTB3"),
+                "the missing leg must be named, got: {}",
+                reason
+            ),
+            other => panic!("expected Unavailable, got {:?}", other),
         }
     }
 }

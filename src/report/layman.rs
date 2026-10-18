@@ -55,6 +55,8 @@ fn plain_name(id: &str) -> &'static str {
         // crisis": the honest plain description is the plumbing itself, since that is what is being
         // measured and what a reader needs to picture.
         "funding_stress" => "how expensive it is for banks and funds to borrow cash overnight, which is the plumbing that keeps debt rolling and jams first when money gets tight",
+        "credit_tail" => "how much more the weakest borrowers pay to borrow than the rest of the high-yield market — reported but deliberately not counted, because the available history is only about three years",
+        "cp_funding" => "what the money market charges to roll short-term company IOUs against the Treasury bill rate — reported but deliberately not counted, because this series publishes only a few times a month and is too slow to be a warning",
         "capex_vs_cashflow" => "how much AI companies spend building data centres compared with the cash their business brings in",
         "inference_demand" => "whether the AI compute that has been built is actually being used, and whether that use is still growing",
         "energisation_delay" => "how long a new power project has to wait in the queue before it can actually be switched on",

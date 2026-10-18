@@ -9,7 +9,7 @@
 //! | Endpoint                                   | Result                       |
 //! |--------------------------------------------|------------------------------|
 //! | `fred.stlouisfed.org/graph/fredgraph.csv`  | **0/9** — read timeouts, HTTP/2 `INTERNAL_ERROR`; sometimes 200 in 0.13 s, then nothing |
-//! | `api.stlouisfed.org/fred/...`              | **5/5** at ~0.15 s, returning a clean `400 api_key is not set` |
+//! | `api.stlouisfed.org/fred/...`              | **5/5** at ~0.15 s; `400 api_key is not set` was measured **before any key was configured** — with `FRED_API_KEY` set it returns **200** (verified 2026-10-16) |
 //!
 //! CORRECTION (2026-10-16): that 400 was measured while no key was configured, and it still
 //! misleads — it reads as though the keyed API were unavailable, when it is in fact the transport

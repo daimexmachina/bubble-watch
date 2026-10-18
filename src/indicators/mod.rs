@@ -80,6 +80,11 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "credit_hy" => Some(Box::new(credit::CreditHy)),
         "credit_ig" => Some(Box::new(credit::CreditIg)),
         "funding_stress" => Some(Box::new(credit::FundingStress)),
+        // WEIGHT 0, measured and unscored. Registered here so they are fetched, computed and
+        // rendered; `score::composite` excludes weight-0 readings from both the composite and the
+        // coverage fraction, so being implemented cannot move the headline.
+        "credit_tail" => Some(Box::new(credit::CreditTail)),
+        "cp_funding" => Some(Box::new(credit::CpFunding)),
         "private_credit_growth" => Some(Box::new(credit::PrivateCreditGrowth)),
         "foreign_interest" => Some(Box::new(fundamentals::ForeignOwnership)),
         "datacenter_construction" => Some(Box::new(fundamentals::DataCenterConstruction)),
