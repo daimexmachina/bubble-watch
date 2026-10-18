@@ -142,6 +142,18 @@ fn join_list(items: &[String]) -> String {
 ///   * an anonymous counterparty — `SPEC.md` §15.7, "The limit that cannot be fixed by reading":
 ///     "The method cannot see a relationship a filer declines to name ... No amount of further
 ///     reading resolves it, because the identity is not in the filing."
+///   * the QUANTITY of AI-specific credit raised — every channel here that touches credit reads the
+///     PRICE of it (`credit_hy`, `credit_ig`, `credit_tail`) or the AGGREGATE market for it
+///     (`funding_stress`, `cp_funding`), so none of them can see AI-specific issuance. Measured and
+///     sourced in `.hermes/analysis/2026-10-17-news-cloud-selloff-and-ai-financing-fears.md` §4
+///     (commit ea97ae9, sha256 e8600068…): global AI-related debt issuance fell from $113bn in June
+///     2026 to $23bn in September 2026 — roughly 80% in three months — per the Financial Times from
+///     Morgan Stanley data, cited by Axios on 2026-10-14 and 2026-10-16, while ~$18bn of bank loans
+///     for an Oracle data-centre campus slid into stressed territory (Axios, 2026-10-16). PERMANENT,
+///     not "quiet today": the reporting source is a private research dataset, and individual
+///     CDS/bond quotes are ALREADY declared unavailable free in `leveraged_builder_stress`'s
+///     rationale, so no source this tool can reach shows it. It is a limit of the instrument, not a
+///     gap in today's run.
 ///
 /// EMPTY IS A LEGAL STATE, and it renders the honest fallback: a model with no declared hole says it
 /// measures a fixed list and claims nothing beyond it. Do not add a channel here because it went
@@ -152,6 +164,9 @@ const DECLARED_BLIND_SPOTS: &[&str] = &[
 court filings, and this report reads no other country's register",
     "money going in circles where the company does not name the other side — only the relationships \
 a filing actually names can be read, so no amount of further reading resolves it",
+    "how much new debt the AI complex is raising — this report reads the price of credit and the \
+aggregate market for it, and the monthly volume of AI-specific borrowing is published only in \
+private research data",
 ];
 
 /// The wording of the "cannot see at all" section, from that declared list.
@@ -823,6 +838,12 @@ TODAY: {}",
         // The section must survive its own list changing length: the old one-channel branch was
         // where the double space lived, and a list that renders "are things ... : a company"
         // for a single entry is the same class of defect. PURE, so both branches are reachable.
+        //
+        // THE PLURAL BRANCH IS CHECKED AT N=3, NOT ONLY N=2, because that is what the shipped
+        // constant renders since the QUANTITY-of-AI-credit entry was declared (2026-10-17): the
+        // three-entry join goes through `join_list`'s many-branch, whose ", and " separator is a
+        // different arm from the two-entry join's " and ". Testing only the pair would leave the
+        // shipped rendering path uncovered.
         let one = blind_spot_text(&["a thing that cannot be seen"]);
         assert!(
             one.contains(
@@ -836,6 +857,19 @@ TODAY: {}",
             two.contains("There are things this report cannot see at all: x and y."),
             "two entries must be joined into a list: {}",
             two
+        );
+        let three = blind_spot_text(&["x", "y", "z"]);
+        assert!(
+            three.contains("There are things this report cannot see at all: x, y, and z."),
+            "three entries must be joined with the many-branch separator: {}",
+            three
+        );
+        // And the list the report actually ships is rendered by this branch, entry by entry.
+        assert_eq!(
+            DECLARED_BLIND_SPOTS.len(),
+            3,
+            "the shipped declaration changed length; the N=3 case above is then no longer the one \
+the report renders, and this test's third case must be re-pointed before it stops covering it"
         );
     }
 
