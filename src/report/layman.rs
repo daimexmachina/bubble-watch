@@ -32,10 +32,10 @@ pub struct LaymanSummary {
     /// needs no explanation. See `Report::sub_scores`.
     #[serde(default)]
     pub the_questions_disagree: String,
-    /// The permanent holes in the model, which do not depend on today's data.
-    /// These are stated prominently rather than listed as data quality, because
-    /// the most consequential one is a real blind spot rather than a failed
-    /// fetch — the report can be at 100% coverage and still not see it.
+    /// The model's PERMANENT holes, declared in `DECLARED_BLIND_SPOTS` rather than inferred from
+    /// the run. Stated prominently rather than listed as data quality, because the point is what
+    /// the report cannot see even at 100% coverage: a channel that merely failed this morning is a
+    /// data-quality gap, and a data-quality gap is what the quality section is for.
     pub known_blind_spots: String,
     pub bottom_line: String,
 }
@@ -118,6 +118,68 @@ fn join_list(items: &[String]) -> String {
     }
 }
 
+/// The model's PERMANENT blind spots: what this report cannot see even on a day when every source
+/// answers, because nothing it can read records them.
+///
+/// WHY THIS IS A DECLARATION AND NOT A COMPUTATION
+/// ----------------------------------------------
+/// The section used to be built from `data_quality.unavailable` filtered to weight 0, i.e. "a
+/// declared channel that happened to fail on THIS run", and it then told the reader those entries
+/// "would still be missing on a day when every source answered". For a channel that is fetched and
+/// reported whenever its source answers, that is false. MEASURED, from the recorded runs in `out/`:
+/// `ai-bubble-watch-2026-10-16.json` lists exactly one such entry — `buildout_opposition_news`
+/// (weight 0, GDELT, unavailable that day) — and the report published it as a permanent hole in the
+/// model, while on 2026-10-11..15 the same section said the model had no holes at all, because on
+/// those days no weight-0 channel failed. The list was therefore "whatever went quiet today", which
+/// is data quality, not a blind spot. A run's failures must never reach this list; the guard is
+/// `the_blind_spot_list_can_never_be_filled_by_todays_failures`, which fails if they do.
+///
+/// EVERY ENTRY IS GROUNDED IN THIS REPO, so the declaration can be audited rather than believed:
+///
+///   * a failure filed outside the United States — `config/indicators.toml`, `distress_events`:
+///     "US ONLY, so a non-US failure is a declared blind spot and never a zero". Measured: Firmus
+///     withdrew its ASX listing and no US source sees it.
+///   * an anonymous counterparty — `SPEC.md` §15.7, "The limit that cannot be fixed by reading":
+///     "The method cannot see a relationship a filer declines to name ... No amount of further
+///     reading resolves it, because the identity is not in the filing."
+///
+/// EMPTY IS A LEGAL STATE, and it renders the honest fallback: a model with no declared hole says it
+/// measures a fixed list and claims nothing beyond it. Do not add a channel here because it went
+/// quiet — that is precisely the defect this constant replaced. A NEW entry is a claim about the
+/// world, so it needs its grounding written down beside it.
+const DECLARED_BLIND_SPOTS: &[&str] = &[
+    "a company outside the United States going bust — the count of failures reads United States \
+court filings, and this report reads no other country's register",
+    "money going in circles where the company does not name the other side — only the relationships \
+a filing actually names can be read, so no amount of further reading resolves it",
+];
+
+/// The wording of the "cannot see at all" section, from that declared list.
+///
+/// PURE, and separated from `summarize` so both branches can be tested and falsified by name —
+/// including the empty one, which a run of the shipped config does not reach while the model
+/// declares a hole, and which would otherwise rot untested.
+fn blind_spot_text(entries: &[&str]) -> String {
+    if entries.is_empty() {
+        // Nothing declared: state the bound on the claim rather than reassuring the reader.
+        return "This report measures a fixed list of things and claims nothing beyond it."
+            .to_string();
+    }
+    let what: Vec<String> = entries.iter().map(|s| (*s).to_string()).collect();
+    format!(
+        "There {} this report cannot see at all: {}. These would stay missing on a day when every \
+source answered, because nothing it can read would show them. They are not gaps in today's run — \
+the checks it failed today are listed separately, and a later run may well fill those. Nothing \
+here is guessed at, and none of it is counted in the score.",
+        if what.len() == 1 {
+            "is one thing"
+        } else {
+            "are things"
+        },
+        join_list(&what)
+    )
+}
+
 pub fn summarize(r: &Report) -> LaymanSummary {
     let what_this_is = "This report tries to answer one question: how much does the AI boom look \
 like a bubble right now? It scores a set of measurements from 0 to 100. A higher score means more \
@@ -150,6 +212,12 @@ of the warning signs are showing."
     // contradicts the dashboard's own weight-0 card, which says of exactly these channels
     // "These channels are MEASURED AND DISPLAYED but carry zero weight" (report/html.rs).
     // Only a weight-0 channel that produced NO reading belongs in this clause.
+    //
+    // AND EVEN THAT IS A STATEMENT ABOUT TODAY, NOT ABOUT THE CHANNEL. "Cannot measure at all" was
+    // the same category error the blind-spot section made (fixed in the same change): a weight-0
+    // channel is fetched and reported whenever its source answers — `buildout_opposition_news` gave
+    // no reading on 2026-10-16 and a reading on every other day in `out/` — so a permanence claim
+    // about it is false, while "it could not measure it today" is exactly what the selection says.
     let declared_gaps = r
         .indicators
         .iter()
@@ -165,9 +233,9 @@ why this report tells you what it cannot check as well as what it can.",
         phase_plain,
         scored_count,
         if declared_gaps == 1 {
-            ", plus 1 thing it cannot measure at all".to_string()
+            ", plus 1 thing it could not measure today".to_string()
         } else if declared_gaps > 1 {
-            format!(", plus {} things it cannot measure at all", declared_gaps)
+            format!(", plus {} things it could not measure today", declared_gaps)
         } else {
             String::new()
         }
@@ -290,7 +358,9 @@ out to have been right.",
         }
     };
 
-    // Blind spots: real gaps (excluding the permanent weight-0 declarations).
+    // The weighted gaps: what the score had to work around today. Weight-0 channels are excluded
+    // whatever they do, because they never touch the score; one that went quiet today is data
+    // quality like any other silence, and it is listed in the quality section rather than here.
     let gaps: Vec<String> = r
         .data_quality
         .unavailable
@@ -469,42 +539,16 @@ page. Run it again on another day and a comparison will appear.{}",
         }
     };
 
-    // Declared blind spots: weight-0 entries, which are permanent properties of
-    // the model rather than failures on this run. Written out in full because the
-    // circularity one materially limits what a low score can mean.
-    let declared: Vec<&crate::model::UnavailableItem> = r
-        .data_quality
-        .unavailable
-        .iter()
-        .filter(|u| u.weight <= 0.0)
-        .collect();
-
-    let circularity_note = "One thing this report cannot see at all is money going in circles. In this boom, large technology companies have taken ownership stakes in AI businesses, and those businesses then buy computing power, chips and cloud services back from the companies that funded them. A chip maker invests in the very customers who buy its chips. Sometimes the same dollars get counted as sales by more than one company in the chain. This report cannot measure any of that, because it needs to know who invested in whom and how much of a company's sales came from its own backer, and that relationship is not published in a form a program can read reliably. It matters twice over. First, a sale is not independent proof that outside demand exists. Second, if the young company's value falls, it can hit its backer's profits and its sales at the same time. If anything this gap makes the score look better than it should, because spending that is really money moving in a circle is counted here as ordinary business investment. Treat a calm reading as less reassuring than usual on this point.";
-
-    let known_blind_spots = if declared.is_empty() {
-        "This report measures a fixed list of things and claims nothing beyond it.".to_string()
-    } else {
-        let mut out = String::new();
-        let has_circularity = declared.iter().any(|u| u.id == "circularity");
-        if has_circularity {
-            out.push_str(circularity_note);
-            out.push(' ');
-        }
-        let others: Vec<String> = declared
-            .iter()
-            .filter(|u| u.id != "circularity")
-            .map(|u| plain_name(&u.id).to_string())
-            .collect();
-        if !others.is_empty() {
-            out.push_str(&format!(
-                "There {} {} it also cannot measure at all: {}. Those are left blank rather than guessed at, and they never affect the score. The difference between these and the gaps listed elsewhere is that these are permanent — they would still be missing on a day when every source answered.",
-                if others.len() == 1 { "is one more thing" } else { "are further things" },
-                if others.len() == 1 { "" } else { "" },
-                join_list(&others)
-            ));
-        }
-        out.trim().to_string()
-    };
+    // PERMANENT blind spots, DECLARED and never inferred from today's data.
+    //
+    // THIS SECTION USED TO BE BUILT FROM `unavailable ∩ weight == 0` — "a declared channel that
+    // happened to fail on this run" — and then told the reader those entries were permanent. For a
+    // channel that IS fetched and reported on every other day that is false, and it made the
+    // section's content a function of this morning's outages: measured 2026-10-16, the only entry
+    // was `buildout_opposition_news` (weight 0, GDELT, one lost day), and the one-channel branch
+    // also rendered a double space from a dead `format!` argument. Today's failures are data
+    // quality and are reported as data quality; the list below cannot be added to by a bad day.
+    let known_blind_spots = blind_spot_text(DECLARED_BLIND_SPOTS);
 
     LaymanSummary {
         what_this_is,
@@ -684,8 +728,14 @@ mod tests {
             "must not report the weight total as a count"
         );
         assert!(
-            s.the_score.contains("1 thing it cannot measure"),
-            "declared gaps should be acknowledged separately: {}",
+            s.the_score.contains("1 thing it could not measure today"),
+            "a declared weight-0 channel with no reading today must be acknowledged as a gap for \
+TODAY: {}",
+            s.the_score
+        );
+        assert!(
+            !s.the_score.contains("cannot measure at all"),
+            "nothing in the score sentence is described as unmeasurable in principle: {}",
             s.the_score
         );
     }
@@ -712,14 +762,132 @@ mod tests {
         );
         let s = summarize(&r);
         assert!(
-            s.the_score.contains("1 thing it cannot measure"),
-            "only the weight-0 channel that produced no reading is unmeasurable: {}",
+            s.the_score.contains("1 thing it could not measure today"),
+            "only the weight-0 channel that produced no reading is counted, and as a TODAY gap: {}",
             s.the_score
         );
         assert!(
-            !s.the_score.contains("2 things it cannot measure"),
-            "a weight-0 channel that produced a reading is MEASURED, not unmeasurable: {}",
+            !s.the_score.contains("2 things it could not measure today"),
+            "a weight-0 channel that produced a reading is MEASURED, not unmeasured: {}",
             s.the_score
+        );
+    }
+
+    #[test]
+    fn the_blind_spot_list_can_never_be_filled_by_todays_failures() {
+        // THE DEFECT THIS CARD FIXES. The section was `unavailable ∩ weight == 0` — a channel that
+        // happened to lose its source that morning — published as a PERMANENT hole in the model
+        // ("they would still be missing on a day when every source answered"). Measured
+        // 2026-10-16 (`out/ai-bubble-watch-2026-10-16.json`): the only entry was
+        // `buildout_opposition_news`, weight 0, one lost GDELT day, while on 2026-10-11..15 the
+        // very same section said the model had no holes at all. The list is now a DECLARATION, so
+        // this property holds: every weight-0 channel in the configuration failing at once still
+        // adds nothing to it.
+        let silent = [
+            "buildout_opposition_news",
+            "public_attention",
+            "leveraged_builder_stress",
+            "credit_tail",
+            "cp_funding",
+        ];
+        let mut inds = vec![ind("volatility", 8.0, Some(20.0))];
+        for id in silent {
+            inds.push(ind(id, 0.0, None));
+        }
+        let s = summarize(&report(inds, 32.4, None));
+        for id in silent {
+            assert!(
+                !s.known_blind_spots.contains(plain_name(id)),
+                "{} went quiet today, which is data quality, not a permanent blind spot: {}",
+                id,
+                s.known_blind_spots
+            );
+        }
+        assert!(
+            !s.known_blind_spots.contains("permanent"),
+            "the section must not claim permanence for anything the run produced: {}",
+            s.known_blind_spots
+        );
+        for entry in DECLARED_BLIND_SPOTS {
+            assert!(
+                s.known_blind_spots.contains(*entry),
+                "a declared blind spot must still be rendered: {} missing from {}",
+                entry,
+                s.known_blind_spots
+            );
+        }
+    }
+
+    #[test]
+    fn the_declared_blind_spots_are_rendered_in_both_grammatical_numbers() {
+        // The section must survive its own list changing length: the old one-channel branch was
+        // where the double space lived, and a list that renders "are things ... : a company"
+        // for a single entry is the same class of defect. PURE, so both branches are reachable.
+        let one = blind_spot_text(&["a thing that cannot be seen"]);
+        assert!(
+            one.contains(
+                "There is one thing this report cannot see at all: a thing that cannot be seen."
+            ),
+            "one entry must read in the singular: {}",
+            one
+        );
+        let two = blind_spot_text(&["x", "y"]);
+        assert!(
+            two.contains("There are things this report cannot see at all: x and y."),
+            "two entries must be joined into a list: {}",
+            two
+        );
+    }
+
+    #[test]
+    fn the_blind_spot_text_bounds_the_claim_when_nothing_is_declared() {
+        // A model that declares no hole must say what it does NOT claim, rather than stay silent
+        // (an empty section reads as "nothing to see here") or reassure the reader.
+        assert_eq!(
+            blind_spot_text(&[]),
+            "This report measures a fixed list of things and claims nothing beyond it."
+        );
+    }
+
+    #[test]
+    fn no_part_of_the_summary_contains_a_double_space() {
+        // THE RENDER WART. The removed sentence was a `format!` whose SECOND argument was an empty
+        // string in BOTH branches, so a one-entry list rendered
+        // "There is one more thing  it also cannot measure at all" — visible in the recorded
+        // 2026-10-16 report. An empty argument is invisible in review; this catches it. The blocks
+        // are joined with a newline rather than a space so the join cannot manufacture the very
+        // defect under test.
+        let r = report(
+            vec![
+                ind("volatility", 8.0, Some(20.0)),
+                ind("credit_tail", 0.0, Some(50.0)),
+                ind("buildout_opposition_news", 0.0, None),
+                ind("capex_vs_cashflow", 14.0, None),
+            ],
+            32.4,
+            Some([30.0, 72.0]),
+        );
+        let s = summarize(&r);
+        let all = [
+            &s.what_this_is,
+            &s.the_score,
+            &s.what_is_stretched,
+            &s.what_is_calm,
+            &s.what_we_cannot_measure,
+            &s.about_timing,
+            &s.direction_of_travel,
+            &s.the_questions_disagree,
+            &s.known_blind_spots,
+            &s.bottom_line,
+        ]
+        .iter()
+        .map(|b| b.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+        assert!(
+            !all.contains("  "),
+            "a double space reached the plain-English summary: {:?}",
+            all
         );
     }
 
@@ -865,8 +1033,9 @@ mod tests {
 
     #[test]
     fn ignores_weight_zero_declared_gaps() {
-        // foreign_interest is a permanent blind spot at weight 0; it must not be
-        // reported as a missing measurement, and must never be scored.
+        // A weight-0 channel must never be scored, and must not appear in the weighted-gaps
+        // sentence. It is also NOT a permanent blind spot, whatever it does on a given run:
+        // see DECLARED_BLIND_SPOTS, which is the only source for that list now.
         let r = report(
             vec![
                 ind("volatility", 8.0, Some(20.0)),
@@ -878,7 +1047,8 @@ mod tests {
         let s = summarize(&r);
         assert!(
             !s.what_we_cannot_measure.contains("foreign"),
-            "a declared weight-0 gap is a permanent disclosure, not a data failure"
+            "a declared weight-0 channel's silence is not a weighted gap: {}",
+            s.what_we_cannot_measure
         );
     }
 
