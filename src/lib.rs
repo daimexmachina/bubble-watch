@@ -5,6 +5,15 @@
 //! midpoint, and no silent fallback.
 
 pub mod backtest;
+/// A content fingerprint of the source tree, computed the SAME WAY at build time and at run
+/// time — the build script bakes one into the binary and `build_id` recomputes it from disk.
+///
+/// The implementation file uses `//` comments rather than `//!` because it is spliced into
+/// `build.rs` by `include!`, which cannot carry an inner attribute; see the top of
+/// `src/build_fingerprint.rs` for the full reasoning, including why the fingerprint is a content
+/// hash rather than an mtime comparison.
+pub mod build_fingerprint;
+pub mod build_id;
 pub mod circular_rubric;
 pub mod config;
 pub mod drift;
@@ -84,28 +93,33 @@ pub fn pipeline_with_history(
     // Merge load warnings with the trend the report computed for itself.
     report.trend.warnings.append(&mut warnings);
 
-    // RECORDING IS REFUSED WHILE OFFLINE, and this is a data-integrity rule rather than a convenience.
+    // RECORDING IS GOVERNED BY `history::decide_record`, WHICH IS A PURE FUNCTION AND LIVES NEXT TO
+    // `append` FOR THAT REASON. Two rules, both data-integrity rules rather than conveniences:
     //
-    // An offline run reads whatever is in the local cache; it does not consult the world. Appending it
-    // to the archive therefore files a MEASUREMENT that was never taken — and worse, files it under
-    // today's date, where it is indistinguishable from the real daily run. Measured 2026-10-16: the
-    // archive held FOURTEEN rows for that day against one for every other day, several of them
-    // duplicates from offline diagnostic runs with identical composites, and nothing anywhere said
-    // which row was the measurement.
+    //   1. AN OFFLINE RUN MAY NOT RECORD. It reads whatever is in the local cache; it does not consult
+    //      the world, so appending it files a MEASUREMENT that was never taken — under today's date,
+    //      where it is indistinguishable from the real daily run. Measured 2026-10-16: the archive held
+    //      FOURTEEN rows for that day against one for every other day, several of them duplicates from
+    //      offline diagnostic runs with identical composites, and nothing said which row was real.
     //
-    // The flag stays opt-out for the caller; the refusal lives here so no command can forget it.
-    let record_requested = record;
-    let record = record && !offline;
-    if record_requested && !record {
-        report.trend.warnings.push(
-            "NOT RECORDED: this run was offline, so it read the local cache rather than the world. \
-             Filing it would have put a measurement that was never taken into the archive, under \
-             today's date, where it could not be told apart from the real daily run. Re-run without \
-             --offline to record a measurement."
-                .to_string(),
-        );
+    //   2. A BINARY THAT CANNOT ACCOUNT FOR ITS OWN SOURCE MAY NOT RECORD. `scripts/falsify.sh`
+    //      restores the mutated SOURCE and proves the restore, but its `cargo test` also builds the
+    //      BINARY target from the MUTATED source, and it used to leave that binary in place with a clean
+    //      tree. `scripts/daily-refresh.sh` rebuilt only when the binary was missing, so the next timer
+    //      run would have executed the mutant and RECORDED it into the archive. Measured 2026-10-17: a
+    //      binary left by a falsification printed "plus 5 things it cannot measure at all" where the
+    //      committed source prints 2. The binary now carries the fingerprint of the tree it was built
+    //      from (`build.rs`) and refuses to record when that fingerprint is not the tree it is running
+    //      beside. See `crate::build_id`.
+    //
+    // The decision is computed here rather than in each command, so no command can forget it, and every
+    // refusal is pushed onto the report so it reaches the HTML, the JSON and the terminal.
+    let artifact = build_id::check();
+    let decision = history::decide_record(record, offline, &artifact);
+    for r in &decision.refusals {
+        report.trend.warnings.push(r.clone());
     }
-    if record {
+    if decision.record {
         let point = history::point_from(
             &report.indicators,
             report.composite,

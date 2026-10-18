@@ -60,12 +60,14 @@ cargo build --release
 ./target/release/bubble-watch --offline score      # cache only; never touches the network
 ```
 
-Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial coverage.
+Exit codes: `0` ok · `2` config error · `3` no usable data · `4` partial coverage ·
+`5` asked to record a measurement and did not (an offline run, or a binary that cannot account
+for the source tree it sits in).
 
 Tests:
 
 ```bash
-cargo test                                         # 470 tests, no network required
+cargo test                                         # 485 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 

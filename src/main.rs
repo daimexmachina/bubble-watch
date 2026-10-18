@@ -164,6 +164,28 @@ enum Cmd {
         #[arg(long, default_value_t = 30)]
         days: i64,
     },
+    /// Report whether this BINARY was built from the source tree it names, and exit
+    /// non-zero if it was not.
+    ///
+    /// WHY THIS IS A COMMAND. The hazard it answers is a leaked falsification:
+    /// `scripts/falsify.sh` restores the mutated SOURCE and proves the restore, but
+    /// its `cargo test` builds the BINARY target from the mutated source too, and
+    /// nothing used to check the artifact afterwards. A binary built from other
+    /// source is invisible from the outside — same name, same path, and a clean
+    /// working tree — so a scheduler can only ask it a question. This is that
+    /// question, with the exit code as the machine-readable answer:
+    ///
+    ///   * `0` — VERIFIED: the tree is byte-identical to the one this binary was
+    ///     compiled from, so the run may record.
+    ///   * `5` — not verified (MISMATCH or UNKNOWN). `scripts/daily-refresh.sh`
+    ///     rebuilds and, if it still cannot verify, REFUSES to run: a run recorded
+    ///     by a binary built from other source is a falsified measurement in the
+    ///     archive.
+    ///
+    /// The recording path refuses anyway (`history::decide_record`); this exists so
+    /// the shell can act BEFORE running anything, and so a human can see both
+    /// fingerprints side by side.
+    ArtifactCheck,
 }
 
 fn main() {
@@ -180,6 +202,13 @@ fn load_config(cli: &Cli) -> Result<Config, String> {
 }
 
 fn run(cli: &Cli) -> Result<(), String> {
+    // BEFORE THE CONFIG IS LOADED. `artifact-check` is a question about this BINARY and
+    // the tree it was built from; it does not read an indicator, and `scripts/daily-refresh.sh`
+    // has to be able to ask it before it can trust any other command.
+    if matches!(cli.cmd, Cmd::ArtifactCheck) {
+        return artifact_check();
+    }
+
     let cfg = load_config(cli)?;
     let cache = if cli.cache_dir.as_os_str().is_empty() {
         None
@@ -501,6 +530,10 @@ fn run(cli: &Cli) -> Result<(), String> {
             println!("wrote {}", json_path.display());
             println!("wrote {}", html_path.display());
             print_human(&r);
+            // `--no-record` did not ask for a row, so there is nothing to require.
+            if !*no_record {
+                require_recorded(&r);
+            }
             finish_code(&r);
             Ok(())
         }
@@ -581,6 +614,12 @@ fn run(cli: &Cli) -> Result<(), String> {
             let dir = out.clone().unwrap_or_else(|| PathBuf::from("site"));
             gen_site(&dir, history_dir, &r)?;
             print_human(&r);
+            // THE UNATTENDED PATH. This is what the 13:32 timer runs, and the thing
+            // that RECORDS. A refusal here must fail the unit rather than print a
+            // warning into a journal nobody reads.
+            if !*no_record {
+                require_recorded(&r);
+            }
             finish_code(&r);
             Ok(())
         }
@@ -624,7 +663,56 @@ fn run(cli: &Cli) -> Result<(), String> {
             );
             std::process::exit(1);
         }
+        Cmd::ArtifactCheck => {
+            // Handled before the config is read; see the top of `run`.
+            artifact_check()
+        }
     }
+}
+
+/// Answer "was this binary built from the source it names?" and exit non-zero if not.
+///
+/// Split out of `run` so it can be reached BEFORE `Config::load`: the question is about
+/// the artifact, not the model, and a scheduler has to ask it before it can trust
+/// anything else the binary would say.
+fn artifact_check() -> Result<(), String> {
+    let s = bubble_watch::build_id::check();
+    println!("ARTIFACT CHECK — was this binary built from the source it names?");
+    println!("{}", "=".repeat(72));
+    match std::env::current_exe() {
+        Ok(p) => println!("  binary:            {}", p.display()),
+        Err(e) => println!("  binary:            (could not resolve: {})", e),
+    }
+    println!(
+        "  source tree:       {}",
+        bubble_watch::build_id::SOURCE_ROOT
+    );
+    println!(
+        "  baked fingerprint: {}  ({} file(s) at build time)",
+        if s.baked().is_empty() {
+            "(none — this build recorded no fingerprint)"
+        } else {
+            s.baked()
+        },
+        bubble_watch::build_id::EMBEDDED_FILES
+    );
+    match s.on_disk() {
+        Some(d) => println!("  tree fingerprint:  {}", d),
+        None => println!("  tree fingerprint:  (could not be computed)"),
+    }
+    println!("  verdict:           {}", s.verdict_word());
+    println!();
+    println!("  {}", s.summary());
+    if let Some(r) = s.refusal() {
+        println!();
+        println!("  A run from this binary will NOT be recorded to the measurement archive.");
+        println!();
+        println!("  {}", wrap(&r, 72));
+        std::process::exit(5);
+    }
+    println!();
+    println!("  A run from this binary may be recorded: it was built from this tree.");
+    Ok(())
 }
 
 /// Write the servable site: a dashboard, an index, and one report per recorded
@@ -803,6 +891,28 @@ fn finish_code(r: &bubble_watch::model::Report) {
     if r.coverage < 0.5 {
         std::process::exit(4);
     }
+}
+
+/// A run that ASKED to record a measurement and did not record one must FAIL.
+///
+/// WHY THIS EXISTS. The recording rules (offline, and a binary that cannot account
+/// for its own source — see `history::decide_record`) push a `NOT RECORDED` warning
+/// onto the report, and that warning reaches the HTML, the JSON and the terminal.
+/// That is not enough for the unattended path: `scripts/daily-refresh.sh` runs
+/// `site` from systemd and propagates its exit code, so a run that quietly recorded
+/// nothing would leave the archive one day short, the dashboard stale for a day, and
+/// a unit that reports SUCCESS. A silence that looks like success is exactly the
+/// defect the archive rules exist to prevent.
+///
+/// Exit 5 is documented in README.md, SPEC.md and the daily-refresh header.
+fn require_recorded(r: &bubble_watch::model::Report) {
+    if r.trend.recorded {
+        return;
+    }
+    eprintln!();
+    eprintln!("error: this run asked to record a measurement and did NOT record one (exit 5).");
+    eprintln!("       The reason is in the warnings above; data/history/runs.jsonl is unchanged.");
+    std::process::exit(5);
 }
 
 /// Print the per-source fetch failures, if any.

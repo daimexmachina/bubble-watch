@@ -25,6 +25,23 @@
 #   3. `verify` mode re-checks a whole repo against a manifest of hashes, so a leak
 #      can be detected after the fact rather than only prevented.
 #
+# AND THE ARTIFACT, WHICH IS THE OTHER HALF OF THE SAME LEAK
+#   Restoring the SOURCE is not enough: `cargo test --release` below also builds the
+#   `bubble-watch` BINARY target, so before this step existed every falsification
+#   left `target/release/bubble-watch` built from the MUTATED source with a clean
+#   tree — the mutation present in the thing that RUNS, absent from the thing that
+#   is reviewed. `scripts/daily-refresh.sh` rebuilt only when the binary was
+#   MISSING, so the next 13:32 run would have executed that binary and RECORDED its
+#   numbers into `data/history/runs.jsonl`. Measured 2026-10-17: a binary left by a
+#   falsification printed "plus 5 things it cannot measure at all", offline from the
+#   same cache, where the committed source prints 2.
+#
+#   So after the restore this script REBUILDS the binary and VERIFIES it with
+#   `bubble-watch artifact-check`, which exits non-zero unless the binary's baked
+#   source fingerprint is the tree beside it. If a plain rebuild does not repair the
+#   artifact, it forces one (`cargo clean -p bubble-watch`) rather than trusting
+#   cargo to have had work to do; if it still cannot be verified, the run FAILS.
+#
 # USAGE
 #   scripts/falsify.sh <file> <old_substring> <new_substring> <test_filter>
 #
@@ -43,6 +60,10 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
+
+# The binary `cargo test --release` builds from the mutated source. Checked and
+# rebuilt after every falsification; see `rebuild_artifact`.
+BIN="$REPO/target/release/bubble-watch"
 
 die() { printf '\033[31mFAIL\033[0m %s\n' "$*" >&2; exit 1; }
 ok()  { printf '\033[32m ok \033[0m %s\n' "$*"; }
@@ -92,6 +113,53 @@ manifest_verify() {
 }
 
 # --------------------------------------------------------------------------
+# the artifact: rebuild it after a restore, and PROVE the rebuild happened
+# --------------------------------------------------------------------------
+#
+# THE HALF OF THE LEAK THAT RESTORING THE SOURCE DOES NOT COVER. `cargo test --release`
+# builds the BINARY target from the mutated source, so the run above leaves
+# `target/release/bubble-watch` a MUTANT with a clean, hash-verified tree. That binary is
+# invisible from the outside: same path, same name, and `--verify` passes because the
+# SOURCE is fine.
+#
+# WHY IT IS VERIFIED RATHER THAN ASSUMED. Evidence #2 on the card that filed this defect
+# reported `cargo build --release` printing "Finished in 0.07s" and NOT rebuilding the
+# mutant. That specific no-op did not reproduce here (a plain `cargo build --release` after
+# a falsification took 25.8s and reproduced the pre-experiment binary byte for byte), but
+# the fix must not depend on cargo's mood: the rebuild is followed by `artifact-check`,
+# and if that still fails the crate's artifacts are removed and it is built again. A
+# falsification that cannot leave a trustworthy binary FAILS here instead of finishing
+# with an encouraging line.
+ARTIFACT_STALE=0
+
+rebuild_artifact() {
+    if [ ! -x "$BIN" ]; then
+        info "no $BIN to rebuild (nothing was built from the mutation)"
+        ARTIFACT_STALE=0
+        return 0
+    fi
+    ARTIFACT_STALE=1
+    cargo build --release >/dev/null 2>&1 \
+        || die "the binary could not be rebuilt after the restore — it may still be the mutant."
+    if ! "$BIN" artifact-check >/dev/null 2>&1; then
+        info "the rebuild did not repair the artifact; removing this crate's artifacts and retrying"
+        cargo clean -p bubble-watch >/dev/null 2>&1 || true
+        cargo build --release >/dev/null 2>&1 \
+            || die "the binary could not be rebuilt after 'cargo clean -p bubble-watch'."
+    fi
+    local verdict
+    if ! verdict="$("$BIN" artifact-check 2>&1)"; then
+        printf '%s\n' "$verdict" | sed 's/^/      /'
+        die "the binary at $BIN STILL cannot account for the restored source, so it may have been
+      built from the mutation. Do NOT run anything that records a run, and do not commit."
+    fi
+    ARTIFACT_STALE=0
+    ok "artifact rebuilt and verified against the restored source"
+    printf '%s\n' "$verdict" \
+        | grep -E '^  (baked fingerprint|tree fingerprint|verdict)' | sed 's/^/      /' || true
+}
+
+# --------------------------------------------------------------------------
 # mutation mode
 # --------------------------------------------------------------------------
 restore_now() {
@@ -108,6 +176,15 @@ restore_now() {
         exit 1
     fi
     printf '\n      (emergency restore ran for %s; sha %s)\n' "$FILE_UNDER_TEST" "${a:0:16}"
+    # The source is back, but the BINARY was built from the mutated source and the run
+    # was interrupted before `mutate_test` could rebuild it. Say so and repair it: the
+    # interrupt is exactly when a mutant artifact is most likely to be left behind and
+    # least likely to be noticed.
+    if [ "$ARTIFACT_STALE" -eq 1 ]; then
+        printf '\n\033[31mFAIL\033[0m the interrupted run may have left %s built from the MUTATED source\n' "$BIN" >&2
+        printf '      rebuilding it now; if this is interrupted too, run: cargo build --release\n' >&2
+        rebuild_artifact
+    fi
 }
 trap restore_now EXIT
 
@@ -150,6 +227,10 @@ PY
     # shellcheck disable=SC2206
     local fargs=($filter)
 
+    # From here on a mutation can reach the BINARY target, so an interruption from here
+    # to the end of `rebuild_artifact` below leaves a mutant artifact behind.
+    ARTIFACT_STALE=1
+
     local out rc=0
     out="$(cargo test --release "${fargs[@]}" 2>&1)" || rc=$?
 
@@ -189,6 +270,12 @@ PY
     rm -f "$BACKUP" "$BACKUP.sha"
     BACKUP=""
     FILE_UNDER_TEST=""
+
+    # ... AND PROVE THE ARTIFACT TOO. The source being clean is not the property that
+    # matters for the archive: the BINARY is what runs and what gets recorded, and the
+    # `cargo test` above built it from the mutated source. This rebuilds it and refuses
+    # to finish unless it can account for the restored source.
+    rebuild_artifact
     return 0
 }
 

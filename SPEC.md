@@ -199,7 +199,8 @@ bubble-watch sources                      # probe each source, print health
 
 Global: `--config PATH`, `--offline` (cache only), `--cache-dir PATH`,
 `--verbosity`. Exit codes: `0` ok · `2` config error · `3` all sources failed ·
-`4` partial coverage below floor.
+`4` partial coverage below floor · `5` asked to record a measurement and did not
+(offline, or a binary that cannot account for the source tree — see §17).
 
 ## 8. Testing strategy
 
@@ -375,7 +376,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 470 tests green offline; live assertions opt-in.
+- 485 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -770,3 +771,45 @@ without anyone pretending the band is better than it is.
 **Any comparison of two composites from different methodology versions is a comparison of two
 different instruments, not one instrument at two times.** That sentence is now printed by
 `drift`, and it applies to the 30.6 → 43.0 progression in every earlier section of this document.
+
+---
+
+## 17. The archive only accepts runs from a binary built from this source
+
+### 17.1 The measured hazard
+
+`scripts/falsify.sh` breaks a guard, watches the named test fail, restores the mutated source and
+PROVES the restore with sha256. What it did not do was rebuild. `cargo test --release` builds the
+`bubble-watch` BINARY target as well as the tests, so every falsification ended with
+`target/release/bubble-watch` built from the MUTATED source and a clean, hash-verified tree — the
+mutation present in the thing that RUNS, absent from the thing that is REVIEWED.
+
+`scripts/daily-refresh.sh` rebuilt only when that binary was MISSING, so the next 13:32 timer run
+executed the mutant and `site` RECORDED its numbers into `data/history/runs.jsonl`, where it is
+afterwards indistinguishable from a real measurement. MEASURED 2026-10-17, offline from the same
+cache: the binary left behind by a falsification of `src/report/layman.rs` printed "plus 5 things
+it cannot measure at all" where the committed source prints 2.
+
+### 17.2 The rule
+
+**Recording requires that the binary account for its own source.** `build.rs` bakes an FNV-1a/64
+fingerprint of `Cargo.toml`, `Cargo.lock` and every `src/**/*.rs` into the binary
+(`BUBBLE_WATCH_SOURCE_DIGEST`), and `src/build_id.rs` recomputes the fingerprint of that tree at
+run time. `Verified` permits a record; `Mismatch` (the tree has changed since the build) and
+`Unknown` (the tree could not be read, or no fingerprint was baked) both refuse, and the refusal is
+a `NOT RECORDED` warning that reaches the terminal, the JSON and the HTML.
+
+**Content, not mtime.** An mtime comparison fails in both directions: `cp -p`, `git checkout`, a
+restored backup or a build cache can leave content that differs from the binary's while looking
+older, and a `touch`, a fresh clone or a `git stash` cycle makes byte-identical content look newer.
+The fingerprint compares what actually decides the binary's behaviour, so a `touch` neither blocks a
+run nor hides one.
+
+**The command.** `bubble-watch artifact-check` prints the baked fingerprint, the tree's fingerprint
+and the verdict, and exits `5` when they disagree. It runs BEFORE the config is read, so a scheduler
+can ask it first. `scripts/daily-refresh.sh` rebuilds when the check fails and REFUSES to run
+(exit 5) if it still fails; `scripts/falsify.sh` rebuilds after every verified restore and checks
+the result, forcing `cargo clean -p bubble-watch` if a plain rebuild does not repair it.
+
+Exit code `5` covers any run that ASKED to record and did not — including an offline run, which
+records nothing by design. An unattended run therefore cannot fail quietly: the unit fails.

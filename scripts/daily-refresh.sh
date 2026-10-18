@@ -6,9 +6,10 @@
 # hallucinate. The tool itself refuses to impute a missing source, so a FRED
 # outage degrades to a reported gap rather than a wrong number.
 #
-# Exit codes are the tool's own (2 config, 3 all sources failed, 4 coverage
-# below floor). They are propagated so systemd records a failed unit instead of
-# a silent success.
+# Exit codes are the tool's own (2 config, 3 all sources failed, 4 coverage below
+# floor, 5 asked to record and did not) plus 5 from this script when the binary
+# cannot be made to account for the source tree. They are propagated so systemd
+# records a failed unit instead of a silent success.
 set -euo pipefail
 
 REPO=/home/daim/workspace/bubble-watch
@@ -18,9 +19,38 @@ cd "$REPO"
 # NOT used here.
 BIN="$REPO/target/release/bubble-watch"
 
-# Rebuild only if the binary is missing (keeps the timer fast and predictable).
+# REBUILD WHEN THE BINARY CANNOT ACCOUNT FOR THE SOURCE TREE, not only when it is
+# missing — the old `[ ! -x "$BIN" ]` test is why this hazard existed.
+#
+# `scripts/falsify.sh` mutates a source file, runs `cargo test --release` (which builds
+# the BINARY target from the mutated source too), then restores and hash-verifies the
+# SOURCE. Restoring the source leaves the mutation PRESENT IN THE THING THAT RUNS and
+# ABSENT FROM THE THING THAT IS REVIEWED: the tree is clean, `--verify` passes, and the
+# binary at this path is a mutant. Measured 2026-10-17: a binary left behind by a
+# falsification printed "plus 5 things it cannot measure at all", offline from the same
+# cache, where the committed source prints 2. The old check here rebuilt only when the
+# binary was MISSING, so the next 13:32 run would have executed that binary and
+# `site` would have RECORDED it.
+#
+# `artifact-check` compares the fingerprint of the source tree baked into the binary at
+# build time with the tree on disk now, and exits non-zero when they differ — which is
+# also what a source edit that was never built looks like. A missing binary is built, a
+# binary that cannot account for the tree is rebuilt, and NOTHING is run until the check
+# passes: a row written to `data/history/runs.jsonl` by a binary built from other source
+# is a falsified measurement in the archive, and afterwards it is indistinguishable from
+# a real one.
 if [ ! -x "$BIN" ]; then
-  cargo build --release >/dev/null 2>&1
+  echo "no binary at $BIN — building"
+  cargo build --release
+elif ! "$BIN" artifact-check >/dev/null 2>&1; then
+  echo "binary does not account for the source tree — rebuilding"
+  cargo build --release
+fi
+
+if ! "$BIN" artifact-check; then
+  echo "REFUSING TO RUN: $BIN is not this tree's build, so a run from it would record a" >&2
+  echo "measurement this source never produced. Nothing was recorded." >&2
+  exit 5
 fi
 
 # Regenerate the site, appending this run to the archive and rebuilding the

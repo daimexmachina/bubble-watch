@@ -181,6 +181,72 @@ pub fn append(dir: &Path, point: &TrendPoint) -> Result<(), String> {
     Ok(())
 }
 
+/// One run's recording decision, with every reason a run was refused.
+///
+/// A STRUCT RATHER THAN A BOOLEAN because a refusal that nobody can hear is its own
+/// defect: each reason travels with the decision and is pushed onto the report, so
+/// it reaches the HTML, the JSON and the terminal. The offline refusal was once
+/// silent on the terminal and cost most of a day of diagnosis.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordDecision {
+    pub record: bool,
+    pub refusals: Vec<String>,
+}
+
+/// THE RULES THAT DECIDE WHETHER A MEASUREMENT MAY ENTER THE ARCHIVE.
+///
+/// PURE, and pulled out of `pipeline_with_history` on purpose. These are the two
+/// rules that stand between the archive and a number that was never measured, and
+/// a rule buried in the middle of an IO function can only be tested by running a
+/// whole pipeline. Here each is exercised, and falsified, by name.
+///
+/// RULE 1 — an OFFLINE run never records. It read the local cache; it did not
+/// consult the world. Appending it files a measurement that was never taken, under
+/// today's date, where it cannot be told apart from the real daily run. Measured
+/// 2026-10-16: the archive held FOURTEEN rows for that day against one for every
+/// other day, several of them duplicates from offline diagnostic runs with
+/// identical composites.
+///
+/// RULE 2 — a binary that cannot account for its own source never records. Its
+/// numbers may come from code that is no longer in the tree, which is exactly the
+/// state a leaked falsification leaves behind (mutant binary, restored source) and
+/// the state an unbuilt edit leaves behind. See `crate::build_id`.
+///
+/// The rules are reported INDEPENDENTLY and not short-circuited, so a run that is
+/// both offline and built from other source says so once for each fact rather than
+/// naming the one that happened to be checked first.
+pub fn decide_record(
+    requested: bool,
+    offline: bool,
+    artifact: &crate::build_id::Status,
+) -> RecordDecision {
+    if !requested {
+        // A display refresh is a read of the archive, not a write to it. It has
+        // nothing to refuse, and it must stay silent about rules that did not apply.
+        return RecordDecision {
+            record: false,
+            refusals: Vec::new(),
+        };
+    }
+    let mut refusals: Vec<String> = Vec::new();
+    if offline {
+        refusals.push(
+            "NOT RECORDED: this run was offline, so it read the local cache rather than the world. \
+             Filing it would have put a measurement that was never taken into the archive, under \
+             today's date, where it could not be told apart from the real daily run. Re-run without \
+             --offline to record a measurement."
+                .to_string(),
+        );
+    }
+    if let Some(r) = artifact.refusal() {
+        refusals.push(r);
+    }
+    RecordDecision {
+        record: refusals.is_empty(),
+        refusals,
+    }
+}
+
 /// Whole days between two YYYY-MM-DD dates, or None if either is unparseable.
 ///
 /// Returns a signed value: positive when `to` is later than `from`.
@@ -1568,6 +1634,119 @@ mod tests {
         assert!(d.phase_changed);
         assert_eq!(d.phase_then, "early");
         assert_eq!(d.phase_now, "mid");
+    }
+
+    #[test]
+    fn a_verified_binary_online_run_may_record_and_says_nothing() {
+        // The complement of the two refusal tests: the rules must not become a guard
+        // that refuses everything. An online run from a verified binary records, and
+        // it says nothing, because nothing was wrong.
+        let ok = crate::build_id::Status::Verified {
+            digest: "0123456789abcdef".into(),
+            files: 41,
+        };
+        let d = decide_record(true, false, &ok);
+        assert!(
+            d.record,
+            "a verified binary online must be allowed to record"
+        );
+        assert!(d.refusals.is_empty(), "{:?}", d.refusals);
+    }
+
+    #[test]
+    fn a_run_whose_binary_does_not_match_the_tree_may_not_record() {
+        // THE HAZARD THIS CARD EXISTS FOR. scripts/falsify.sh restores the source and
+        // leaves the BINARY built from the mutated source; daily-refresh.sh used to
+        // run that binary and RECORD its numbers. A binary whose baked fingerprint
+        // differs from the tree must not be able to write to the archive, and the
+        // refusal must be loud, not silent.
+        let stale = crate::build_id::Status::Mismatch {
+            embedded: "aaaaaaaaaaaaaaaa".into(),
+            on_disk: "bbbbbbbbbbbbbbbb".into(),
+            files: 41,
+        };
+        let d = decide_record(true, false, &stale);
+        assert!(
+            !d.record,
+            "a binary built from other source must not record a measurement"
+        );
+        assert_eq!(d.refusals.len(), 1);
+        assert!(
+            d.refusals[0].starts_with("NOT RECORDED"),
+            "the refusal must be recognisable as one: {}",
+            d.refusals[0]
+        );
+        assert!(
+            d.refusals[0].contains("aaaaaaaaaaaaaaaa")
+                && d.refusals[0].contains("bbbbbbbbbbbbbbbb"),
+            "it must name both fingerprints so the operator can see WHICH build is in place: {}",
+            d.refusals[0]
+        );
+    }
+
+    #[test]
+    fn an_unverifiable_binary_may_not_record_either() {
+        // "We could not tell" is not a reason to file a number. The failure direction
+        // that matters here is the reassuring one: a mutation that is assumed absent.
+        let unknown = crate::build_id::Status::Unknown {
+            embedded: String::new(),
+            reason: "BUBBLE_WATCH_SOURCE_DIGEST was empty at compile time".into(),
+        };
+        let d = decide_record(true, false, &unknown);
+        assert!(!d.record);
+        assert!(d.refusals[0].starts_with("NOT RECORDED"));
+    }
+
+    #[test]
+    fn the_recording_rules_are_reported_independently() {
+        // A run that is BOTH offline and built from other source must name both
+        // facts. Reporting only the first one checked would leave the operator
+        // fixing one problem and re-running into the other.
+        let stale = crate::build_id::Status::Mismatch {
+            embedded: "aaaaaaaaaaaaaaaa".into(),
+            on_disk: "bbbbbbbbbbbbbbbb".into(),
+            files: 41,
+        };
+        let d = decide_record(true, true, &stale);
+        assert!(!d.record);
+        assert_eq!(d.refusals.len(), 2, "{:?}", d.refusals);
+        assert!(d.refusals[0].contains("offline"), "{}", d.refusals[0]);
+        assert!(
+            d.refusals[1].contains("MISMATCH") || d.refusals[1].contains("not built from"),
+            "{}",
+            d.refusals[1]
+        );
+    }
+
+    #[test]
+    fn a_display_refresh_records_nothing_and_says_nothing() {
+        // `--no-record` is a READ of the archive. It must not record, and it must not
+        // emit a refusal either: nothing was refused, and a warning about a write
+        // that was never attempted is noise that teaches readers to skip warnings.
+        let stale = crate::build_id::Status::Mismatch {
+            embedded: "aaaaaaaaaaaaaaaa".into(),
+            on_disk: "bbbbbbbbbbbbbbbb".into(),
+            files: 41,
+        };
+        for (offline, s) in [
+            (false, stale.clone()),
+            (true, stale.clone()),
+            (
+                false,
+                crate::build_id::Status::Verified {
+                    digest: "x".repeat(16),
+                    files: 1,
+                },
+            ),
+        ] {
+            let d = decide_record(false, offline, &s);
+            assert!(!d.record);
+            assert!(
+                d.refusals.is_empty(),
+                "a no-record run has nothing to refuse: {:?}",
+                d.refusals
+            );
+        }
     }
 
     #[test]
