@@ -87,8 +87,24 @@ pub fn pipeline_with_history(
     let (archive, mut warnings) = history::load(history_dir);
     let generated_at = now_iso8601();
 
+    // `recorded` IS THE OUTCOME, NOT THE REQUEST, AND THAT IS WHY `false` IS PASSED HERE.
+    //
+    // It is set true below, and only by a successful `append`. Passing `record` (the request) made
+    // `trend.recorded` true for a run the rules had just REFUSED, which broke the same field in three
+    // places at once: the JSON claimed `"recorded": true` next to a NOT RECORDED warning, and
+    // `require_recorded` in main.rs — whose entire job is to fail the unattended path — read the
+    // request, returned early, so `report` and `site` exited 0 having appended nothing. Measured
+    // 2026-10-17 (t_d8439440): `--offline report` printed NOT RECORDED, left the archive byte-identical,
+    // and wrote `"recorded": true` into the probe JSON. Under systemd that is a unit reporting SUCCESS
+    // with no measurement taken, which is the silence-that-looks-like-success the archive rules exist
+    // to prevent.
+    //
+    // The alternative fix — leave the request here and have `require_recorded` scan for a NOT RECORDED
+    // warning — was rejected. It would leave this field meaning the REQUEST in the JSON while the
+    // terminal meaning the OUTCOME, and it would not catch a failed `append`, whose warning is
+    // "this run was NOT recorded to the archive" and is not the string `decide_record` emits.
     let mut report =
-        report::build_with_history(readings, &obs, cfg, &generated_at, &archive, record, true);
+        report::build_with_history(readings, &obs, cfg, &generated_at, &archive, false, true);
 
     // Merge load warnings with the trend the report computed for itself.
     report.trend.warnings.append(&mut warnings);

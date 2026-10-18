@@ -67,7 +67,7 @@ for the source tree it sits in).
 Tests:
 
 ```bash
-cargo test                                         # 485 tests, no network required
+cargo test                                         # 486 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
