@@ -148,6 +148,21 @@ enum Cmd {
         /// fixes and finding no way to avoid polluting the series.
         #[arg(long)]
         no_record: bool,
+        /// Also write the dated per-run report (HTML + JSON) into this directory.
+        ///
+        /// WHY THIS EXISTS, and it is a performance fix with a correctness bonus. The daily script used
+        /// to run the FULL pipeline THREE times — `site` to record and rebuild the dashboard, then
+        /// `score --json` purely to read a date out of the run, then `report` to write the dated files —
+        /// and each invocation re-fetches every source from scratch. Measured 2026-10-17: that pushed
+        /// the job past its 900 s `TimeoutStartSec` and systemd killed it mid-`report`, so the day's
+        /// per-run report was never written at all (`start operation timed out`).
+        ///
+        /// The date is taken from THIS run's own `generated_at`, which also removes a hazard the shell
+        /// used to carry: `date +%F` is the LOCAL date while the archive records UTC, so after 17:00
+        /// Pacific the two disagree and a report lands under one name beside an archive row dated
+        /// another. Deriving both from the same instant makes that impossible rather than documented.
+        #[arg(long)]
+        report_out: Option<PathBuf>,
     },
     /// Report which recent days have NO archive row.
     ///
@@ -600,6 +615,7 @@ fn run(cli: &Cli) -> Result<(), String> {
             out,
             history_dir,
             no_record,
+            report_out,
         } => {
             // Generate today's run, then rebuild the whole site so the dashboard reflects it
             // immediately. Recording is now opt-out: a re-render to LOOK at the dashboard is a read,
@@ -613,6 +629,21 @@ fn run(cli: &Cli) -> Result<(), String> {
             );
             let dir = out.clone().unwrap_or_else(|| PathBuf::from("site"));
             gen_site(&dir, history_dir, &r)?;
+
+            // The dated per-run report, from the SAME run that just recorded and rebuilt the site.
+            // One fetch, two consumers — this is what removes the second and third full pipelines.
+            if let Some(rdir) = report_out {
+                let date = bubble_watch::history::date_of(&r.generated_at);
+                std::fs::create_dir_all(rdir).map_err(|e| e.to_string())?;
+                let json_path = rdir.join(format!("ai-bubble-watch-{}.json", date));
+                let html_path = rdir.join(format!("ai-bubble-watch-{}.html", date));
+                std::fs::write(&json_path, report::json::to_json(&r, false))
+                    .map_err(|e| e.to_string())?;
+                std::fs::write(&html_path, report::html::render(&r)).map_err(|e| e.to_string())?;
+                println!("wrote {}", json_path.display());
+                println!("wrote {}", html_path.display());
+            }
+
             print_human(&r);
             // THE UNATTENDED PATH. This is what the 13:32 timer runs, and the thing
             // that RECORDS. A refusal here must fail the unit rather than print a

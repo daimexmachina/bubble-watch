@@ -118,28 +118,25 @@ if ! "$BIN" artifact-check; then
   exit 5
 fi
 
-# Regenerate the site, appending this run to the archive and rebuilding the
-# dashboard. Output goes to stdout, captured by journald.
-"$BIN" site --out "$REPO/site" --history-dir "$REPO/data/history"
-rc=$?
-
-# Also keep a dated copy of the JSON report for offline inspection.
+# ONE pipeline run with THREE consumers: it records the measurement, rebuilds the
+# dashboard, and writes the dated per-run report.
 #
-# The DATE COMES FROM THE RUN, NOT FROM THE SHELL. Using `date +%F` takes the LOCAL
-# date, while the archive records runs in UTC — so after 17:00 Pacific the two
-# disagree and a report gets filed under yesterday's name next to an archive entry
-# dated tomorrow. Deriving both from the same generated_at keeps them consistent.
-RUN_DATE="$("$BIN" score --json 2>/dev/null \
-  | python3 -c 'import json,sys; print(json.load(sys.stdin)["generated_at"][:10])' 2>/dev/null \
-  || true)"
-# Fall back to the local date only if the run could not be read, and say so.
-if [ -z "$RUN_DATE" ]; then
-  RUN_DATE="$(date +%F)"
-  echo "WARNING: could not read generated_at from the run; falling back to the local date $RUN_DATE" >&2
-fi
-
-"$BIN" report --out "$REPO/out" --name "ai-bubble-watch-$RUN_DATE" \
-  --history-dir "$REPO/data/history" --no-record >/dev/null || true
+# THIS USED TO BE THREE SEPARATE INVOCATIONS -- `site` to record and rebuild the site,
+# `score --json` purely to read a date out of the run, and `report` to write the dated
+# files -- and EACH one re-fetched every source from scratch, because most sources have
+# no TTL and an online fetch always hits the network. Measured 2026-10-17: the three
+# fetches pushed the job past its 900 s TimeoutStartSec and systemd killed it mid-`report`
+# ("start operation timed out"), so that day's per-run report was NEVER WRITTEN. The
+# dashboard and the archive row still landed, which is what made it quiet.
+#
+# The DATE COMES FROM THE RUN, NOT THE SHELL. `date +%F` takes the LOCAL date while the
+# archive records runs in UTC, so after 17:00 Pacific the two disagree and a report gets
+# filed under yesterday's name beside an archive entry dated tomorrow. That is now
+# STRUCTURAL -- the binary derives the filename from its own generated_at -- rather than
+# a rule this script has to remember, which is why the RUN_DATE block is gone rather than
+# rewritten.
+"$BIN" site --out "$REPO/site" --history-dir "$REPO/data/history" --report-out "$REPO/out"
+rc=$?
 
 # ---------------------------------------------------------------- gap check ----
 #

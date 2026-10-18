@@ -172,3 +172,45 @@ fn a_refused_record_request_exits_5() {
         failures.join("\n  ")
     );
 }
+
+#[test]
+fn the_unattended_run_fetches_the_network_ONCE() {
+    // THE OUTAGE THIS GUARDS, measured 2026-10-17. `site`, `report` and `score` each run the full
+    // pipeline, and every source without a TTL re-fetches on an online run — so N invocations cost N
+    // complete network passes. The daily script was making THREE: `site` to record and rebuild the
+    // dashboard, `score --json` purely to read a date out of the run, and `report` to write the dated
+    // files. That tipped the job past its 900 s TimeoutStartSec and systemd killed it mid-`report`
+    // ("start operation timed out"), so that day's per-run report was NEVER WRITTEN. The dashboard and
+    // the archive row still landed, which is exactly what made the failure quiet.
+    //
+    // The fix collapsed all three into one `site` run with `--report-out`. This asserts the count stays
+    // at one, because the regression is a two-line edit away and costs 5-10 minutes of budget that
+    // nothing else reports on.
+    let script = std::fs::read_to_string("scripts/daily-refresh.sh")
+        .expect("scripts/daily-refresh.sh must be readable from the crate root");
+
+    let pipeline_runs: Vec<&str> = script
+        .lines()
+        .map(|l| l.trim())
+        .filter(|t| {
+            t.starts_with("\"$BIN\" site")
+                || t.starts_with("\"$BIN\" report")
+                || t.starts_with("\"$BIN\" score")
+        })
+        .collect();
+
+    assert_eq!(
+        pipeline_runs.len(),
+        1,
+        "the unattended job must complete the network fetch ONCE per run; it makes {}. Each extra \
+         invocation is another full pass over every keyless source. Found: {:#?}",
+        pipeline_runs.len(),
+        pipeline_runs
+    );
+    assert!(
+        pipeline_runs[0].contains("--report-out"),
+        "and that single run must also emit the dated report, or the dated files stop being written \
+         while everything else keeps working: {:?}",
+        pipeline_runs[0]
+    );
+}
