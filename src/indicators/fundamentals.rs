@@ -2731,10 +2731,12 @@ impl Indicator for BuildoutOppositionNews {
             };
         }
         let change = (recent - prior) / prior * 100.0;
+        // Scored from the anchors; same defect and same fix as the builders channel above.
+        let stress = crate::score::interpolate(change, &ic.anchors);
         let peak = vals.iter().cloned().fold(f64::MIN, f64::max);
 
         Reading::Scored {
-            stress: 0.0,
+            stress,
             value: change,
             unit: "% change in news volume for data-centre withdrawals, trailing 30 days vs the 30 before"
                 .into(),
@@ -2843,6 +2845,11 @@ impl Indicator for LeveragedBuilderStress {
         }
 
         let mean_dd = per_name.iter().map(|(_, d)| d).sum::<f64>() / per_name.len() as f64;
+        // Scored from the anchors. This was hard-coded to 0.0 while the series carried weight 0;
+        // promoting the weight without promoting the computation left six points of weight counted at
+        // zero stress, which DILUTES the composite rather than adding to it — a silent understatement
+        // of every reading, not a missing channel.
+        let stress = crate::score::interpolate(mean_dd, &ic.anchors);
         let worst =
             per_name.iter().cloned().fold(
                 ("".to_string(), 0.0_f64),
@@ -2854,7 +2861,7 @@ impl Indicator for LeveragedBuilderStress {
             .collect();
 
         Reading::Scored {
-            stress: 0.0,
+            stress,
             value: mean_dd,
             unit: "% below 52-week high, equal-weighted across debt-funded AI builders".into(),
             detail: format!(
@@ -4311,6 +4318,45 @@ mod tests {
             Reading::Unavailable { reason } => assert!(reason.contains("10"), "{reason}"),
             other => panic!("expected Unavailable, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn a_promoted_channel_actually_scores_from_its_anchors() {
+        // THE DEFECT THIS GUARDS, found 2026-10-27 and made by me in the commit that promoted these
+        // channels. Three series were raised from weight 0 to real weights; `public_attention` was
+        // given a computed stress, but the builders and withdrawal channels kept the literal
+        // `stress: 0.0` they carried from their unscored days. A weight with zero stress does not add
+        // evidence — it DILUTES, because the weight enters the denominator while contributing nothing
+        // to the numerator. The builders channel alone understated every reading by about 2.4 points,
+        // and nothing failed: the report simply printed a quieter score.
+        //
+        // Asserting the value alone would not catch it, because the value was always right. The test
+        // has to assert that the STRESS RESPONDS to the anchors.
+        let cfg = shipped();
+        let deep = builders(6, -60.0);
+        let shallow = builders(6, -5.0);
+        let s_deep = match LeveragedBuilderStress.evaluate(&Ctx {
+            obs: &deep,
+            cfg: &cfg,
+        }) {
+            Reading::Scored { stress, .. } => stress,
+            other => panic!("expected Scored, got {other:?}"),
+        };
+        let s_shallow = match LeveragedBuilderStress.evaluate(&Ctx {
+            obs: &shallow,
+            cfg: &cfg,
+        }) {
+            Reading::Scored { stress, .. } => stress,
+            other => panic!("expected Scored, got {other:?}"),
+        };
+        assert!(
+            s_deep > s_shallow + 20.0,
+            "a 60% drawdown must read as materially more stress than a 5% one; got {s_deep} vs {s_shallow}"
+        );
+        assert!(
+            s_deep > 50.0,
+            "a 60% drawdown must not read as near-zero stress; got {s_deep} — is stress still hard-coded?"
+        );
     }
 
     #[test]
