@@ -124,6 +124,24 @@ pub const YAHOO_SPECS: &[YahooSpec] = &[
         range: "1y",
         interval: "1d",
     },
+    // ---- CHINA: the AI complex against the broad market ----------------------
+    // Reachability measured FIRST, 2026-10-27, because the obvious route does not work: Yahoo returns
+    // ONE data point for the mainland indices (000688.SS STAR50, 000300.SS CSI300, 399006.SZ ChiNext)
+    // at range 1y, 2y AND max, so no drawdown is computable from them; %5EHSTECH, sh000300 and
+    // sh000688 are 404. The US-listed vehicles carry full daily history, so the relative measure is
+    // built from those.
+    YahooSpec {
+        key: "CQQQ_1y_d",
+        symbol: "CQQQ",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "FXI_1y_d",
+        symbol: "FXI",
+        range: "1y",
+        interval: "1d",
+    },
 ];
 
 /// FRED series the model may want. All optional by construction.

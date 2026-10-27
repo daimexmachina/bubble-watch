@@ -1232,6 +1232,23 @@ rationale = "NEWS SALIENCE OF DATA-CENTRE WITHDRAWALS, from the free GDELT doc A
 anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS INTENTIONALLY EMPTY AND NO ANCHOR IS EVER CONSULTED. This entry exists so the series is fetched, reported and rendered; it is arithmetically incapable of moving the composite or the coverage fraction, because score::composite excludes weight-0 indicators from both. It is NOT a placeholder awaiting a scale. If a future version wants to score withdrawal salience, the pre-registered lead/lag gate must be run FIRST — the sibling sentiment channel was tested that way and FAILED (lag +7, p = 0.36)."
 
 [[indicator]]
+id = "china_ai_derating"
+group = "pricing"
+label = "China AI complex de-rating against the broad Chinese market (first non-US market measure)"
+weight = 5.0
+unit = "% below its own 52-week high for China tech relative to broad China"
+source = "yahoo"
+# SORTED ASCENDING BY DRAWDOWN (negative percentages). A DEEPER relative drawdown is MORE stress: this
+# is the REALISATION leg, the same coding valuation, volatility, credit and the builders channel use.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED: 0 is "Chinese AI is at its relative high"; -15 is ordinary
+# noise for a ratio; -30 is roughly where a sector re-rating becomes unambiguous and is the level
+# measured on 2026-10-27 for CQQQ/FXI; -45 is approaching a structural de-rating; -60 is a full
+# repudiation of the theme.
+anchors = [[-60.0, 95.0], [-45.0, 80.0], [-30.0, 62.0], [-15.0, 38.0], [0.0, 18.0]]
+rationale = "CHINA TECHNOLOGY VERSUS BROAD CHINA, from the CQQQ/FXI ratio measured as a drawdown from its own 52-week peak. WHY RELATIVE AND NOT ABSOLUTE: Reuters reported the STAR50 down about 40% from its July high with roughly $480bn erased, but Morgan Stanley attributes part of that slide to TRUST TAXES, a weakening economy and global volatility rather than to AI. Dividing by the broad Chinese market cancels the macro and policy component and leaves the AI-specific re-rating, which is the part that is evidence about AI rather than about China. WHY US-LISTED VEHICLES AND NOT THE MAINLAND INDICES: measured 2026-10-27 through the tool's own Fetcher, Yahoo returns ONE data point for 000688.SS (STAR50), 000300.SS (CSI300) and 399006.SZ (ChiNext) at range 1y, 2y AND max — no drawdown is computable from a single row — while %5EHSTECH, sh000300 and sh000688 are 404, and the one free mainland feed tried (Eastmoney push2his) returned 400 daily bars once and then dropped every retry. CQQQ and FXI carry 251 daily points each. MEASURED 2026-10-27: the ratio sat 32.7% below its own peak against a 1.2% drawdown in the S&P 500, corroborating the AI-specific part of the reporting independently of the article. THE FIRST NON-US MARKET MEASURE in this model, which was 96% US-sourced when that was measured on 2026-09-20. DIRECTION IS AN ASSERTED ASSUMPTION, NOT A GATED FINDING: a deeper relative drawdown is coded as MORE stress, consistent with the REALISATION coding used elsewhere, but no lead/lag gate was run for this channel and none is possible on one year of data. LIMITS: (1) US-listed ETFs carry ADR, FX and US-sentiment exposure, and their peaks do not coincide with STAR50's; (2) one year of history only, so the 2021-22 China tech bust is not in the window; (3) this is a MARKET measure — it says what has been priced, not what will be."
+anchor_note = "SORTED ASCENDING BY THE DRAWDOWN PERCENTAGE. 2026-10-27: the ratio read -32.7% from its peak, which lands between the -30 and -45 anchors and scores in the low-to-mid 60s. The anchors are stated reference points (relative high, ordinary noise, unambiguous re-rating, structural de-rating, full repudiation) rather than values fitted to any outcome."
+
+[[indicator]]
 id = "leveraged_builder_stress"
 group = "pricing"
 label = "Debt-funded AI builders — drawdown (the BORROWERS, not the lenders)"
@@ -1264,7 +1281,7 @@ anchor_note = "WEIGHT 0 — EMPTY ANCHORS ON PURPOSE. This series is fetched, re
 # cross-version comparison, so both are an OWNER decision rather than a loop's. Each ships measured,
 # rendered and auditable at weight 0.0, with a ladder MEASURED from the observed distribution and
 # PROPOSED in its rationale but held OUT of `anchors`, which stay empty and are enforced empty by an
-# `assert!` inside each indicator. Total weight is therefore unchanged at 196 and `schema_version` is
+# `assert!` inside each indicator. Total weight is 214 at methodology 2.8 and `schema_version` is
 # NOT bumped — a bump is required only when total weight changes.
 #
 # HOW THE NUMBERS WERE MEASURED — one fetch per series, 2026-10-17, through this tool's own keyed

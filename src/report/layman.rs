@@ -65,6 +65,7 @@ fn plain_name(id: &str) -> &'static str {
         // distinction is the whole reason this indicator reads a court docket rather than the news.
         "distress_events" => "whether AI companies are actually going bust, counted from the court filings that record a bankruptcy rather than from stories about one",
         "public_attention" => "how many people are looking up AI-bubble topics on Wikipedia — reported but deliberately not counted, because people tend to look things up after they are news rather than before",
+        "china_ai_derating" => "how far Chinese AI shares have fallen compared with the rest of the Chinese market — the first non-US market measure in this tool",
         "buildout_opposition_news" => "how often the news reports data-centre plans being WITHDRAWN — reported but deliberately not counted, because this is the local-permitting layer the model used to miss entirely",
         "leveraged_builder_stress" => "how far the heavily borrowed AI builders have fallen from their own highs — the BORROWERS, reported but deliberately not counted until a lead/lag test says it should be",
         "funding_gap" => "how much AI companies spend compared with what they sell",

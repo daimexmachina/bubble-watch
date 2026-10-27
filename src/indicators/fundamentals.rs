@@ -2896,6 +2896,119 @@ impl Indicator for LeveragedBuilderStress {
     }
 }
 
+/// China's AI complex de-rating against the broad Chinese market.
+pub struct ChinaAiDerating;
+
+impl Indicator for ChinaAiDerating {
+    fn id(&self) -> &'static str {
+        "china_ai_derating"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "china_ai_derating is weight 0 and must carry NO anchors, but the config supplies {}.",
+                ic.anchors.len()
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "china_ai_derating is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+
+        let Some(tech) = ctx.obs.yahoo.get("CQQQ_1y_d") else {
+            return Reading::Unavailable {
+                reason: "no CQQQ (China technology) series was retrieved, so whether Chinese AI \
+                         equities are de-rating against their own market is unknown"
+                    .into(),
+            };
+        };
+        let Some(broad) = ctx.obs.yahoo.get("FXI_1y_d") else {
+            return Reading::Unavailable {
+                reason:
+                    "no FXI (China large-cap) series was retrieved, so the broad-market leg of \
+                         the China relative measure is missing"
+                        .into(),
+            };
+        };
+
+        // Pair on DATE, not index: the series can differ in length, and pairing by position would
+        // silently compare a Monday against a Friday.
+        let bm: std::collections::BTreeMap<&str, f64> = broad
+            .points
+            .iter()
+            .map(|p| (p.date.as_str(), p.value))
+            .collect();
+        let ratio: Vec<f64> = tech
+            .points
+            .iter()
+            .filter_map(|p| bm.get(p.date.as_str()).map(|b| p.value / b))
+            .filter(|r| r.is_finite() && *r > 0.0)
+            .collect();
+        if ratio.len() < 60 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "only {} overlapping CQQQ/FXI observations; fewer would let one bad print set the \
+                     measure",
+                    ratio.len()
+                ),
+            };
+        }
+        let last = *ratio.last().unwrap();
+        let peak = ratio.iter().cloned().fold(f64::MIN, f64::max);
+        if peak <= 0.0 {
+            return Reading::Unavailable {
+                reason: "the CQQQ/FXI ratio has no positive peak in the window".into(),
+            };
+        }
+        let drawdown = (last / peak - 1.0) * 100.0;
+        let stress = crate::score::interpolate(drawdown, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: drawdown,
+            unit: "% below its own 52-week high for China tech relative to broad China".into(),
+            detail: format!(
+                "China technology (CQQQ) sits at {:.4} against broad China (FXI), {:.1}% below the \
+                 ratio's own 52-week peak of {:.4} across {} paired observations. WHY RELATIVE: the \
+                 absolute China drawdown is contaminated — Morgan Stanley attributes part of the \
+                 slide to TRUST TAXES, a weakening economy and global volatility rather than to AI — \
+                 so dividing by the broad market cancels the macro and policy component and leaves \
+                 the AI-specific re-rating. WHY US-LISTED VEHICLES: measured 2026-10-27, Yahoo \
+                 returns ONE data point for the mainland indices (STAR50, CSI300, ChiNext) at every \
+                 range, so no drawdown is computable from them, while CQQQ and FXI carry full daily \
+                 history. MEASURED CONTEXT: Reuters put the STAR50 40% below its July high with about \
+                 $480bn erased while the S&P 500 sat 1.2% below its own, and this ratio read -32.7% \
+                 from its peak, corroborating the AI-specific part of that story independently. \
+                 DIRECTION: a deeper relative drawdown is MORE stress — the same REALISATION coding \
+                 used by valuation, volatility, credit and the builders channel. LIMITS: (1) these \
+                 are US-listed ETFs, so they carry ADR, FX and US-sentiment exposure and their peaks \
+                 do not coincide with STAR50's; (2) one year of history only, so no 2021-22 China \
+                 tech bust is in the window; (3) a MARKET measure — it says what has been priced, \
+                 not what will be.",
+                last, drawdown, peak, ratio.len()
+            ),
+            provenance: crate::model::Provenance {
+                source: "yahoo".into(),
+                endpoint: "chart API, 1y daily: CQQQ / FXI".into(),
+                as_of: tech.points.last().map(|p| p.date.clone()).unwrap_or_default(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4087,6 +4200,116 @@ mod tests {
                 );
             }
             other => panic!("expected Scored, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn the_china_ratio_pairs_by_DATE_and_refuses_a_thin_window() {
+        // Two things can go wrong and only one of them is obvious. Pairing by INDEX rather than date
+        // would compare a Monday against a Friday whenever the two legs differ in length — silently,
+        // and with plausible-looking numbers. And a window too short would let one bad print set a
+        // drawdown that is then scored as a whole-quarter judgement.
+        let cfg = shipped();
+        let dates: Vec<String> = (0..80)
+            .map(|i| format!("2026-{:02}-{:02}", i / 28 + 1, i % 28 + 1))
+            .collect();
+
+        // CQQQ has an EXTRA leading row that FXI does not. Index pairing would shift every value.
+        let mut tech_pts: Vec<crate::model::Point> = vec![crate::model::Point {
+            date: "2025-01-01".into(),
+            value: 999.0,
+        }];
+        tech_pts.extend(dates.iter().map(|d| crate::model::Point {
+            date: d.clone(),
+            value: 100.0,
+        }));
+        let broad_pts: Vec<crate::model::Point> = dates
+            .iter()
+            .map(|d| crate::model::Point {
+                date: d.clone(),
+                value: 50.0,
+            })
+            .collect();
+
+        let mut obs = Observations::default();
+        obs.yahoo.insert(
+            "CQQQ_1y_d".into(),
+            crate::model::Series {
+                provenance: crate::model::Provenance {
+                    source: "t".into(),
+                    endpoint: "t".into(),
+                    as_of: String::new(),
+                    retrieved_at: String::new(),
+                },
+                points: tech_pts,
+            },
+        );
+        obs.yahoo.insert(
+            "FXI_1y_d".into(),
+            crate::model::Series {
+                provenance: crate::model::Provenance {
+                    source: "t".into(),
+                    endpoint: "t".into(),
+                    as_of: String::new(),
+                    retrieved_at: String::new(),
+                },
+                points: broad_pts,
+            },
+        );
+        let ctx = Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        };
+        match ChinaAiDerating.evaluate(&ctx) {
+            Reading::Scored { detail, value, .. } => {
+                // Flat series -> ratio 2.0 everywhere -> 0% drawdown. The 999.0 leading row must not
+                // leak in, which is what date pairing guarantees.
+                assert!(value.abs() < 1e-9, "expected a flat ratio, got {value}");
+                assert!(detail.contains("paired observations"), "{detail}");
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+
+        // Thin window -> refuse rather than score.
+        let mut thin = Observations::default();
+        let few: Vec<crate::model::Point> = dates
+            .iter()
+            .take(10)
+            .map(|d| crate::model::Point {
+                date: d.clone(),
+                value: 100.0,
+            })
+            .collect();
+        thin.yahoo.insert(
+            "CQQQ_1y_d".into(),
+            crate::model::Series {
+                provenance: crate::model::Provenance {
+                    source: "t".into(),
+                    endpoint: "t".into(),
+                    as_of: String::new(),
+                    retrieved_at: String::new(),
+                },
+                points: few.clone(),
+            },
+        );
+        thin.yahoo.insert(
+            "FXI_1y_d".into(),
+            crate::model::Series {
+                provenance: crate::model::Provenance {
+                    source: "t".into(),
+                    endpoint: "t".into(),
+                    as_of: String::new(),
+                    retrieved_at: String::new(),
+                },
+                points: few,
+            },
+        );
+        match ChinaAiDerating.evaluate(&Ctx {
+            obs: &thin,
+            cfg: &cfg,
+        }) {
+            Reading::Unavailable { reason } => assert!(reason.contains("10"), "{reason}"),
+            other => panic!("expected Unavailable, got {other:?}"),
         }
     }
 
