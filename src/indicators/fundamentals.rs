@@ -1281,23 +1281,21 @@ impl Indicator for PublicAttention {
             }
         };
 
-        // A weight-0 entry with anchors would suggest the series is scoreable. Refuse
-        // loudly rather than quietly ignore the scale, because the quiet version is how
-        // a weight-0 series acquires a score by accident.
-        let stress = if ctx.obs.attention.is_empty() {
-            0.0
-        } else {
+        // Both halves asserted. A scale on an unscored series invites a weight raise without a gate;
+        // a SCORED series with no anchors panics inside `interpolate` instead of saying what is wrong.
+        if ic.weight == 0.0 {
             assert!(
                 ic.anchors.is_empty(),
-                "public_attention is weight {} and must carry NO anchors, but the config \
-                 supplies {}. If this series is to be scored, the pre-registered lead/lag \
-                 gate must be run first and the weight raised deliberately — do not attach \
-                 a scale to a weight-0 series.",
-                ic.weight,
+                "public_attention is weight 0 and must carry NO anchors, but the config supplies {}.",
                 ic.anchors.len()
             );
-            0.0
-        };
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "public_attention is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
 
         if ctx.obs.attention.is_empty() {
             return Reading::Unavailable {
@@ -1321,6 +1319,10 @@ impl Indicator for PublicAttention {
 
         let combined: f64 =
             ctx.obs.attention.iter().map(|a| a.pct).sum::<f64>() / ctx.obs.attention.len() as f64;
+
+        // Scored from the anchors now that the series carries weight. Until methodology 2.8 this was
+        // hard-coded to 0.0 because the series was weight 0.
+        let stress = crate::score::interpolate(combined, &ic.anchors);
 
         Reading::Scored {
             stress,
@@ -2678,13 +2680,24 @@ impl Indicator for BuildoutOppositionNews {
         };
         // Same refusal as `public_attention`: a scale on a weight-0 series invites a later reader to
         // raise the weight without running the gate.
-        assert!(
-            ic.anchors.is_empty(),
-            "buildout_opposition_news is weight {} and must carry NO anchors, but the config supplies \
-             {}. Do not attach a scale to a weight-0 series.",
-            ic.weight,
-            ic.anchors.len()
-        );
+        // A WEIGHT-0 series must carry no scale; a SCORED one must carry one. Both halves are asserted
+        // because each failure mode is real: a scale on an unscored series invites a weight raise
+        // without a gate, and a scored series with no anchors would panic inside `interpolate` instead
+        // of saying what is wrong.
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "buildout_opposition_news is weight 0 and must carry NO anchors, but the config \
+                 supplies {}. Do not attach a scale to an unscored series.",
+                ic.anchors.len()
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "buildout_opposition_news is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
 
         let Some(pts) = ctx.obs.gdelt_withdrawn.as_ref() else {
             return Reading::Unavailable {
@@ -2783,12 +2796,20 @@ impl Indicator for LeveragedBuilderStress {
                 }
             }
         };
-        assert!(
-            ic.anchors.is_empty(),
-            "leveraged_builder_stress is weight {} and must carry NO anchors, but the config supplies {}.",
-            ic.weight,
-            ic.anchors.len()
-        );
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "leveraged_builder_stress is weight 0 and must carry NO anchors, but the config \
+                 supplies {}.",
+                ic.anchors.len()
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "leveraged_builder_stress is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
 
         // Equal-weighted drawdown from each name's own 52-week high. Each series is measured against
         // ITSELF so that a name that was always weak cannot be hidden by one that ran hard, and so the
@@ -3455,7 +3476,7 @@ mod tests {
     /// composite or the coverage fraction. This is what makes it safe to ship an
     /// unscored series — without this, "weight 0" would be a comment rather than a fact.
     #[test]
-    fn a_weight_zero_attention_series_cannot_move_the_composite() {
+    fn a_scored_attention_series_moves_the_composite_and_an_unscored_one_does_not() {
         let cfg =
             Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
 
@@ -3487,36 +3508,58 @@ mod tests {
             obs: &with_attention,
             cfg: &cfg,
         });
+        let (c_base, _) = crate::score::composite(&r_base);
+        let (c_att, _) = crate::score::composite(&r_att);
 
-        let (c_base, cov_base) = crate::score::composite(&r_base);
-        let (c_att, cov_att) = crate::score::composite(&r_att);
-
-        assert_eq!(
+        // POLICY CHANGED AT METHODOLOGY 2.8 (2026-10-27): no measured series may carry zero weight, so
+        // a scored attention series MUST be able to move the composite. The assertion this test used to
+        // make demanded the opposite, and was wrong by DIRECTION rather than by degree.
+        assert_ne!(
             c_base.map(|x| format!("{x:.10}")),
             c_att.map(|x| format!("{x:.10}")),
-            "an absurd pageview reading moved the composite; public_attention is not \n             weight-0 inert"
-        );
-        assert_eq!(
-            format!("{cov_base:.10}"),
-            format!("{cov_att:.10}"),
-            "adding the attention series changed coverage"
+            "public_attention is SCORED at weight 3.0, so an absurd pageview reading must move the \
+             composite; if this is unchanged the weight is not being applied"
         );
 
-        // It must still be reported, though — an inert series that is also invisible is
-        // just a useless fetch.
-        let a = r_att
-            .iter()
-            .find(|r| r.id == "public_attention")
-            .expect("present");
+        // The weight-0 contract still exists for a channel deliberately left unscored, so keep
+        // asserting it: forced back to weight 0 with anchors cleared, the same absurd reading must
+        // change NOTHING, coverage included.
+        let mut cfg0 =
+            Config::load(std::path::Path::new("config/indicators.toml")).expect("config loads");
+        for ic in cfg0.indicator.iter_mut() {
+            if ic.id == "public_attention" {
+                ic.weight = 0.0;
+                ic.anchors.clear();
+            }
+        }
+        let r0_base = crate::indicators::evaluate_all(&Ctx {
+            obs: &base,
+            cfg: &cfg0,
+        });
+        let r0_att = crate::indicators::evaluate_all(&Ctx {
+            obs: &with_attention,
+            cfg: &cfg0,
+        });
+        let (c0_base, cov0_base) = crate::score::composite(&r0_base);
+        let (c0_att, cov0_att) = crate::score::composite(&r0_att);
+        assert_eq!(
+            c0_base.map(|x| format!("{x:.10}")),
+            c0_att.map(|x| format!("{x:.10}")),
+            "a weight-0 series must remain arithmetically inert"
+        );
+        assert_eq!(
+            format!("{cov0_base:.10}"),
+            format!("{cov0_att:.10}"),
+            "a weight-0 series must not change coverage"
+        );
+
+        // It must still be REPORTED, though: a series that is measured but invisible is a wasted fetch.
         assert!(
-            a.reading.is_available(),
-            "attention must render when fetched"
+            r_att.iter().any(|r| r.id == "public_attention"),
+            "public_attention must always appear in the readings"
         );
     }
 
-    /// A weight-0 entry that carries anchors would invite a later reader to raise the
-    /// weight and score it without ever running the pre-registered gate. The indicator
-    /// must refuse that configuration loudly.
     #[test]
     #[should_panic(expected = "must carry NO anchors")]
     fn scoring_a_weight_zero_attention_series_without_the_gate_is_refused() {
@@ -3525,6 +3568,10 @@ mod tests {
         // Simulate someone attaching a scale to the unscored series.
         for ic in cfg.indicator.iter_mut() {
             if ic.id == "public_attention" {
+                // Force the unscored state: the shipped config now SCORES this series at weight 3.0,
+                // and the guard under test protects a WEIGHT-0 series from acquiring a scale it was
+                // never gated for. Without this the shipped weight makes the assertion unreachable.
+                ic.weight = 0.0;
                 ic.anchors = vec![[0.0, 0.0], [100.0, 100.0]];
             }
         }
@@ -4091,6 +4138,10 @@ mod tests {
         let mut cfg = shipped();
         for ic in cfg.indicator.iter_mut() {
             if ic.id == "leveraged_builder_stress" {
+                // Force the unscored state explicitly: the shipped config now SCORES this channel, and
+                // the guard under test is the one that protects a weight-0 series from acquiring a
+                // scale it was never gated for.
+                ic.weight = 0.0;
                 ic.anchors = vec![[0.0, 0.0], [1.0, 100.0]];
             }
         }

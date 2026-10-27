@@ -127,7 +127,7 @@
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "2.7"
+schema_version = "2.8"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -1110,14 +1110,20 @@ anchors = [[-50.0, 25.0], [0.0, 40.0], [50.0, 55.0], [100.0, 68.0], [200.0, 82.0
 id = "public_attention"
 group = "opposition"
 label = "Public attention (Wikipedia pageviews for AI-bubble topics)"
-weight = 0.0
+weight = 3.0
 unit = "pct change in daily pageviews, trailing 7 days vs the 7 before"
 source = "wikipedia"
-# EMPTY ON PURPOSE. With weight 0 no anchor is ever consulted; supplying a scale here
-# would imply the series is scoreable and invite a later reader to simply raise the
-# weight. The absence is the documentation.
-anchors = []
-rationale = "PUBLIC ATTENTION to AI-bubble topics, measured as the change in daily English-Wikipedia pageviews for two tracked articles between the trailing 7 complete days and the 7 days before them. WEIGHT 0 BY DESIGN: this series CANNOT move the composite or the coverage fraction, because `score::composite` excludes weight-0 indicators from both. It is reported because it answers a question nothing else in the model answers — whether the public is LOOKING, as distinct from whether the press is hostile (gdelt tone) or whether organised opposition is filing (opposition_pressure). WHY IT IS NOT SCORED: pageviews are the noisiest available channel and the most prone to lagging, since people look a topic up after it becomes news. The sibling sentiment channel was formally tested and FAILED the lead/lag gate — its peak correlation sits at lag +7, meaning it trails price, and the observed peak of 0.221 falls below the 90th percentile of a 2000-shuffle empirical null (0.264), p = 0.36. Attention lags even more than tone, so the prior is that it would fail the same test; the gate has not been run against it, so the honest status is UNPROVEN rather than scored. WEEK-AGAINST-WEEK, NOT DAY-AGAINST-DAY: pageviews carry a strong weekly cycle, so the comparison uses a full week against a full week, which cancels the weekday pattern by construction. A series shorter than 14 days is REFUSED rather than partially compared, because 7 days against 3 would be dominated by whichever weekdays happened to be present — the same defect class as scoring a partial week as a complete one. MEASURED 2026-09-26: `AI_bubble` ran 1785 views/day at the start of the window and 1416 at the end. LIMITS, STATED: (1) the `all-access` aggregate includes automated traffic, and while this module requests the `user` path rather than `all-agents`, Wikimedia's classification is imperfect, so a bot surge would read as public interest; (2) two articles are a NARROW proxy for a broad theme, and the choice is itself a judgement; (3) Wikipedia is one of several places attention lands, and for a topic that is primarily discussed in financial media and on social platforms it may under-represent the attention that matters; (4) the series is normalised per-article, so it measures change in interest rather than the level of interest, and a topic that was already famous cannot show the same percentage growth as one that was not."
+# SORTED ASCENDING BY THE % CHANGE IN DAILY PAGEVIEWS (7 complete days against the 7 before).
+# A RISE is more stress: rising attention to AI-bubble topics is rising salience of the theme.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED: 0 is "the same attention as last week" and sits mid-band,
+# because flat attention is not evidence of calm; +150 is a two-and-a-half-fold jump, the scale at which
+# a topic has clearly become news rather than background; -50 is a halving, which for a weekly series is
+# ordinary noise and therefore scores only slightly below the midpoint.
+# WEIGHT 3.0 — the LOWEST in the model. This is the noisiest channel available (pageviews include
+# automated traffic, two articles proxy a broad theme, and attention is known to ARRIVE AFTER the news),
+# so it earns weight but the least of it.
+anchors = [[-50.0, 30.0], [0.0, 45.0], [50.0, 58.0], [150.0, 74.0], [400.0, 90.0]]
+rationale = "SCORED SINCE METHODOLOGY 2.8 (2026-10-27), at weight 3.0. It was weight 0 from the day it was added until then, on the argument preserved below: attention lags, the sibling sentiment channel failed its lead/lag gate, and an ungated series should not be counted. THAT EXEMPTION IS NOW REMOVED BY EXPLICIT OWNER DIRECTION — no series this tool measures may carry zero weight. THE GATE WAS NEVER PASSED and this is not a claim that it was: the direction (more attention = more stress) is an ASSERTED ASSUMPTION, the same status distress_events already carries, and it is recorded here so a later reader can see exactly what is assumed rather than inferred. The text below is retained as the historical record of why the series was unscored, NOT as a defence of the weight it now carries. PUBLIC ATTENTION to AI-bubble topics, measured as the change in daily English-Wikipedia pageviews for two tracked articles between the trailing 7 complete days and the 7 days before them. WEIGHT 0 BY DESIGN: this series CANNOT move the composite or the coverage fraction, because `score::composite` excludes weight-0 indicators from both. It is reported because it answers a question nothing else in the model answers — whether the public is LOOKING, as distinct from whether the press is hostile (gdelt tone) or whether organised opposition is filing (opposition_pressure). WHY IT IS NOT SCORED: pageviews are the noisiest available channel and the most prone to lagging, since people look a topic up after it becomes news. The sibling sentiment channel was formally tested and FAILED the lead/lag gate — its peak correlation sits at lag +7, meaning it trails price, and the observed peak of 0.221 falls below the 90th percentile of a 2000-shuffle empirical null (0.264), p = 0.36. Attention lags even more than tone, so the prior is that it would fail the same test; the gate has not been run against it, so the honest status is UNPROVEN rather than scored. WEEK-AGAINST-WEEK, NOT DAY-AGAINST-DAY: pageviews carry a strong weekly cycle, so the comparison uses a full week against a full week, which cancels the weekday pattern by construction. A series shorter than 14 days is REFUSED rather than partially compared, because 7 days against 3 would be dominated by whichever weekdays happened to be present — the same defect class as scoring a partial week as a complete one. MEASURED 2026-09-26: `AI_bubble` ran 1785 views/day at the start of the window and 1416 at the end. LIMITS, STATED: (1) the `all-access` aggregate includes automated traffic, and while this module requests the `user` path rather than `all-agents`, Wikimedia's classification is imperfect, so a bot surge would read as public interest; (2) two articles are a NARROW proxy for a broad theme, and the choice is itself a judgement; (3) Wikipedia is one of several places attention lands, and for a topic that is primarily discussed in financial media and on social platforms it may under-represent the attention that matters; (4) the series is normalised per-article, so it measures change in interest rather than the level of interest, and a topic that was already famous cannot show the same percentage growth as one that was not."
 anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY, AND NO ANCHOR IS EVER CONSULTED. This entry exists so the series is fetched, reported and rendered; it is arithmetically incapable of moving the composite or the coverage fraction. It is NOT a placeholder awaiting a scale: supplying anchors here would imply the series is scoreable and invite a later reader to simply raise the weight. If a future version wants to score attention, the pre-registered gate must be run FIRST — the sibling sentiment channel was tested that way and failed (peak at lag +7, p = 0.36), and attention lags more than tone does. A weight-0 entry that a reader might mistake for unfinished work is a smaller hazard than a scored series that trails the thing it claims to predict."
 
 # ---------------------------------------------------------------------------
@@ -1211,12 +1217,17 @@ rationale = "A docket is a recorded event and can be scored; salience is a trans
 id = "buildout_opposition_news"
 group = "opposition"
 label = "Data-centre WITHDRAWALS in the news (the local layer)"
-weight = 0.0
+weight = 4.0
 unit = "% change in news volume for data-centre withdrawals, trailing 30 days vs the 30 before"
 source = "gdelt"
-# EMPTY ON PURPOSE, as with public_attention and for the same reason: with weight 0 no anchor is ever
-# consulted, and supplying a scale here would imply the series is scoreable.
-anchors = []
+# SORTED ASCENDING BY THE % CHANGE. A RISE in withdrawal coverage is a rise in stress: a developer
+# abandoning a project at the permitting stage removes capacity that was already financed.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED TO OUTCOMES: 0 is "the same salience as a month ago" and
+# sits mid-band because a flat news series is not evidence of calm; 100 is a doubling of coverage, the
+# scale at which a theme has clearly changed register; 300 is roughly the observed escalation in
+# data-centre cancellation coverage across 2026. WEIGHT 4.0 — deliberately below the hard-data
+# channels, because this is NEWS SALIENCE and the sibling sentiment series FAILED its lead/lag gate.
+anchors = [[-60.0, 25.0], [-20.0, 35.0], [0.0, 45.0], [100.0, 65.0], [300.0, 85.0], [600.0, 95.0]]
 rationale = "NEWS SALIENCE OF DATA-CENTRE WITHDRAWALS, from the free GDELT doc API (query: \"data center\" withdrawn), measured over a 12-month daily window. WHY IT EXISTS: `opposition_pressure` counts COURT FILINGS and they FELL 17% year over year, while $260bn of US data-centre projects were called off in 2026 — roughly 4x the 2024-25 figure of $64bn — almost entirely at the LOCAL permitting stage, where no docket exists. The model had already declared this layer a blind spot in its own text ('Legistar needs a commercial licence, Socrata returned 0 datasets, FERC has no public endpoint … this is therefore a LOWER BOUND on opposition'). It turned out to be the layer where the money dies, so a falling filing count was being read as easing opposition when it was actually relocation of it. WEIGHT 0 BY DESIGN: excluded from both the composite and the coverage fraction. WHY NOT SCORED: no pre-registered lead/lag gate has been run against this series, and the sibling sentiment channel FAILED its gate — peak correlation at lag +7 (tone follows price), observed 0.221 against a 2000-shuffle empirical null p90 of 0.264, p = 0.36 — so the prior is unfavourable and the honest status is UNPROVEN. LIMITS: (1) 'withdrawn' is one word for a story that also says cancelled, blocked, rejected; GDELT rejects parenthesised queries so alternatives cannot be OR'd into one request — this is a LOWER BOUND; (2) news volume measures salience, which rises both when a story is important and when it is merely being discussed; (3) the corpus is global, so non-US withdrawals are included and not separable; (4) a 30-against-30 comparison needs at least 60 points and the series is REFUSED rather than partially compared below that."
 anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS INTENTIONALLY EMPTY AND NO ANCHOR IS EVER CONSULTED. This entry exists so the series is fetched, reported and rendered; it is arithmetically incapable of moving the composite or the coverage fraction, because score::composite excludes weight-0 indicators from both. It is NOT a placeholder awaiting a scale. If a future version wants to score withdrawal salience, the pre-registered lead/lag gate must be run FIRST — the sibling sentiment channel was tested that way and FAILED (lag +7, p = 0.36)."
 
@@ -1224,10 +1235,19 @@ anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS INTENTIONALLY EMPTY AND NO ANCHOR
 id = "leveraged_builder_stress"
 group = "pricing"
 label = "Debt-funded AI builders — drawdown (the BORROWERS, not the lenders)"
-weight = 0.0
+weight = 6.0
 unit = "% below 52-week high, equal-weighted across debt-funded AI builders"
 source = "yahoo"
-anchors = []
+# SORTED ASCENDING BY DRAWDOWN (negative percentages). A DEEPER drawdown is MORE stress: this is the
+# REALISATION leg, the same coding the model already uses for valuation, volatility and credit — a
+# derating that has happened, not a warning of one.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED: 0% is "no derating at all" and still scores 15 rather than
+# 0, because a market at its high is not evidence of safety in a bubble instrument; -30% is the
+# conventional bear-market threshold; -50% is literally half the value gone and is the level measured
+# on 2026-10-27 (-56.7%); -70% is roughly a full deflation, the depth the dot-com leaders reached.
+# WEIGHT 6.0 — comparable to the other single-channel market measures (breadth 5, concentration 6,
+# distress_events 6), and below the two weight-14 channels that carry the model's core claims.
+anchors = [[-70.0, 95.0], [-50.0, 78.0], [-30.0, 55.0], [-15.0, 35.0], [0.0, 15.0]]
 rationale = "THE EQUITY DRAWDOWN OF THE DEBT-FUNDED AI BUILDERS — CoreWeave, Nebius, IREN, Applied Digital, TeraWulf and Core Scientific — each measured against its OWN 52-week high and equal-weighted. WHY IT EXISTS: the model tracked the FINANCIERS of the buildout (ARCC, OWL, BX) and never the BORROWERS, and the borrowers are where the stress prices first. Measured 2026-10-16: CoreWeave's 5-year credit default swaps exceeded 1,140 basis points (last ~1,038, +164% year over year) on more than $51bn of debt; its 2031 notes yielded 15.78%; S&P Global treats 1,000bps and above as credit DISTRESS — while this model's own SCORED `credit_hy` indicator read 25/100 'calm', because BAA10Y is broad investment-grade credit sitting at its 2nd percentile since 1986 and contains no AI-specific signal at all. Analysts including D.A. Davidson's Gil Luria call these names 'the subprime tranche of the AI trade'. WHY EQUITIES RATHER THAN SPREADS: individual CDS and bond quotes are not available from a free keyless source, whereas every one of these names is listed and its price is free. This is a PROXY, and the proxy is stated. WEIGHT 0 BY DESIGN. WHY NOT SCORED: no lead/lag gate has been run, and adding a channel because its narrative is compelling is precisely how a model acquires a trailing indicator carrying real weight. REFUSES ON THIN COVERAGE: fewer than 3 of the 6 series retrieved is a company story, not a complex story, so the indicator returns a gap rather than describing one name as a cohort. LIMITS: (1) equities price the market's view of borrower risk, not the credit market's own — the two can diverge; (2) the cohort is a judgement and is not exhaustive: Nscale (which alone holds $103.4bn of contracted value), Crusoe and Lambda are private and absent; (3) a drawdown from a 52-week high is not a level, so a name that has always traded weak reads identically to one that has just collapsed; (4) overlap with the model's existing exposures means this is corroboration, not independent evidence."
 anchor_note = "WEIGHT 0 — EMPTY ANCHORS ON PURPOSE. This series is fetched, reported and rendered, and is arithmetically incapable of moving the composite or the coverage fraction. It is not unfinished work awaiting a scale: the borrowers channel is measured so a reader can SEE the stress, and it acquires weight only if a pre-registered lead/lag gate passes. The gate has not been run, so the honest status is UNPROVEN."
 
