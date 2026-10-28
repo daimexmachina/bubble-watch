@@ -172,6 +172,67 @@ pub const FRED_SPECS: &[&str] = &[
     "DTB3",
 ];
 
+/// Fetch one group of CourtListener docket queries into `obs`.
+///
+/// EXTRACTED SO THE TWO GROUPS CAN BE CALLED IN A DAY-DEPENDENT ORDER. CourtListener allows roughly
+/// five requests per ~21 HOURS and the model wants ten (five queries x two date windows), so whichever
+/// group runs first consumes the quota and everything after it is refused with 429. Before this,
+/// `opposition_pressure` always ran first and `distress_events` never completed a run at all — it GAPped
+/// on every reading for days, and the 7-day TTL could not help because its URLs had never once
+/// succeeded, so there was nothing cached to serve. Alternating the order by CALENDAR DAY guarantees
+/// each group is served every other day, instead of one group being served always and the other never.
+fn fetch_court_group(
+    f: &Fetcher,
+    today: &str,
+    queries: &[(&'static str, &'static str)],
+    insolvency: bool,
+    obs: &mut Observations,
+) {
+    for (label, query) in queries {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        let source = if insolvency {
+            "courtlistener-insolvency"
+        } else {
+            "courtlistener"
+        };
+        match courtlistener::year_over_year_pct(f, query, today, 365) {
+            Ok(Some((pct, recent, prior))) => {
+                let rec = courtlistener::DocketChange {
+                    query: label.to_string(),
+                    yoy_pct: pct,
+                    recent_count: recent,
+                    prior_count: prior,
+                };
+                if insolvency {
+                    obs.insolvency.push(rec);
+                } else {
+                    obs.courtlistener.push(rec);
+                }
+            }
+            // A zero prior window makes the percentage undefined. Reporting it as a large increase
+            // would invent an explosion from a base that never existed, so it is a recorded gap.
+            Ok(None) => obs.failures.push(SourceFailure {
+                source: source.into(),
+                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason: if insolvency {
+                    "prior-year insolvency docket count was zero, so the year-over-year change is \
+                     undefined and is reported as a gap rather than as growth"
+                        .into()
+                } else {
+                    "prior-year docket count was zero, so the year-over-year change is undefined and \
+                     is reported as a gap rather than as growth"
+                        .into()
+                },
+            }),
+            Err(e) => obs.failures.push(SourceFailure {
+                source: source.into(),
+                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
+                reason: e,
+            }),
+        }
+    }
+}
+
 /// Fetch everything. Partial failure is normal and expected: the returned
 /// `Observations` records what succeeded and what did not, and scoring proceeds
 /// on whatever is real.
@@ -490,63 +551,43 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }
     }
 
-    for (label, query) in courtlistener::tracked_queries() {
-        std::thread::sleep(std::time::Duration::from_secs(2));
-        match courtlistener::year_over_year_pct(f, query, &today, 365) {
-            Ok(Some((pct, recent, prior))) => {
-                obs.courtlistener.push(courtlistener::DocketChange {
-                    query: label.to_string(),
-                    yoy_pct: pct,
-                    recent_count: recent,
-                    prior_count: prior,
-                });
-            }
-            // A prior window of zero makes the percentage undefined. Reporting it
-            // as a large increase would invent an explosion from a base that never
-            // existed, so it is recorded as a gap instead.
-            Ok(None) => obs.failures.push(SourceFailure {
-                source: "courtlistener".into(),
-                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
-                reason: "prior-year docket count was zero, so the year-over-year change is \
-                         undefined and is reported as a gap rather than as growth"
-                    .into(),
-            }),
-            Err(e) => obs.failures.push(SourceFailure {
-                source: "courtlistener".into(),
-                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
-                reason: e,
-            }),
-        }
-    }
-
-    // Insolvency dockets. A SEPARATE loop writing to `obs.insolvency`, never to
-    // `obs.courtlistener`: `opposition_pressure` sums that vector, so mixing liquidations into it
-    // would silently change a published score's meaning.
-    for (label, query) in courtlistener::insolvency_queries() {
-        std::thread::sleep(std::time::Duration::from_secs(2));
-        match courtlistener::year_over_year_pct(f, query, &today, 365) {
-            Ok(Some((pct, recent, prior))) => obs.insolvency.push(courtlistener::DocketChange {
-                query: label.to_string(),
-                yoy_pct: pct,
-                recent_count: recent,
-                prior_count: prior,
-            }),
-            // A zero prior window makes the percentage undefined. Recorded as a gap rather than
-            // reported as explosive growth from a base that never existed.
-            Ok(None) => obs.failures.push(SourceFailure {
-                source: "courtlistener-insolvency".into(),
-                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
-                reason:
-                    "prior-year insolvency docket count was zero, so the year-over-year change \
-                         is undefined and is reported as a gap rather than as growth"
-                        .into(),
-            }),
-            Err(e) => obs.failures.push(SourceFailure {
-                source: "courtlistener-insolvency".into(),
-                endpoint: format!("{}+{}", courtlistener::SEARCH_URL, query),
-                reason: e,
-            }),
-        }
+    // FAIR ROTATION ACROSS A QUOTA THAT CANNOT SERVE BOTH GROUPS IN ONE RUN.
+    //
+    // The day number decides the order, and it is deterministic: on an even UTC day the insolvency
+    // group goes first, on an odd day the opposition group does. Whichever runs first gets the ~5
+    // available requests; the other is likely refused, but it is now refused only every other day
+    // rather than every single day. See `fetch_court_group` for why this exists.
+    let day: u32 = today.get(8..10).and_then(|s| s.parse().ok()).unwrap_or(1);
+    if day % 2 == 0 {
+        fetch_court_group(
+            f,
+            &today,
+            &courtlistener::insolvency_queries(),
+            true,
+            &mut obs,
+        );
+        fetch_court_group(
+            f,
+            &today,
+            &courtlistener::tracked_queries(),
+            false,
+            &mut obs,
+        );
+    } else {
+        fetch_court_group(
+            f,
+            &today,
+            &courtlistener::tracked_queries(),
+            false,
+            &mut obs,
+        );
+        fetch_court_group(
+            f,
+            &today,
+            &courtlistener::insolvency_queries(),
+            true,
+            &mut obs,
+        );
     }
 
     // Public ATTENTION (Wikipedia pageviews). Deliberately weight 0 upstream: the
