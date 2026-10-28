@@ -3016,6 +3016,84 @@ impl Indicator for ChinaAiDerating {
     }
 }
 
+/// Political risk: the market-implied chance of a Democratic sweep, and what rule-making is doing.
+pub struct RegulatoryRisk;
+
+impl Indicator for RegulatoryRisk {
+    fn id(&self) -> &'static str {
+        "regulatory_risk"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight == 0.0 {
+            assert!(ic.anchors.is_empty(), "regulatory_risk is weight 0 and must carry NO anchors");
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "regulatory_risk is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+
+        let (Some(house), Some(senate)) = (ctx.obs.policy_house_dem, ctx.obs.policy_senate_dem) else {
+            return Reading::Unavailable {
+                reason: "the House and Senate control probabilities were not both retrieved, so the \
+                         market-implied chance of a sweep is unknown rather than zero"
+                    .into(),
+            };
+        };
+
+        // Combined as a product, which is an APPROXIMATION and is labelled as one: the two chambers are
+        // correlated, so independence understates a sweep. The prediction markets quote the sweep
+        // directly at a few points above this product (63-65% against ~60% here), which is the expected
+        // direction of the error.
+        let sweep = house / 100.0 * senate / 100.0 * 100.0;
+        let stress = crate::score::interpolate(sweep, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: sweep,
+            unit: "pct, market-implied chance of a Democratic sweep (House x Senate, independence                    assumed)"
+                .into(),
+            detail: format!(
+                "Prediction markets imply a {:.0}% chance of a Democratic House and a {:.0}% chance of \
+                 a Democratic Senate, so roughly {:.0}% for a sweep on an independence assumption — \
+                 the markets quote the sweep contract itself slightly higher because the chambers are \
+                 correlated. DIRECTION IS AN ASSERTED ASSUMPTION: a higher sweep probability is coded \
+                 as MORE regulatory risk for the AI complex. That is Daim's thesis, not a measured \
+                 finding, and the evidence is genuinely two-sided — investigations can raise costs, and \
+                 they can also entrench incumbents and clear out weaker competitors. THE COUNTER-
+                 EVIDENCE IS RECORDED IN THE SAME READING rather than left out: the S&P 500 has risen \
+                 in the 12 months after every US midterm since WWII (Wells Fargo), options markets are \
+                 pricing only about a 1% forward-volatility rise for the day after this election \
+                 against a ~4% historical average (Cboe), and prediction markets were heavily wrong \
+                 about Brazil's presidential election the same week. A sweep is already largely in the \
+                 price, which is what makes it a risk the market has had the opportunity to assess. \
+                 FORWARD-LOOKING BY DESIGN, AND THE ONLY SUCH CHANNEL: every other input here reports a \
+                 state that has already happened; this one reports a probability. LIMITS: (1) the \
+                 product assumes independence, stated above; (2) the probability is a market opinion \
+                 about an EVENT, not a measurement of policy, and the policy response is the link that \
+                 actually matters — the BIS rule count in the falsifier panel is the quiet counter-\n                 evidence to it; (3) a prediction market has no obligation to be right.",
+                house, senate, sweep
+            ),
+            provenance: crate::model::Provenance {
+                source: "polymarket".into(),
+                endpoint: crate::sources::polymarket::GAMMA_SEARCH.into(),
+                as_of: ctx.obs.retrieved_at.clone(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

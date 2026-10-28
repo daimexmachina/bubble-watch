@@ -67,7 +67,7 @@ for the source tree it sits in).
 Tests:
 
 ```bash
-cargo test                                         # 490 tests, no network required
+cargo test                                         # 491 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -184,7 +184,7 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
 | `distress_events` | 6 | AI-exposed company insolvencies, counted from **filed court dockets** — not from coverage of them. Covers private companies EDGAR cannot see (Character.ai's Chapter 11 returns 0 EDGAR hits but is on the docket) | CourtListener |
 
-Weight totals 214 across the 25 scored indicators, and **there are no declared gaps left**.
+Weight totals 218 across the 25 scored indicators, and **there are no declared gaps left**.
 
 ### `circularity` — a former blind spot, now scored
 

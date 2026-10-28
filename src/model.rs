@@ -415,6 +415,17 @@ pub struct Observations {
     #[serde(default)]
     pub gdelt_withdrawn: Option<Vec<crate::sources::gdelt::TimelinePoint>>,
 
+    /// Polymarket's implied probability, in percent, that the Democratic Party controls the House and
+    /// the Senate after the 2026 midterms. Two calls, keyless.
+    ///
+    /// FORWARD-LOOKING, unlike everything else in this model: every other channel reports a state that
+    /// has happened. That is a deliberate exception, recorded so it is not mistaken for a measurement of
+    /// the present.
+    #[serde(default)]
+    pub policy_house_dem: Option<f64>,
+    #[serde(default)]
+    pub policy_senate_dem: Option<f64>,
+
     /// Public ATTENTION from Wikipedia pageviews, one entry per tracked article.
     /// UNSCORED: the indicator reading it carries weight 0, so this can never move
     /// the composite. It exists so a reader can see whether the public is looking.

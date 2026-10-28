@@ -12,6 +12,7 @@ pub mod gdelt;
 pub mod lbnl;
 pub mod nport;
 pub mod openrouter;
+pub mod polymarket;
 pub mod wikipedia;
 pub mod yahoo;
 pub mod z1;
@@ -588,6 +589,25 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
             true,
             &mut obs,
         );
+    }
+
+    // POLITICAL RISK. Keyless, two calls. A refusal is recorded as a failure rather than as a zero:
+    // "no chance of a sweep" is a claim this module has not earned.
+    for chamber in ["House", "Senate"] {
+        match polymarket::control_probability(f, chamber) {
+            Ok(pct) => {
+                if chamber == "House" {
+                    obs.policy_house_dem = Some(pct);
+                } else {
+                    obs.policy_senate_dem = Some(pct);
+                }
+            }
+            Err(e) => obs.failures.push(SourceFailure {
+                source: "polymarket".into(),
+                endpoint: format!("{}+{}", polymarket::GAMMA_SEARCH, chamber),
+                reason: e,
+            }),
+        }
     }
 
     // Public ATTENTION (Wikipedia pageviews). Deliberately weight 0 upstream: the
