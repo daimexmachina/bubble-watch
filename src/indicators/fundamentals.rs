@@ -3034,7 +3034,10 @@ impl Indicator for RegulatoryRisk {
             }
         };
         if ic.weight == 0.0 {
-            assert!(ic.anchors.is_empty(), "regulatory_risk is weight 0 and must carry NO anchors");
+            assert!(
+                ic.anchors.is_empty(),
+                "regulatory_risk is weight 0 and must carry NO anchors"
+            );
         } else {
             assert!(
                 !ic.anchors.is_empty(),
@@ -3043,11 +3046,13 @@ impl Indicator for RegulatoryRisk {
             );
         }
 
-        let (Some(house), Some(senate)) = (ctx.obs.policy_house_dem, ctx.obs.policy_senate_dem) else {
+        let (Some(house), Some(senate)) = (ctx.obs.policy_house_dem, ctx.obs.policy_senate_dem)
+        else {
             return Reading::Unavailable {
-                reason: "the House and Senate control probabilities were not both retrieved, so the \
+                reason:
+                    "the House and Senate control probabilities were not both retrieved, so the \
                          market-implied chance of a sweep is unknown rather than zero"
-                    .into(),
+                        .into(),
             };
         };
 
@@ -3088,6 +3093,160 @@ impl Indicator for RegulatoryRisk {
                 source: "polymarket".into(),
                 endpoint: crate::sources::polymarket::GAMMA_SEARCH.into(),
                 as_of: ctx.obs.retrieved_at.clone(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
+/// A shock at one of the AI majors, measured as the worst short-window return in the cohort.
+pub struct HyperscalerShock;
+
+/// The AI majors, as individual names. Broad enough to be a cohort, small enough that one company's
+/// collapse is still legible.
+pub const HYPERSCALER_KEYS: &[(&str, &str)] = &[
+    ("GOOGL_1y_d", "Alphabet"),
+    ("MSFT_1y_d", "Microsoft"),
+    ("AMZN_1y_d", "Amazon"),
+    ("META_1y_d", "Meta"),
+    ("ORCL_1y_d", "Oracle"),
+    ("NVDA_1y_d", "Nvidia"),
+];
+
+/// The short window, in trading days, over which a single-hit is measured. FIVE, not one: a one-day
+/// print is mostly noise and a 40-day window would bury the event entirely, while five still contains
+/// a single 12% day at full strength and also shows whether it persisted or was bought back.
+pub const SHOCK_WINDOW: usize = 5;
+
+impl Indicator for HyperscalerShock {
+    fn id(&self) -> &'static str {
+        "hyperscaler_shock"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "hyperscaler_shock is weight 0 and must carry NO anchors"
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "hyperscaler_shock is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+
+        let mut per_name: Vec<(&str, f64, f64)> = Vec::new(); // (label, 5d pct, drawdown from high)
+        for (key, label) in HYPERSCALER_KEYS {
+            let Some(series) = ctx.obs.yahoo.get(*key) else {
+                continue;
+            };
+            let vals = series.values();
+            if vals.len() < SHOCK_WINDOW + 1 {
+                continue;
+            }
+            let n = vals.len();
+            let then = vals[n - 1 - SHOCK_WINDOW];
+            let last = vals[n - 1];
+            if then <= 0.0 {
+                continue;
+            }
+            let ret = (last / then - 1.0) * 100.0;
+            let high = vals.iter().cloned().fold(f64::MIN, f64::max);
+            let dd = if high > 0.0 {
+                (last / high - 1.0) * 100.0
+            } else {
+                0.0
+            };
+            per_name.push((*label, ret, dd));
+        }
+
+        // Refuse on thin coverage rather than describe one company as a cohort.
+        if per_name.len() < 3 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "only {} of {} AI-major price series were retrieved, which is a company story \
+                     rather than a cohort story",
+                    per_name.len(),
+                    HYPERSCALER_KEYS.len()
+                ),
+            };
+        }
+
+        // The WORST short-window return in the cohort is the value: the question this answers is
+        // "did a major AI player take a significant hit", and an equal-weighted mean would average
+        // one company's collapse against five quiet names and lose it.
+        let worst = per_name
+            .iter()
+            .cloned()
+            .fold(("", 0.0_f64, 0.0_f64), |a, b| if b.1 < a.1 { b } else { a });
+        let mean_dd = per_name.iter().map(|(_, _, d)| d).sum::<f64>() / per_name.len() as f64;
+        let stress = crate::score::interpolate(worst.1, &ic.anchors);
+        let rows: Vec<String> = per_name
+            .iter()
+            .map(|(l, r, d)| format!("{} {:+.1}% / {:.0}% off high", l, r, d))
+            .collect();
+
+        Reading::Scored {
+            stress,
+            value: worst.1,
+            unit: format!(
+                "% return over the last {} trading days, worst name in the AI-major cohort",
+                SHOCK_WINDOW
+            ),
+            detail: format!(
+                "The weakest of the AI majors over the last {} trading days is {} at {:+.1}%; the \
+                 cohort is {:.1}% below its own 52-week highs on average ({}). WHY THIS CHANNEL \
+                 EXISTS: the model watched INDICES and ONE cohort — the six debt-funded builders — so \
+                 a collapse at one of the largest AI companies was diluted to roughly a 0.5% index \
+                 move. Worse, two derived measures moved the WRONG WAY on such a day: a mega-cap \
+                 falling while the rest holds raises RSP/SPY, which reads as IMPROVING breadth, and \
+                 narrows the cap-weight lead, which reads as IMPROVING concentration. A 12% \
+                 single-day fall at a major AI player is a larger event for this economy than a \
+                 CoreWeave drawdown and it was the one move the instrument could not name. WHY THE \
+                 WORST NAME AND NOT THE MEAN: the question is whether a major player was hit, and an \
+                 equal-weighted mean averages one collapse against five quiet names and loses it. \
+                 WHY {} DAYS: a one-day print is mostly noise, while a longer window would bury the \
+                 event; five still contains a single 12% day at full strength and also shows whether \
+                 it persisted or was bought back. DIRECTION: a deeper short-window loss is MORE \
+                 stress, the REALISATION coding used by valuation, volatility, credit and the \
+                 builders channel. LIMITS, STATED: (1) this is a COHORT OF SIX chosen by judgement — \
+                 it is not the whole AI complex, and a shock at a name outside it (a neocloud, a \
+                 supplier, a private company) is invisible here; (2) a short window is NOISY by \
+                 construction, so a single bad week can move this figure a long way and the named \
+                 breakdown is printed beside it so the reader can see which company drove it; (3) \
+                 these are the same companies whose filings feed the fundamentals panel, so this is \
+                 corroboration of those channels rather than independent evidence; (4) it says what \
+                 the market did, not why.",
+                SHOCK_WINDOW,
+                worst.0,
+                worst.1,
+                mean_dd,
+                rows.join(", "),
+                SHOCK_WINDOW
+            ),
+            provenance: crate::model::Provenance {
+                source: "yahoo".into(),
+                endpoint: format!(
+                    "chart API, 1y daily: {}",
+                    per_name.iter().map(|(l, _, _)| *l).collect::<Vec<_>>().join(", ")
+                ),
+                as_of: ctx
+                    .obs
+                    .yahoo
+                    .get("GOOGL_1y_d")
+                    .and_then(|s| s.points.last())
+                    .map(|p| p.date.clone())
+                    .unwrap_or_default(),
                 retrieved_at: ctx.obs.retrieved_at.clone(),
             },
         }

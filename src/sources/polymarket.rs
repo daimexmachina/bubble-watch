@@ -72,9 +72,11 @@ pub fn control_probability(f: &Fetcher, chamber: &str) -> Result<f64, String> {
             let Some(prices) = m.get("outcomePrices").and_then(|p| p.as_str()) else {
                 continue;
             };
-            let parsed: Vec<String> =
-                serde_json::from_str(prices).map_err(|e| format!("outcomePrices is not a list: {e}"))?;
-            let Some(first) = parsed.first() else { continue };
+            let parsed: Vec<String> = serde_json::from_str(prices)
+                .map_err(|e| format!("outcomePrices is not a list: {e}"))?;
+            let Some(first) = parsed.first() else {
+                continue;
+            };
             let p: f64 = first
                 .parse()
                 .map_err(|e| format!("outcome price {first:?} is not a number: {e}"))?;

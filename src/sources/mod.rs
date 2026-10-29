@@ -143,6 +143,49 @@ pub const YAHOO_SPECS: &[YahooSpec] = &[
         range: "1y",
         interval: "1d",
     },
+    // ---- THE AI MAJORS AS INDIVIDUAL NAMES ------------------------------------
+    // Added 2026-10-28. Until now the model watched INDICES (SPX, RSP, SPY, VIX), ONE cohort (the six
+    // debt-funded builders) and quarterly filings — so a collapse at one of the largest AI companies
+    // was diluted to a ~0.5% index ripple, and two derived measures (breadth, concentration) read
+    // BETTER when a mega-cap fell and the rest held. A 12% single-day fall at a major AI player is a
+    // larger event for this economy than a CoreWeave drawdown, and it was the one kind of move the
+    // instrument could not name.
+    YahooSpec {
+        key: "GOOGL_1y_d",
+        symbol: "GOOGL",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "MSFT_1y_d",
+        symbol: "MSFT",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "AMZN_1y_d",
+        symbol: "AMZN",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "META_1y_d",
+        symbol: "META",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "ORCL_1y_d",
+        symbol: "ORCL",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "NVDA_1y_d",
+        symbol: "NVDA",
+        range: "1y",
+        interval: "1d",
+    },
 ];
 
 /// FRED series the model may want. All optional by construction.

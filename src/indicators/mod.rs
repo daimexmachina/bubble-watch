@@ -108,6 +108,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "leveraged_builder_stress" => Some(Box::new(fundamentals::LeveragedBuilderStress)),
         "china_ai_derating" => Some(Box::new(fundamentals::ChinaAiDerating)),
         "regulatory_risk" => Some(Box::new(fundamentals::RegulatoryRisk)),
+        "hyperscaler_shock" => Some(Box::new(fundamentals::HyperscalerShock)),
         _ => None,
     }
 }
