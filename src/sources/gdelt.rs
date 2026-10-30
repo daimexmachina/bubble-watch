@@ -163,6 +163,21 @@ pub fn parse_timeline(body: &str) -> Result<Vec<TimelinePoint>, String> {
 /// `sleep_before` is passed in rather than called here so the pacing is visible at
 /// the call site and testable, and because this crate keeps IO in the source layer
 /// with no hidden delays.
+/// How long a fetched GDELT timeline stays usable, in seconds.
+///
+/// SEVEN DAYS, and the point is that ONE SUCCESS NOW LASTS A WEEK. Every fetch before this one was
+/// unconditional, so a query that 429'd was retried on the very next run — and GDELT throttles a
+/// sustained retry loop, which is why `buildout_opposition_news` failed on EVERY run from the day it was
+/// built and never once produced a reading while carrying 4 points of weight. A 12-month daily timeline
+/// does not change meaningfully in a week, so caching it costs nothing analytically and breaks the
+/// cold-start lockout: the first run that gets through fills the cache and the next six runs cost
+/// nothing.
+///
+/// FRESH-ONLY, deliberately — NOT the stale-serving variant. A stale news series would be served
+/// silently after a failure, and the line that records it is printed by `main.rs` and never rendered in
+/// the report. An absent channel that says so is honest; a stale one that looks current is not.
+pub const GDELT_TTL_SECS: u64 = 7 * 24 * 60 * 60;
+
 pub fn fetch_timeline(
     f: &Fetcher,
     query: &str,
@@ -170,7 +185,8 @@ pub fn fetch_timeline(
     timespan: &str,
 ) -> Result<Vec<TimelinePoint>, String> {
     let url = timeline_url(query, mode, timespan);
-    let body = f.get(&url, UA_WEB)?;
+    let body =
+        f.get_with_ttl_fresh_only(&url, UA_WEB, std::time::Duration::from_secs(GDELT_TTL_SECS))?;
     parse_timeline(&body)
 }
 

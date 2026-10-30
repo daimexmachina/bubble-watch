@@ -48,8 +48,19 @@ pub const SEARCH_URL: &str = "https://www.courtlistener.com/api/rest/v4/search/"
 /// Data rather than inline string literals so no query can enter the model whose
 /// meaning was not reviewed, and so the set is countable by a test.
 pub fn tracked_queries() -> Vec<(&'static str, &'static str)> {
+    // TWO QUERIES, NOT THREE, AND THE BUDGET IS WHY. `year_over_year_pct` spends TWO requests per query
+    // (one per 365-day window), so this group cost SIX against a host that allows roughly FIVE per ~21
+    // hours. It could therefore never complete, no matter how the order was rotated: measured
+    // 2026-10-29 with both groups sharing the quota, `opposition_pressure` GAPped alongside
+    // `distress_events`, and 18 points of weight sat in gaps.
+    //
+    // `moratorium` was the one dropped, and it is the cheapest to lose on the evidence rather than on
+    // taste: it is the THIN series — 17 to 20 filings against 265-326 for lawsuit and 336-393 for
+    // injunction — so a single filing moves its percentage by about six points, and because the
+    // indicator combines by FILING VOLUME it already contributed only ~3% of the reading. Dropping it
+    // costs 2 requests and almost no information; dropping either of the other two would have halved
+    // the series the indicator is actually built on.
     vec![
-        ("moratorium", "\"data center\" moratorium"),
         ("lawsuit", "\"data center\" lawsuit"),
         ("injunction", "\"data center\" injunction"),
     ]

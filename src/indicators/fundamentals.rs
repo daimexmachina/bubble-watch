@@ -4291,8 +4291,11 @@ mod tests {
                     detail.contains("injunction"),
                     "the missing query must be NAMED, not merely counted: {detail}"
                 );
+                // TWO configured queries since 2026-10-29 (moratorium dropped for the request budget),
+                // so one absent reads "1 of 2". The assertion is on the RATIO being stated, not on a
+                // frozen denominator — the configuration is allowed to change, the disclosure is not.
                 assert!(
-                    detail.contains("1 of 3"),
+                    detail.contains("1 of 2"),
                     "the ratio of MISSING to configured queries must be stated: {detail}"
                 );
             }
