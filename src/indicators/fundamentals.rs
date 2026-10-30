@@ -3182,54 +3182,82 @@ impl Indicator for HyperscalerShock {
             };
         }
 
-        // The WORST short-window return in the cohort is the value: the question this answers is
-        // "did a major AI player take a significant hit", and an equal-weighted mean would average
-        // one company's collapse against five quiet names and lose it.
-        let worst = per_name
+        // TWO DIFFERENT FACTS, BOTH SEVERE, AND THE CHANNEL WAS SEEING ONLY ONE.
+        //
+        // The five-day return catches a FRESH SHOCK. The drawdown from the 52-week high catches a
+        // SUSTAINED DE-RATING. Measured live on 2026-10-29 these disagree completely inside one cohort:
+        // Oracle was +11.2% over five days — it would read as RECOVERING — while sitting 55.4% below its
+        // own high, the worst damage of the six. Alphabet was -12.6% in a SINGLE day while only 29.5%
+        // below its high. Reporting the five-day alone let Oracle's half-lost market value pass as
+        // health, and reporting the drawdown alone would have buried a 12.6% day at the largest name.
+        // So both are scored through the same ladder and the MORE SEVERE governs, which is the only
+        // arrangement under which neither fact can hide the other.
+        let worst_5d = per_name
             .iter()
             .cloned()
             .fold(("", 0.0_f64, 0.0_f64), |a, b| if b.1 < a.1 { b } else { a });
+        let worst_dd = per_name
+            .iter()
+            .cloned()
+            .fold(("", 0.0_f64, 0.0_f64), |a, b| if b.2 < a.2 { b } else { a });
         let mean_dd = per_name.iter().map(|(_, _, d)| d).sum::<f64>() / per_name.len() as f64;
-        let stress = crate::score::interpolate(worst.1, &ic.anchors);
+        let s_5d = crate::score::interpolate(worst_5d.1, &ic.anchors);
+        let s_dd = crate::score::interpolate(worst_dd.2, &ic.anchors);
+        let (stress, value, driver, driver_val) = if s_dd > s_5d {
+            (
+                s_dd,
+                worst_dd.2,
+                format!("{} (drawdown from its own 52-week high)", worst_dd.0),
+                worst_dd.2,
+            )
+        } else {
+            (
+                s_5d,
+                worst_5d.1,
+                format!(
+                    "{} (return over the last {} trading days)",
+                    worst_5d.0, SHOCK_WINDOW
+                ),
+                worst_5d.1,
+            )
+        };
         let rows: Vec<String> = per_name
             .iter()
-            .map(|(l, r, d)| format!("{} {:+.1}% / {:.0}% off high", l, r, d))
+            .map(|(l, r, d)| format!("{} {:+.1}% 5d / {:.0}% off high", l, r, d))
             .collect();
 
         Reading::Scored {
             stress,
-            value: worst.1,
+            value,
             unit: format!(
-                "% return over the last {} trading days, worst name in the AI-major cohort",
+                "pct — the MORE SEVERE of the {}-day return and the drawdown from the 52-week high, \
+                 worst name in the AI-major cohort",
                 SHOCK_WINDOW
             ),
             detail: format!(
-                "The weakest of the AI majors over the last {} trading days is {} at {:+.1}%; the \
-                 cohort is {:.1}% below its own 52-week highs on average ({}). WHY THIS CHANNEL \
-                 EXISTS: the model watched INDICES and ONE cohort — the six debt-funded builders — so \
-                 a collapse at one of the largest AI companies was diluted to roughly a 0.5% index \
-                 move. Worse, two derived measures moved the WRONG WAY on such a day: a mega-cap \
-                 falling while the rest holds raises RSP/SPY, which reads as IMPROVING breadth, and \
-                 narrows the cap-weight lead, which reads as IMPROVING concentration. A 12% \
-                 single-day fall at a major AI player is a larger event for this economy than a \
-                 CoreWeave drawdown and it was the one move the instrument could not name. WHY THE \
+                "The AI majors are led downward by {driver} at {driver_val:+.1}%. OVER FIVE DAYS the \
+                 worst name is {} at {:+.1}%; FROM THEIR 52-WEEK HIGHS the worst is {} at {:.1}%, and \
+                 the cohort averages {:.1}% below its own highs ({}). BOTH ARE SCORED AND THE MORE \
+                 SEVERE GOVERNS, because they disagree inside one cohort: measured 2026-10-29, ORACLE \
+                 was +11.2% over five days — reading as RECOVERING — while 55.4% below its high, the \
+                 worst damage of the six; and ALPHABET fell 12.6% in a SINGLE day while 29.5% below its \
+                 high. Reporting the five-day alone let Oracle's half-lost market value pass as health; \
+                 reporting the drawdown alone would have buried a 12.6% day at the largest name. WHY THE \
                  WORST NAME AND NOT THE MEAN: the question is whether a major player was hit, and an \
-                 equal-weighted mean averages one collapse against five quiet names and loses it. \
-                 WHY {} DAYS: a one-day print is mostly noise, while a longer window would bury the \
-                 event; five still contains a single 12% day at full strength and also shows whether \
-                 it persisted or was bought back. DIRECTION: a deeper short-window loss is MORE \
-                 stress, the REALISATION coding used by valuation, volatility, credit and the \
-                 builders channel. LIMITS, STATED: (1) this is a COHORT OF SIX chosen by judgement — \
-                 it is not the whole AI complex, and a shock at a name outside it (a neocloud, a \
-                 supplier, a private company) is invisible here; (2) a short window is NOISY by \
-                 construction, so a single bad week can move this figure a long way and the named \
-                 breakdown is printed beside it so the reader can see which company drove it; (3) \
-                 these are the same companies whose filings feed the fundamentals panel, so this is \
-                 corroboration of those channels rather than independent evidence; (4) it says what \
-                 the market did, not why.",
-                SHOCK_WINDOW,
-                worst.0,
-                worst.1,
+                 equal-weighted mean averages one collapse against five quiet names and loses it. WHY \
+                 {} DAYS: a one-day print is mostly noise, while a longer window would bury the event; \
+                 five still contains a single 12% day at full strength and shows whether it persisted \
+                 or was bought back. DIRECTION: a deeper loss on either measure is MORE stress, the \
+                 REALISATION coding used by valuation, volatility, credit, the builders and China. \
+                 LIMITS, STATED: (1) this is a COHORT OF SIX chosen by judgement, not the whole AI \
+                 complex — a shock at a neocloud, a supplier or a private company is invisible here; \
+                 (2) the short window is noisy by construction, which is why the per-company breakdown \
+                 is printed beside it; (3) these are the same companies whose filings feed the \
+                 fundamentals panel, so this corroborates those channels rather than standing \n                 independent of them; (4) it says what the market did, not why.",
+                worst_5d.0,
+                worst_5d.1,
+                worst_dd.0,
+                worst_dd.2,
                 mean_dd,
                 rows.join(", "),
                 SHOCK_WINDOW
