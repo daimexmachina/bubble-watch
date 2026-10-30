@@ -3133,6 +3133,106 @@ pub const BREADTH_ANCHORS: &[[f64; 2]] = &[
     [100.0, 96.0],
 ];
 
+/// The arithmetic shared by every cohort shock indicator, so the three legs cannot drift apart between
+/// cohorts. Returns the raw facts; each indicator applies its own anchor ladders to them.
+pub struct CohortStats {
+    pub worst_5d: (String, f64),
+    pub worst_dd: (String, f64),
+    pub mean_dd: f64,
+    pub n: f64,
+    pub n_deep: usize,
+    pub breadth_pct: f64,
+    pub rows: Vec<String>,
+}
+
+fn cohort_stats(ctx: &Ctx, keys: &[(&str, &str)]) -> Result<CohortStats, String> {
+    let mut per_name: Vec<(&str, f64, f64)> = Vec::new();
+    for (key, label) in keys {
+        let Some(series) = ctx.obs.yahoo.get(*key) else {
+            continue;
+        };
+        let vals = series.values();
+        if vals.len() < SHOCK_WINDOW + 1 {
+            continue;
+        }
+        let n = vals.len();
+        let then = vals[n - 1 - SHOCK_WINDOW];
+        let last = vals[n - 1];
+        if then <= 0.0 {
+            continue;
+        }
+        let ret = (last / then - 1.0) * 100.0;
+        let high = vals.iter().cloned().fold(f64::MIN, f64::max);
+        let dd = if high > 0.0 {
+            (last / high - 1.0) * 100.0
+        } else {
+            0.0
+        };
+        per_name.push((*label, ret, dd));
+    }
+    // Refuse on thin coverage rather than describe one company as a cohort.
+    if per_name.len() * 100 < keys.len() * 50 {
+        return Err(format!(
+            "only {} of {} price series were retrieved, which is a company story rather than a cohort \
+             story",
+            per_name.len(),
+            keys.len()
+        ));
+    }
+    let worst_5d = per_name
+        .iter()
+        .cloned()
+        .fold(("".to_string(), 0.0_f64, 0.0_f64), |a, b| {
+            if b.1 < a.1 {
+                (b.0.to_string(), b.1, b.2)
+            } else {
+                a
+            }
+        });
+    let worst_dd = per_name
+        .iter()
+        .cloned()
+        .fold(("".to_string(), 0.0_f64, 0.0_f64), |a, b| {
+            if b.2 < a.2 {
+                (b.0.to_string(), b.1, b.2)
+            } else {
+                a
+            }
+        });
+    let n = per_name.len() as f64;
+    let mean_dd = per_name.iter().map(|(_, _, d)| d).sum::<f64>() / n;
+    let n_deep = per_name.iter().filter(|(_, _, d)| *d < -20.0).count();
+    let breadth_pct = n_deep as f64 / n * 100.0;
+    let rows = per_name
+        .iter()
+        .map(|(l, r, d)| format!("{} {:+.1}% 5d / {:.0}% off high", l, r, d))
+        .collect();
+    Ok(CohortStats {
+        worst_5d: (worst_5d.0, worst_5d.1),
+        worst_dd: (worst_dd.0, worst_dd.2),
+        mean_dd,
+        n,
+        n_deep,
+        breadth_pct,
+        rows,
+    })
+}
+
+/// Pick the governing leg. The more severe governs so neither a single collapse nor a spreading one can
+/// hide behind the other, and the leg is returned so it can be NAMED in the output rather than inferred.
+fn governing_leg(st: &CohortStats, anchors: &[[f64; 2]]) -> (f64, f64, &'static str) {
+    let s_5d = crate::score::interpolate(st.worst_5d.1, anchors);
+    let s_dd = crate::score::interpolate(st.worst_dd.1, anchors);
+    let s_breadth = crate::score::interpolate(st.breadth_pct, BREADTH_ANCHORS);
+    if s_dd >= s_5d && s_dd >= s_breadth {
+        (s_dd, st.worst_dd.1, "drawdown")
+    } else if s_breadth >= s_5d {
+        (s_breadth, st.breadth_pct, "breadth")
+    } else {
+        (s_5d, st.worst_5d.1, "five-day")
+    }
+}
+
 impl Indicator for HyperscalerShock {
     fn id(&self) -> &'static str {
         "hyperscaler_shock"
@@ -3141,17 +3241,10 @@ impl Indicator for HyperscalerShock {
     fn evaluate(&self, ctx: &Ctx) -> Reading {
         let ic = match ctx.cfg.indicator(self.id()) {
             Some(c) => c,
-            None => {
-                return Reading::Unavailable {
-                    reason: "not configured".into(),
-                }
-            }
+            None => return Reading::Unavailable { reason: "not configured".into() },
         };
         if ic.weight == 0.0 {
-            assert!(
-                ic.anchors.is_empty(),
-                "hyperscaler_shock is weight 0 and must carry NO anchors"
-            );
+            assert!(ic.anchors.is_empty(), "hyperscaler_shock is weight 0 and must carry NO anchors");
         } else {
             assert!(
                 !ic.anchors.is_empty(),
@@ -3159,147 +3252,109 @@ impl Indicator for HyperscalerShock {
                 ic.weight
             );
         }
-
-        let mut per_name: Vec<(&str, f64, f64)> = Vec::new(); // (label, 5d pct, drawdown from high)
-        for (key, label) in HYPERSCALER_KEYS {
-            let Some(series) = ctx.obs.yahoo.get(*key) else {
-                continue;
-            };
-            let vals = series.values();
-            if vals.len() < SHOCK_WINDOW + 1 {
-                continue;
-            }
-            let n = vals.len();
-            let then = vals[n - 1 - SHOCK_WINDOW];
-            let last = vals[n - 1];
-            if then <= 0.0 {
-                continue;
-            }
-            let ret = (last / then - 1.0) * 100.0;
-            let high = vals.iter().cloned().fold(f64::MIN, f64::max);
-            let dd = if high > 0.0 {
-                (last / high - 1.0) * 100.0
-            } else {
-                0.0
-            };
-            per_name.push((*label, ret, dd));
-        }
-
-        // Refuse on thin coverage rather than describe one company as a cohort.
-        if per_name.len() < 3 {
-            return Reading::Unavailable {
-                reason: format!(
-                    "only {} of {} AI-major price series were retrieved, which is a company story \
-                     rather than a cohort story",
-                    per_name.len(),
-                    HYPERSCALER_KEYS.len()
-                ),
-            };
-        }
-
-        // THREE FACTS, AND THE CHANNEL WAS REPORTING ONE OF THEM. The five-day return catches a FRESH
-        // SHOCK; the drawdown from the 52-week high catches a SUSTAINED DE-RATING; the breadth of deep
-        // drawdowns catches DAMAGE THAT IS SPREADING. Measured live these disagree inside one cohort: on
-        // 2026-10-29 Oracle was +11.2% over five days — reading as RECOVERING — while 55.4% below its
-        // high, and on 2026-10-30 Nvidia fell another 4.2% while the channel's value could not move.
-        //
-        // SATURATION WAS THE BUG. Reporting only the worst name pinned the measure at the top of its
-        // ladder: once Oracle clamped to 98, a further 4.2% fall at Nvidia and any further Oracle decline
-        // both produced ZERO change. A measure that cannot get worse is not measuring. The ladder is now
-        // spaced so -40%, -55% and -75% are separable, and BREADTH supplies the response that a single
-        // worst name structurally cannot.
-        let worst_5d = per_name
-            .iter()
-            .cloned()
-            .fold(("", 0.0_f64, 0.0_f64), |a, b| if b.1 < a.1 { b } else { a });
-        let worst_dd = per_name
-            .iter()
-            .cloned()
-            .fold(("", 0.0_f64, 0.0_f64), |a, b| if b.2 < a.2 { b } else { a });
-        let mean_dd = per_name.iter().map(|(_, _, d)| d).sum::<f64>() / per_name.len() as f64;
-
-        // BREADTH: the share of the cohort more than 20% below its own high. 20% because a fifth off a
-        // 52-week high is the conventional threshold for a de-rating rather than a wobble. This is the
-        // leg that responds when one name is already broken and the damage moves outward — the state
-        // measured on 2026-10-30, when Oracle sat at -55.4% and Nvidia joined it at -14.4%.
-        let n = per_name.len() as f64;
-        let n_deep = per_name.iter().filter(|(_, _, d)| *d < -20.0).count();
-        let breadth_pct = n_deep as f64 / n * 100.0;
-
-        let s_5d = crate::score::interpolate(worst_5d.1, &ic.anchors);
-        let s_dd = crate::score::interpolate(worst_dd.2, &ic.anchors);
-        let s_breadth = crate::score::interpolate(breadth_pct, BREADTH_ANCHORS);
-
-        // The more severe leg governs, so neither a single collapse nor a spreading one can hide behind
-        // the other, and the governing leg is NAMED rather than left to be inferred.
-        let (stress, value, leg) = if s_dd >= s_5d && s_dd >= s_breadth {
-            (s_dd, worst_dd.2, "drawdown")
-        } else if s_breadth >= s_5d {
-            (s_breadth, breadth_pct, "breadth")
-        } else {
-            (s_5d, worst_5d.1, "five-day")
+        let st = match cohort_stats(ctx, HYPERSCALER_KEYS) {
+            Ok(s) => s,
+            Err(e) => return Reading::Unavailable { reason: e },
         };
-
-        let rows: Vec<String> = per_name
-            .iter()
-            .map(|(l, r, d)| format!("{} {:+.1}% 5d / {:.0}% off high", l, r, d))
-            .collect();
-        let (w5l, w5v) = (worst_5d.0, worst_5d.1);
-        let (wdl, wdv) = (worst_dd.0, worst_dd.2);
+        let (stress, value, leg) = governing_leg(&st, &ic.anchors);
+        let (w5l, w5v) = (st.worst_5d.0.clone(), st.worst_5d.1);
+        let (wdl, wdv) = (st.worst_dd.0.clone(), st.worst_dd.1);
+        let (n_deep, n, breadth_pct, mean_dd) = (st.n_deep, st.n, st.breadth_pct, st.mean_dd);
         let governing = match leg {
             "drawdown" => format!("{wdl}'s drawdown from its own 52-week high"),
             "breadth" => format!("the breadth of deep drawdowns: {n_deep} of {n:.0} names more than 20% below their own high"),
             _ => format!("{w5l}'s return over the last {SHOCK_WINDOW} trading days"),
         };
-
         Reading::Scored {
             stress,
             value,
             unit: format!(
-                "pct — the governing leg is {leg}: five-day return, drawdown from the 52-week high, or \
-                 breadth of drawdowns deeper than 20%"
+                "pct — the governing leg is {leg}: five-day return, drawdown from the 52-week high, or breadth of drawdowns deeper than 20%"
             ),
             detail: format!(
-                "The governing measure is {governing}. OVER FIVE DAYS the worst name is {w5l} at \
-                 {w5v:+.1}%; FROM THEIR 52-WEEK HIGHS the worst is {wdl} at {wdv:.1}% and the cohort \
-                 averages {mean_dd:.1}% below its own highs; ON BREADTH, {n_deep} of {n:.0} names are \
-                 more than 20% below their own high ({breadth_pct:.0}%). ALL THREE ARE SCORED AND THE \
-                 MORE SEVERE GOVERNS, because they disagree inside one cohort and each can mask the \
-                 others: on 2026-10-29 ORACLE was +11.2% over five days, reading as RECOVERING, while \
-                 55.4% below its high; and on 2026-10-30, with Oracle already at -55.4%, NVIDIA fell a \
-                 further 4.2% and the score could not move at all. WHY BREADTH EXISTS: reporting only \
-                 the worst name SATURATED the measure — once the worst clamped to the top of the ladder, \
-                 damage spreading to the other names was invisible, and a measure that cannot get worse \
-                 is not measuring. WHY THE LADDER WAS RESHAPED: the old top anchor at -40 -> 98 made \
-                 everything past -40% indistinguishable, so a worsening Oracle read identically to a \
-                 stabilised one; the new spacing separates -40%, -55% and -75%. WHY THE WORST NAME AND \
-                 NOT THE MEAN: the question is whether a major player was hit, and an equal-weighted mean \
-                 averages one collapse against five quiet names and loses it. WHY {SHOCK_WINDOW} DAYS: a \
-                 one-day print is mostly noise, while a longer window would bury the event. DIRECTION: a \
-                 deeper loss on any leg is MORE stress, the REALISATION coding used by valuation, \
-                 volatility, credit, the builders and China. LIMITS, STATED: (1) the cohort of six is \
-                 chosen by judgement, not the whole AI complex — and companies that are not publicly \
-                 listed, such as SpaceX, have NO price series at all and are invisible here by \
-                 construction; (2) the short window is noisy, which is why the per-company breakdown is \
-                 printed beside it; (3) breadth moves in steps of one sixth, so a single name crossing \
-                 the threshold is a visible jump rather than a smooth drift; (4) these are the same \
-                 companies whose filings feed the fundamentals panel, so this corroborates those \
-                 channels rather than standing independent of them; (5) it says what the market did, not \
-                 why. PER COMPANY: {}.", rows.join(", ")
+                "The governing measure is {governing}. OVER FIVE DAYS the worst name is {w5l} at {w5v:+.1}%; FROM THEIR 52-WEEK HIGHS the worst is {wdl} at {wdv:.1}% and the cohort averages {mean_dd:.1}% below its own highs; ON BREADTH, {n_deep} of {n:.0} names are more than 20% below their own high ({breadth_pct:.0}%). ALL THREE ARE SCORED AND THE MORE SEVERE GOVERNS: on 2026-10-29 Oracle was +11.2% over five days, reading as RECOVERING, while 55.4% below its high; and on 2026-10-30, with Oracle already deep, Nvidia fell a further 4.2% and a worst-name-only measure could not move at all. WHY BREADTH EXISTS: reporting only the worst name SATURATES — once the worst clamps to the top of the ladder, damage spreading to the other names is invisible, and a measure that cannot get worse is not measuring. LIMITS: (1) the cohort of six is chosen by judgement, and companies that are not publicly listed, such as SpaceX, have NO price series and are invisible here by construction; (2) the short window is noisy, which is why the per-company breakdown is printed; (3) breadth moves in steps of one sixth; (4) these companies' filings also feed the fundamentals panel, so this corroborates rather than stands independent of it; (5) it says what the market did, not why. PER COMPANY: {}.",
+                st.rows.join(", ")
             ),
             provenance: crate::model::Provenance {
                 source: "yahoo".into(),
                 endpoint: format!(
                     "chart API, 1y daily: {}",
-                    per_name.iter().map(|(l, _, _)| *l).collect::<Vec<_>>().join(", ")
+                    HYPERSCALER_KEYS.iter().map(|(_, l)| *l).collect::<Vec<_>>().join(", ")
                 ),
-                as_of: ctx
-                    .obs
-                    .yahoo
-                    .get("GOOGL_1y_d")
-                    .and_then(|s| s.points.last())
-                    .map(|p| p.date.clone())
-                    .unwrap_or_default(),
+                as_of: ctx.obs.yahoo.get("GOOGL_1y_d").and_then(|s| s.points.last()).map(|p| p.date.clone()).unwrap_or_default(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
+/// Shock across the AI SUPPLY CHAIN — the companies selling into the build-out.
+pub struct AiSupplyChainShock;
+
+pub const SUPPLY_CHAIN_KEYS: &[(&str, &str)] = &[
+    ("AMD_1y_d", "AMD"),
+    ("ARM_1y_d", "ARM"),
+    ("AVGO_1y_d", "Broadcom"),
+    ("MU_1y_d", "Micron"),
+    ("TSM_1y_d", "TSMC"),
+    ("ASML_1y_d", "ASML"),
+    ("AMAT_1y_d", "Applied Materials"),
+    ("QCOM_1y_d", "Qualcomm"),
+    ("INTC_1y_d", "Intel"),
+    ("MRVL_1y_d", "Marvell"),
+    ("VRT_1y_d", "Vertiv"),
+    ("SMCI_1y_d", "Super Micro"),
+];
+
+impl Indicator for AiSupplyChainShock {
+    fn id(&self) -> &'static str {
+        "ai_supply_chain_shock"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => return Reading::Unavailable { reason: "not configured".into() },
+        };
+        if ic.weight == 0.0 {
+            assert!(ic.anchors.is_empty(), "ai_supply_chain_shock is weight 0 and must carry NO anchors");
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "ai_supply_chain_shock is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+        let st = match cohort_stats(ctx, SUPPLY_CHAIN_KEYS) {
+            Ok(s) => s,
+            Err(e) => return Reading::Unavailable { reason: e },
+        };
+        let (stress, value, leg) = governing_leg(&st, &ic.anchors);
+        let (w5l, w5v) = (st.worst_5d.0.clone(), st.worst_5d.1);
+        let (wdl, wdv) = (st.worst_dd.0.clone(), st.worst_dd.1);
+        let (n_deep, n, breadth_pct, mean_dd) = (st.n_deep, st.n, st.breadth_pct, st.mean_dd);
+        let governing = match leg {
+            "drawdown" => format!("{wdl}'s drawdown from its own 52-week high"),
+            "breadth" => format!("the breadth of deep drawdowns: {n_deep} of {n:.0} names more than 20% below their own high"),
+            _ => format!("{w5l}'s return over the last {SHOCK_WINDOW} trading days"),
+        };
+        Reading::Scored {
+            stress,
+            value,
+            unit: format!(
+                "pct — the governing leg is {leg}: five-day return, drawdown from the 52-week high, or breadth of drawdowns deeper than 20%, across the AI supply chain"
+            ),
+            detail: format!(
+                "The governing measure is {governing}. OVER FIVE DAYS the worst name is {w5l} at {w5v:+.1}%; FROM THEIR 52-WEEK HIGHS the worst is {wdl} at {wdv:.1}% and the cohort averages {mean_dd:.1}% below its own highs; ON BREADTH, {n_deep} of {n:.0} names are more than 20% below their own high ({breadth_pct:.0}%). WHY THIS COHORT EXISTS: the model had cohorts for the BUYERS — the hyperscalers and the debt-funded builders — and NONE for the SELLERS, so a rout in the companies whose revenue depends on the build-out happening was invisible. Measured at the 2026-10-30 close: INTEL -29.1% IN A SINGLE SESSION and 53.7% below its high, Qualcomm -10.8%, AMD -10.6%, ARM -9.7%, Marvell -9.6%, Applied Materials -7.3%, ASML -6.6% — while the five true hyperscalers fell only 1.1 to 1.6%. THE SPLIT IS THE POINT, NOT THE AVERAGE: the same day, Texas Instruments was 9.5% off its high and Analog Devices 6.4%, selling into autos and industrial rather than AI, so the damage tracked AI EXPOSURE specifically and was NOT a general de-rating of chips. LIMITS: (1) the twelve names are chosen by judgement and span three layers — logic, memory, equipment — that do not deteriorate for the same reasons; (2) Vertiv and Super Micro sit on the data-centre fit-out layer rather than in silicon, included because that is the same demand; (3) the five-day window is noisy, which is why the per-company breakdown is printed; (4) breadth moves in steps of one twelfth; (5) it says what the market did, not why. PER COMPANY: {}.",
+                st.rows.join(", ")
+            ),
+            provenance: crate::model::Provenance {
+                source: "yahoo".into(),
+                endpoint: format!(
+                    "chart API, 1y daily: {}",
+                    SUPPLY_CHAIN_KEYS.iter().map(|(_, l)| *l).collect::<Vec<_>>().join(", ")
+                ),
+                as_of: ctx.obs.yahoo.get("NVDA_1y_d").and_then(|s| s.points.last()).map(|p| p.date.clone()).unwrap_or_default(),
                 retrieved_at: ctx.obs.retrieved_at.clone(),
             },
         }

@@ -186,6 +186,79 @@ pub const YAHOO_SPECS: &[YahooSpec] = &[
         range: "1y",
         interval: "1d",
     },
+    // ---- THE AI SUPPLY CHAIN AS INDIVIDUAL NAMES -------------------------------
+    YahooSpec {
+        key: "AMD_1y_d",
+        symbol: "AMD",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "ARM_1y_d",
+        symbol: "ARM",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "AVGO_1y_d",
+        symbol: "AVGO",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "MU_1y_d",
+        symbol: "MU",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "TSM_1y_d",
+        symbol: "TSM",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "ASML_1y_d",
+        symbol: "ASML",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "AMAT_1y_d",
+        symbol: "AMAT",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "QCOM_1y_d",
+        symbol: "QCOM",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "INTC_1y_d",
+        symbol: "INTC",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "MRVL_1y_d",
+        symbol: "MRVL",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "VRT_1y_d",
+        symbol: "VRT",
+        range: "1y",
+        interval: "1d",
+    },
+    YahooSpec {
+        key: "SMCI_1y_d",
+        symbol: "SMCI",
+        range: "1y",
+        interval: "1d",
+    },
 ];
 
 /// FRED series the model may want. All optional by construction.

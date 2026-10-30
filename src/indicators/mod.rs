@@ -109,6 +109,7 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "china_ai_derating" => Some(Box::new(fundamentals::ChinaAiDerating)),
         "regulatory_risk" => Some(Box::new(fundamentals::RegulatoryRisk)),
         "hyperscaler_shock" => Some(Box::new(fundamentals::HyperscalerShock)),
+        "ai_supply_chain_shock" => Some(Box::new(fundamentals::AiSupplyChainShock)),
         _ => None,
     }
 }
