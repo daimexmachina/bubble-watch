@@ -3118,6 +3118,21 @@ pub const HYPERSCALER_KEYS: &[(&str, &str)] = &[
 /// a single 12% day at full strength and also shows whether it persisted or was bought back.
 pub const SHOCK_WINDOW: usize = 5;
 
+/// Stress ladder for BREADTH, the share of the cohort more than 20% below its own high.
+///
+/// A second ladder, not the percentage-move one: this quantity is a SHARE OF NAMES, so a -10% reading
+/// would be meaningless on it. The steps are deliberately fine because with six names breadth moves in
+/// increments of 16.7% — a coarse ladder would blunt exactly the transition it exists to detect.
+pub const BREADTH_ANCHORS: &[[f64; 2]] = &[
+    [0.0, 15.0],
+    [16.7, 32.0],
+    [33.3, 50.0],
+    [50.0, 65.0],
+    [66.7, 80.0],
+    [83.3, 90.0],
+    [100.0, 96.0],
+];
+
 impl Indicator for HyperscalerShock {
     fn id(&self) -> &'static str {
         "hyperscaler_shock"
@@ -3182,16 +3197,17 @@ impl Indicator for HyperscalerShock {
             };
         }
 
-        // TWO DIFFERENT FACTS, BOTH SEVERE, AND THE CHANNEL WAS SEEING ONLY ONE.
+        // THREE FACTS, AND THE CHANNEL WAS REPORTING ONE OF THEM. The five-day return catches a FRESH
+        // SHOCK; the drawdown from the 52-week high catches a SUSTAINED DE-RATING; the breadth of deep
+        // drawdowns catches DAMAGE THAT IS SPREADING. Measured live these disagree inside one cohort: on
+        // 2026-10-29 Oracle was +11.2% over five days — reading as RECOVERING — while 55.4% below its
+        // high, and on 2026-10-30 Nvidia fell another 4.2% while the channel's value could not move.
         //
-        // The five-day return catches a FRESH SHOCK. The drawdown from the 52-week high catches a
-        // SUSTAINED DE-RATING. Measured live on 2026-10-29 these disagree completely inside one cohort:
-        // Oracle was +11.2% over five days — it would read as RECOVERING — while sitting 55.4% below its
-        // own high, the worst damage of the six. Alphabet was -12.6% in a SINGLE day while only 29.5%
-        // below its high. Reporting the five-day alone let Oracle's half-lost market value pass as
-        // health, and reporting the drawdown alone would have buried a 12.6% day at the largest name.
-        // So both are scored through the same ladder and the MORE SEVERE governs, which is the only
-        // arrangement under which neither fact can hide the other.
+        // SATURATION WAS THE BUG. Reporting only the worst name pinned the measure at the top of its
+        // ladder: once Oracle clamped to 98, a further 4.2% fall at Nvidia and any further Oracle decline
+        // both produced ZERO change. A measure that cannot get worse is not measuring. The ladder is now
+        // spaced so -40%, -55% and -75% are separable, and BREADTH supplies the response that a single
+        // worst name structurally cannot.
         let worst_5d = per_name
             .iter()
             .cloned()
@@ -3201,66 +3217,75 @@ impl Indicator for HyperscalerShock {
             .cloned()
             .fold(("", 0.0_f64, 0.0_f64), |a, b| if b.2 < a.2 { b } else { a });
         let mean_dd = per_name.iter().map(|(_, _, d)| d).sum::<f64>() / per_name.len() as f64;
+
+        // BREADTH: the share of the cohort more than 20% below its own high. 20% because a fifth off a
+        // 52-week high is the conventional threshold for a de-rating rather than a wobble. This is the
+        // leg that responds when one name is already broken and the damage moves outward — the state
+        // measured on 2026-10-30, when Oracle sat at -55.4% and Nvidia joined it at -14.4%.
+        let n = per_name.len() as f64;
+        let n_deep = per_name.iter().filter(|(_, _, d)| *d < -20.0).count();
+        let breadth_pct = n_deep as f64 / n * 100.0;
+
         let s_5d = crate::score::interpolate(worst_5d.1, &ic.anchors);
         let s_dd = crate::score::interpolate(worst_dd.2, &ic.anchors);
-        let (stress, value, driver, driver_val) = if s_dd > s_5d {
-            (
-                s_dd,
-                worst_dd.2,
-                format!("{} (drawdown from its own 52-week high)", worst_dd.0),
-                worst_dd.2,
-            )
+        let s_breadth = crate::score::interpolate(breadth_pct, BREADTH_ANCHORS);
+
+        // The more severe leg governs, so neither a single collapse nor a spreading one can hide behind
+        // the other, and the governing leg is NAMED rather than left to be inferred.
+        let (stress, value, leg) = if s_dd >= s_5d && s_dd >= s_breadth {
+            (s_dd, worst_dd.2, "drawdown")
+        } else if s_breadth >= s_5d {
+            (s_breadth, breadth_pct, "breadth")
         } else {
-            (
-                s_5d,
-                worst_5d.1,
-                format!(
-                    "{} (return over the last {} trading days)",
-                    worst_5d.0, SHOCK_WINDOW
-                ),
-                worst_5d.1,
-            )
+            (s_5d, worst_5d.1, "five-day")
         };
+
         let rows: Vec<String> = per_name
             .iter()
             .map(|(l, r, d)| format!("{} {:+.1}% 5d / {:.0}% off high", l, r, d))
             .collect();
+        let (w5l, w5v) = (worst_5d.0, worst_5d.1);
+        let (wdl, wdv) = (worst_dd.0, worst_dd.2);
+        let governing = match leg {
+            "drawdown" => format!("{wdl}'s drawdown from its own 52-week high"),
+            "breadth" => format!("the breadth of deep drawdowns: {n_deep} of {n:.0} names more than 20% below their own high"),
+            _ => format!("{w5l}'s return over the last {SHOCK_WINDOW} trading days"),
+        };
 
         Reading::Scored {
             stress,
             value,
             unit: format!(
-                "pct — the MORE SEVERE of the {}-day return and the drawdown from the 52-week high, \
-                 worst name in the AI-major cohort",
-                SHOCK_WINDOW
+                "pct — the governing leg is {leg}: five-day return, drawdown from the 52-week high, or \
+                 breadth of drawdowns deeper than 20%"
             ),
             detail: format!(
-                "The AI majors are led downward by {driver} at {driver_val:+.1}%. OVER FIVE DAYS the \
-                 worst name is {} at {:+.1}%; FROM THEIR 52-WEEK HIGHS the worst is {} at {:.1}%, and \
-                 the cohort averages {:.1}% below its own highs ({}). BOTH ARE SCORED AND THE MORE \
-                 SEVERE GOVERNS, because they disagree inside one cohort: measured 2026-10-29, ORACLE \
-                 was +11.2% over five days — reading as RECOVERING — while 55.4% below its high, the \
-                 worst damage of the six; and ALPHABET fell 12.6% in a SINGLE day while 29.5% below its \
-                 high. Reporting the five-day alone let Oracle's half-lost market value pass as health; \
-                 reporting the drawdown alone would have buried a 12.6% day at the largest name. WHY THE \
-                 WORST NAME AND NOT THE MEAN: the question is whether a major player was hit, and an \
-                 equal-weighted mean averages one collapse against five quiet names and loses it. WHY \
-                 {} DAYS: a one-day print is mostly noise, while a longer window would bury the event; \
-                 five still contains a single 12% day at full strength and shows whether it persisted \
-                 or was bought back. DIRECTION: a deeper loss on either measure is MORE stress, the \
-                 REALISATION coding used by valuation, volatility, credit, the builders and China. \
-                 LIMITS, STATED: (1) this is a COHORT OF SIX chosen by judgement, not the whole AI \
-                 complex — a shock at a neocloud, a supplier or a private company is invisible here; \
-                 (2) the short window is noisy by construction, which is why the per-company breakdown \
-                 is printed beside it; (3) these are the same companies whose filings feed the \
-                 fundamentals panel, so this corroborates those channels rather than standing \n                 independent of them; (4) it says what the market did, not why.",
-                worst_5d.0,
-                worst_5d.1,
-                worst_dd.0,
-                worst_dd.2,
-                mean_dd,
-                rows.join(", "),
-                SHOCK_WINDOW
+                "The governing measure is {governing}. OVER FIVE DAYS the worst name is {w5l} at \
+                 {w5v:+.1}%; FROM THEIR 52-WEEK HIGHS the worst is {wdl} at {wdv:.1}% and the cohort \
+                 averages {mean_dd:.1}% below its own highs; ON BREADTH, {n_deep} of {n:.0} names are \
+                 more than 20% below their own high ({breadth_pct:.0}%). ALL THREE ARE SCORED AND THE \
+                 MORE SEVERE GOVERNS, because they disagree inside one cohort and each can mask the \
+                 others: on 2026-10-29 ORACLE was +11.2% over five days, reading as RECOVERING, while \
+                 55.4% below its high; and on 2026-10-30, with Oracle already at -55.4%, NVIDIA fell a \
+                 further 4.2% and the score could not move at all. WHY BREADTH EXISTS: reporting only \
+                 the worst name SATURATED the measure — once the worst clamped to the top of the ladder, \
+                 damage spreading to the other names was invisible, and a measure that cannot get worse \
+                 is not measuring. WHY THE LADDER WAS RESHAPED: the old top anchor at -40 -> 98 made \
+                 everything past -40% indistinguishable, so a worsening Oracle read identically to a \
+                 stabilised one; the new spacing separates -40%, -55% and -75%. WHY THE WORST NAME AND \
+                 NOT THE MEAN: the question is whether a major player was hit, and an equal-weighted mean \
+                 averages one collapse against five quiet names and loses it. WHY {SHOCK_WINDOW} DAYS: a \
+                 one-day print is mostly noise, while a longer window would bury the event. DIRECTION: a \
+                 deeper loss on any leg is MORE stress, the REALISATION coding used by valuation, \
+                 volatility, credit, the builders and China. LIMITS, STATED: (1) the cohort of six is \
+                 chosen by judgement, not the whole AI complex — and companies that are not publicly \
+                 listed, such as SpaceX, have NO price series at all and are invisible here by \
+                 construction; (2) the short window is noisy, which is why the per-company breakdown is \
+                 printed beside it; (3) breadth moves in steps of one sixth, so a single name crossing \
+                 the threshold is a visible jump rather than a smooth drift; (4) these are the same \
+                 companies whose filings feed the fundamentals panel, so this corroborates those \
+                 channels rather than standing independent of them; (5) it says what the market did, not \
+                 why. PER COMPANY: {}.", rows.join(", ")
             ),
             provenance: crate::model::Provenance {
                 source: "yahoo".into(),
@@ -3283,6 +3308,28 @@ impl Indicator for HyperscalerShock {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn every_additional_deep_drawdown_raises_the_breadth_leg() {
+        // The leg exists because the worst-name measure SATURATED: once Oracle clamped to the top of the
+        // ladder, damage spreading to Nvidia on 2026-10-30 produced no change at all. Breadth has to be
+        // strictly responsive to each additional name, or it repeats the fault it was added to fix.
+        let mut prev = -1.0;
+        for i in 0..=6 {
+            let pct = i as f64 * 100.0 / 6.0;
+            let s = crate::score::interpolate(pct, super::BREADTH_ANCHORS);
+            assert!(
+                s > prev,
+                "breadth {pct:.1}% did not raise stress above {prev}: got {s}"
+            );
+            prev = s;
+        }
+        assert!(
+            prev > 90.0,
+            "all six names deep must score above 90, got {prev} — otherwise the leg cannot express the \
+             state it was built for"
+        );
+    }
+
     use super::*;
     use crate::config::*;
     use crate::model::{EdgarFact, Observations};
