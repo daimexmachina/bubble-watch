@@ -601,6 +601,38 @@ pub fn fetch_all(f: &Fetcher, offline: bool) -> Observations {
         }),
     }
 
+    // Federal policy ATTENTION on data centres — the realised successor to the election-odds
+    // channel, added 2026-11-05. Two calls, keyless, no quota, and the same host the BIS count
+    // already uses. Both windows are required: one alone has no scale, and a ratio computed from a
+    // missing window would read as silence rather than as a gap.
+    let fr_today = crate::now_date();
+    let since90 = federalregister::days_before(&fr_today, 90);
+    let since365 = federalregister::days_before(&fr_today, 365);
+    match federalregister::document_count_since(f, "data center", &since90) {
+        Ok((n90, _)) => match federalregister::document_count_since(f, "data center", &since365) {
+            Ok((n365, latest)) => {
+                obs.fr_dc_90d = Some(n90);
+                obs.fr_dc_365d = Some(n365);
+                obs.fr_dc_provenance = Some(crate::model::Provenance {
+                    source: "federalregister".into(),
+                    endpoint: federalregister::QUERY_URL.into(),
+                    as_of: latest.unwrap_or(fr_today.clone()),
+                    retrieved_at: obs.retrieved_at.clone(),
+                });
+            }
+            Err(e) => obs.failures.push(SourceFailure {
+                source: "federalregister".into(),
+                endpoint: federalregister::query_for_term("data center", &since365),
+                reason: e,
+            }),
+        },
+        Err(e) => obs.failures.push(SourceFailure {
+            source: "federalregister".into(),
+            endpoint: federalregister::query_for_term("data center", &since90),
+            reason: e,
+        }),
+    }
+
     // LBNL interconnection queue. NOTE: this host REQUIRES a browser User-Agent;
     // without one the 15.5MB workbook returns 403, which makes the source look
     // dead. The landing page is Cloudflare-blocked regardless.

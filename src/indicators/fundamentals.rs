@@ -3038,13 +3038,36 @@ impl Indicator for RegulatoryRisk {
                 ic.anchors.is_empty(),
                 "regulatory_risk is weight 0 and must carry NO anchors"
             );
-        } else {
-            assert!(
-                !ic.anchors.is_empty(),
-                "regulatory_risk is weight {} and therefore SCORED, but carries no anchors",
-                ic.weight
-            );
+            // THE FORECAST RESOLVED. The 2026 midterms were held on 2026-11-03 and the Democrats won
+            // both chambers, so this channel's input settled at 100% and can never move again. A
+            // constant that looks like a measurement is worse than a stated gap, so it is retired
+            // rather than left in the report as a flat line: the composite must not carry weight it
+            // cannot earn. Its realised successor is `policy_realisation`.
+            let last = match (ctx.obs.policy_house_dem, ctx.obs.policy_senate_dem) {
+                (Some(h), Some(s)) => {
+                    format!(" The final values read before resolution were {h:.0}% House and {s:.0}% Senate.")
+                }
+                _ => String::new(),
+            };
+            return Reading::Unavailable {
+                reason: format!(
+                    "RETIRED AT METHODOLOGY 3.3 — THE FORECAST RESOLVED. This channel read a \
+                     prediction market's implied chance of a Democratic sweep. The midterms were held \
+                     on 2026-11-03 and the Democrats won both chambers, so the input is a settled \
+                     constant at 100% rather than a forecast, and a settled forecast measures \
+                     nothing.{last} The realised successor is `policy_realisation`, which counts what \
+                     federal agencies actually publish about data centres. Nothing is guessed here: \
+                     the channel is retired openly, its history is preserved in the archive, and the \
+                     weight moved rather than vanished."
+                ),
+            };
         }
+
+        assert!(
+            !ic.anchors.is_empty(),
+            "regulatory_risk is weight {} and therefore SCORED, but carries no anchors",
+            ic.weight
+        );
 
         let (Some(house), Some(senate)) = (ctx.obs.policy_house_dem, ctx.obs.policy_senate_dem)
         else {
@@ -3241,10 +3264,17 @@ impl Indicator for HyperscalerShock {
     fn evaluate(&self, ctx: &Ctx) -> Reading {
         let ic = match ctx.cfg.indicator(self.id()) {
             Some(c) => c,
-            None => return Reading::Unavailable { reason: "not configured".into() },
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
         };
         if ic.weight == 0.0 {
-            assert!(ic.anchors.is_empty(), "hyperscaler_shock is weight 0 and must carry NO anchors");
+            assert!(
+                ic.anchors.is_empty(),
+                "hyperscaler_shock is weight 0 and must carry NO anchors"
+            );
         } else {
             assert!(
                 !ic.anchors.is_empty(),
@@ -3314,10 +3344,17 @@ impl Indicator for AiSupplyChainShock {
     fn evaluate(&self, ctx: &Ctx) -> Reading {
         let ic = match ctx.cfg.indicator(self.id()) {
             Some(c) => c,
-            None => return Reading::Unavailable { reason: "not configured".into() },
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
         };
         if ic.weight == 0.0 {
-            assert!(ic.anchors.is_empty(), "ai_supply_chain_shock is weight 0 and must carry NO anchors");
+            assert!(
+                ic.anchors.is_empty(),
+                "ai_supply_chain_shock is weight 0 and must carry NO anchors"
+            );
         } else {
             assert!(
                 !ic.anchors.is_empty(),
@@ -3357,6 +3394,414 @@ impl Indicator for AiSupplyChainShock {
                 as_of: ctx.obs.yahoo.get("NVDA_1y_d").and_then(|s| s.points.last()).map(|p| p.date.clone()).unwrap_or_default(),
                 retrieved_at: ctx.obs.retrieved_at.clone(),
             },
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// METHODOLOGY 3.3 — THE DEFLATION PHASE
+//
+// Added 2026-11-05, after the worst day for semiconductors since March 2020 (Nasdaq -5.5%,
+// SOX -11.5%, Nvidia -9.3%) moved the composite by 0.73 points. Decomposing that run showed why,
+// and the finding is structural rather than a bug:
+//
+//   * The two cohorts that exist to detect "a major AI name took a hit" are PINNED near the top of
+//     their ladder by long-lived drawdowns (Oracle -53%, Intel -63%), so the day was worth 0.037
+//     composite points between them.
+//   * The heaviest pricing channels are LEVEL measures of stretch, so a crash makes them read
+//     SAFER: valuation_stretch fell 6.2, breadth 14.7, concentration 10.2 across the rout.
+//   * Only VIX registered the event.
+//
+// The model therefore measured the build-up and was nearly blind to the clearing — which is the
+// half of the story Daim's thesis is about. These three channels are the fix: how violent a single
+// day was (velocity), how much of the complex has actually deflated (depth), and what policy has
+// actually done rather than what a betting market expected it to do (realisation).
+// ---------------------------------------------------------------------------------------------
+
+/// Every AI name the model already prices individually: six hyperscalers, twelve supply-chain names
+/// and six debt-funded builders. Twenty-four, and all of them already fetched, so the channels below
+/// add NO requests to the run — which matters because the daily job has a 900 s cap and has already
+/// been killed by it once.
+pub fn cohort_union() -> Vec<(&'static str, &'static str)> {
+    let mut v: Vec<(&'static str, &'static str)> = Vec::new();
+    v.extend_from_slice(HYPERSCALER_KEYS);
+    v.extend_from_slice(SUPPLY_CHAIN_KEYS);
+    v.extend_from_slice(BUILDER_KEYS);
+    v
+}
+
+/// Anchors for the SECOND leg of `cohort_velocity`: the share of the complex that fell 5% or more in
+/// one session.
+///
+/// A share-of-names ladder, like `BREADTH_ANCHORS`, because a -10% reading would be meaningless on
+/// it. Reference points: 0% is a quiet day and still scores 8 rather than 0 (a bubble instrument must
+/// not read a quiet session as safety); 10% is a handful of names; 25% is a broad selloff; 60% is a
+/// rout; every name down 5% or more has no benign reading.
+pub const VELOCITY_SHARE_ANCHORS: &[[f64; 2]] = &[
+    [0.0, 8.0],
+    [10.0, 25.0],
+    [25.0, 45.0],
+    [40.0, 62.0],
+    [60.0, 80.0],
+    [80.0, 92.0],
+    [100.0, 99.0],
+];
+
+/// One-day statistics across the union cohort.
+pub struct VelocityStats {
+    pub rows: Vec<String>,
+    pub mean_1d: f64,
+    pub worst_name: String,
+    pub worst_ret: f64,
+    pub share_down_5: f64,
+    pub n_down_5: usize,
+    pub n: f64,
+}
+
+fn velocity_stats(ctx: &Ctx) -> Result<VelocityStats, String> {
+    let keys = cohort_union();
+    let mut per_name: Vec<(&'static str, f64)> = Vec::new();
+    for (key, label) in &keys {
+        let Some(series) = ctx.obs.yahoo.get(*key) else {
+            continue;
+        };
+        let vals = series.values();
+        if vals.len() < 2 {
+            continue;
+        }
+        let (prev, last) = (vals[vals.len() - 2], vals[vals.len() - 1]);
+        if prev <= 0.0 {
+            continue;
+        }
+        per_name.push((*label, (last / prev - 1.0) * 100.0));
+    }
+    // The same coverage refusal as `cohort_stats`: a handful of names is a company story.
+    if per_name.len() * 100 < keys.len() * 50 {
+        return Err(format!(
+            "only {} of {} one-day returns were computable, which is a company story rather than a \
+             cohort story",
+            per_name.len(),
+            keys.len()
+        ));
+    }
+    let n = per_name.len() as f64;
+    let mean_1d = per_name.iter().map(|(_, r)| r).sum::<f64>() / n;
+    let (worst_name, worst_ret) = per_name.iter().fold(("".to_string(), 0.0_f64), |a, b| {
+        if b.1 < a.1 {
+            (b.0.to_string(), b.1)
+        } else {
+            a
+        }
+    });
+    let n_down_5 = per_name.iter().filter(|(_, r)| *r <= -5.0).count();
+    let share_down_5 = n_down_5 as f64 / n * 100.0;
+    let rows = per_name
+        .iter()
+        .map(|(l, r)| format!("{} {:+.1}%", l, r))
+        .collect();
+    Ok(VelocityStats {
+        rows,
+        mean_1d,
+        worst_name,
+        worst_ret,
+        share_down_5,
+        n_down_5,
+        n,
+    })
+}
+
+/// How violent a SINGLE session was across the AI complex.
+pub struct CohortVelocity;
+
+impl Indicator for CohortVelocity {
+    fn id(&self) -> &'static str {
+        "cohort_velocity"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "cohort_velocity is weight 0 and must carry NO anchors"
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "cohort_velocity is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+        let st = match velocity_stats(ctx) {
+            Ok(s) => s,
+            Err(e) => return Reading::Unavailable { reason: e },
+        };
+
+        // HALF ON THE DAY'S AVERAGE MOVE, HALF ON HOW MANY NAMES WERE HIT.
+        //
+        // Neither leg alone is honest. The average alone hides a rout concentrated in the biggest
+        // names; the share alone cannot tell a day when everything fell 5% from one when two names
+        // fell 20%. Averaging the two SCORES is the point — the split is the measurement, not a
+        // smoothed version of one number.
+        //
+        // Deliberately NOT a worst-name leg: `hyperscaler_shock` and `ai_supply_chain_shock` already
+        // carry the worst name, and a worst-name leg here would be a third copy of the same pinned
+        // measure and would saturate on one idiosyncratic earnings miss.
+        let s_mean = crate::score::interpolate(st.mean_1d, &ic.anchors);
+        let s_share = crate::score::interpolate(st.share_down_5, VELOCITY_SHARE_ANCHORS);
+        let stress = 0.5 * s_mean + 0.5 * s_share;
+
+        let (worst_name, worst_ret) = (st.worst_name.clone(), st.worst_ret);
+        let (mean_1d, share, n_down, n) = (st.mean_1d, st.share_down_5, st.n_down_5, st.n);
+
+        Reading::Scored {
+            stress,
+            value: mean_1d,
+            unit: "pct — the day's mean return across the 24 AI names this model prices individually, \
+                   scored half on that average and half on the share of names that fell 5% or more"
+                .into(),
+            detail: format!(
+                "Today the 24-name AI complex averaged {mean_1d:+.2}% and {n_down} of {n:.0} names \
+                 ({share:.0}%) fell 5% or more; the worst was {worst_name} at {worst_ret:+.1}%. THE \
+                 TWO LEGS SCORE {s_mean:.0} AND {s_share:.0} AND AVERAGE, so a rout concentrated in \
+                 a few names and a broad one are told apart instead of being merged. WHY THIS \
+                 CHANNEL EXISTS: on 2026-11-05 the worst day for semiconductors since March 2020 \
+                 (Nasdaq -5.5%, SOX -11.5%, Nvidia -9.3%) moved this model's composite by 0.73 \
+                 points, because the cohort channels are pinned by long-lived drawdowns (Oracle \
+                 -53%, Intel -63%) and the heaviest pricing channels are LEVELS that read SAFER as \
+                 prices fall. A single-session shock needs its own measure or it is invisible. \
+                 LIMITS: (1) one day is noisy in both directions, and a genuine recovery day scores \
+                 as calm — read it with `deflation_depth`; (2) the cohort of 24 is chosen by \
+                 judgement and excludes private companies, which have no price series; (3) it \
+                 overlaps the three cohort channels it draws its names from, so it CORROBORATES \
+                 rather than stands independent of them; (4) it says what the market did, not why. \
+                 PER NAME: {}.",
+                st.rows.join(", ")
+            ),
+            provenance: crate::model::Provenance {
+                source: "yahoo".into(),
+                endpoint: format!(
+                    "chart API, 1y daily, one-day return: {}",
+                    cohort_union().iter().map(|(_, l)| *l).collect::<Vec<_>>().join(", ")
+                ),
+                as_of: ctx.obs.yahoo.get("NVDA_1y_d").and_then(|s| s.points.last()).map(|p| p.date.clone()).unwrap_or_default(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
+/// How much of the AI complex has actually deflated — the median drawdown from its own 52-week high.
+pub struct DeflationDepth;
+
+impl Indicator for DeflationDepth {
+    fn id(&self) -> &'static str {
+        "deflation_depth"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "deflation_depth is weight 0 and must carry NO anchors"
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "deflation_depth is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+
+        let keys = cohort_union();
+        let mut dds: Vec<(&'static str, f64)> = Vec::new();
+        for (key, label) in &keys {
+            let Some(series) = ctx.obs.yahoo.get(*key) else {
+                continue;
+            };
+            let vals = series.values();
+            if vals.is_empty() {
+                continue;
+            }
+            let last = vals[vals.len() - 1];
+            let high = vals.iter().cloned().fold(f64::MIN, f64::max);
+            if high <= 0.0 {
+                continue;
+            }
+            dds.push((*label, (last / high - 1.0) * 100.0));
+        }
+        if dds.len() * 100 < keys.len() * 50 {
+            return Reading::Unavailable {
+                reason: format!(
+                    "only {} of {} price series were retrieved, which is a company story rather than \
+                     a cohort story",
+                    dds.len(),
+                    keys.len()
+                ),
+            };
+        }
+
+        // MEDIAN, not mean and not worst. The worst name is already scored twice (the two cohort
+        // channels) and a mean is dragged by whichever single name has collapsed hardest. The median
+        // answers a different question: has the TYPICAL AI company deflated, or is this one story?
+        let mut sorted: Vec<f64> = dds.iter().map(|(_, d)| *d).collect();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let n = sorted.len();
+        let median = if n % 2 == 1 {
+            sorted[n / 2]
+        } else {
+            (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
+        };
+        let mean = sorted.iter().sum::<f64>() / n as f64;
+        let n_deep20 = sorted.iter().filter(|d| **d < -20.0).count();
+        let n_deep50 = sorted.iter().filter(|d| **d < -50.0).count();
+        let shallowest = sorted.last().cloned().unwrap_or(0.0);
+
+        let stress = crate::score::interpolate(median, &ic.anchors);
+        let rows: Vec<String> = dds
+            .iter()
+            .map(|(l, d)| format!("{} {:.0}% off high", l, d))
+            .collect();
+
+        Reading::Scored {
+            stress,
+            value: median,
+            unit: "pct — median drawdown from its own 52-week high across the 24 AI names this model \
+                   prices individually"
+                .into(),
+            detail: format!(
+                "The median AI name sits {median:.1}% below its own 52-week high (mean {mean:.1}%, \
+                 shallowest {shallowest:.1}%); {n_deep20} of {n} are more than 20% down and \
+                 {n_deep50} more than 50%. WHY THIS CHANNEL EXISTS: across the October-November 2026 \
+                 rout this model's three heaviest pricing channels FELL by 31 stress points between \
+                 them, because they measure how far prices sit ABOVE trend, how concentrated the \
+                 market is, and how wide spreads are — all of which read SAFER as a bubble deflates. \
+                 Nothing measured how much of the complex had actually been given back, so the \
+                 clearing was invisible precisely when it was happening. DIRECTION: a deeper median \
+                 deflation is MORE stress, matching every other realisation channel here. THAT IS A \
+                 CODING CHOICE AND NOT A GATED FINDING — the alternative reading, that deflation is \
+                 the excess being flushed out and therefore lowers forward risk, is Daim's thesis and \
+                 is NOT what this number says. The channel records the size of the deflation; it \
+                 cannot tell 'the bubble is letting air out' from 'the bubble has burst', and no \
+                 single price series can. LIMITS: (1) a drawdown from a 52-week high is not a level — \
+                 a name that has always traded weak reads the same as one that has just collapsed, \
+                 though the 52-week window bounds this; (2) the cohort of 24 is the union of three \
+                 cohorts chosen by judgement and it OVERLAPS them, so this corroborates rather than \
+                 stands independent; (3) private companies (OpenAI, Anthropic, xAI, Nscale) are \
+                 invisible here by construction, and much of the AI complex's value sits there; (4) \
+                 one year of history only, so no 2000-02 comparison is in the window. PER NAME: {}.",
+                rows.join(", ")
+            ),
+            provenance: crate::model::Provenance {
+                source: "yahoo".into(),
+                endpoint: format!(
+                    "chart API, 1y daily, drawdown from 52-week high: {}",
+                    cohort_union().iter().map(|(_, l)| *l).collect::<Vec<_>>().join(", ")
+                ),
+                as_of: ctx.obs.yahoo.get("NVDA_1y_d").and_then(|s| s.points.last()).map(|p| p.date.clone()).unwrap_or_default(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            },
+        }
+    }
+}
+
+/// Federal policy ATTENTION on data centres — the realised successor to `regulatory_risk`.
+pub struct PolicyRealisation;
+
+impl Indicator for PolicyRealisation {
+    fn id(&self) -> &'static str {
+        "policy_realisation"
+    }
+
+    fn evaluate(&self, ctx: &Ctx) -> Reading {
+        let ic = match ctx.cfg.indicator(self.id()) {
+            Some(c) => c,
+            None => {
+                return Reading::Unavailable {
+                    reason: "not configured".into(),
+                }
+            }
+        };
+        if ic.weight == 0.0 {
+            assert!(
+                ic.anchors.is_empty(),
+                "policy_realisation is weight 0 and must carry NO anchors"
+            );
+        } else {
+            assert!(
+                !ic.anchors.is_empty(),
+                "policy_realisation is weight {} and therefore SCORED, but carries no anchors",
+                ic.weight
+            );
+        }
+
+        let (Some(n90), Some(n365)) = (ctx.obs.fr_dc_90d, ctx.obs.fr_dc_365d) else {
+            return Reading::Unavailable {
+                reason: "both Federal Register windows were not retrieved, so the policy rate is \
+                         unknown rather than unchanged"
+                    .into(),
+            };
+        };
+        if n365 == 0 {
+            return Reading::Unavailable {
+                reason:
+                    "the trailing-year count is zero, so no rate ratio can be formed — this is a \
+                         scale problem, not a measurement of silence"
+                        .into(),
+            };
+        }
+
+        // Annualise the quarterly count and compare it with the year's own rate. A ratio, not a raw
+        // count: a raw count needs a scale invented for it, and any scale chosen today would be a
+        // number back-fitted to today's reading.
+        let annualised = n90 as f64 * (365.0 / 90.0);
+        let ratio = annualised / n365 as f64;
+        let stress = crate::score::interpolate(ratio, &ic.anchors);
+
+        Reading::Scored {
+            stress,
+            value: ratio,
+            unit: "ratio — the trailing-90-day Federal Register publication rate mentioning data \
+                   centres, annualised, against the trailing-year rate (1.0 = steady)"
+                .into(),
+            detail: format!(
+                "The Federal Register published {n90} documents mentioning \"data center\" in the last \
+                 90 days and {n365} in the last 365, so the recent rate is {ratio:.2}x the year's own \
+                 rate. WHY IT REPLACES regulatory_risk: that channel read a prediction market's \
+                 probability of a Democratic sweep, which RESOLVED on 2026-11-03 at 100% and can never \
+                 move again — a settled forecast is a constant, not a measurement. This is the \
+                 realised quantity: what agencies actually published, which can move every day. \
+                 FORWARD-LOOKING IS GONE FROM THE MODEL BY DESIGN: with the forecast retired, every \
+                 scored channel now reports a state that has already happened. LIMITS, STATED: (1) \
+                 the term match is a phrase search and it is NOISY — the newest hit on 2026-11-05 was \
+                 a natural-gas pipeline scoping notice, so this counts federal attention to data \
+                 centres, not AI-specific regulation; (2) it measures publication, not effect, and a \
+                 notice is not a rule; (3) the layer where data-centre restrictions actually bite is \
+                 STATE AND LOCAL permitting, which this source cannot see at all and which remains a \
+                 declared blind spot; (4) two windows overlap, so a burst inflates both and damps the \
+                 ratio; (5) publication volume is partly seasonal."
+            ),
+            provenance: ctx.obs.fr_dc_provenance.clone().unwrap_or_else(|| crate::model::Provenance {
+                source: "federalregister".into(),
+                endpoint: crate::sources::federalregister::QUERY_URL.into(),
+                as_of: ctx.obs.retrieved_at.clone(),
+                retrieved_at: ctx.obs.retrieved_at.clone(),
+            }),
         }
     }
 }
@@ -4831,6 +5276,221 @@ mod tests {
                 );
             }
             other => panic!("expected Unavailable, got {other:?}"),
+        }
+    }
+
+    // ---- the three channels added 2026-11-05 (methodology 3.3) --------------
+
+    /// One series that encodes BOTH a one-day return and a drawdown from its own high, so the two new
+    /// cohort channels can be exercised from the same fixture without one silently standing in for the
+    /// other.
+    fn union_series(one_day_pct: f64, dd_pct: f64) -> crate::model::Series {
+        let last = 100.0 * (1.0 + dd_pct / 100.0);
+        let prev = last / (1.0 + one_day_pct / 100.0);
+        let mut vals = vec![100.0_f64; 58];
+        vals.push(prev);
+        vals.push(last);
+        series(&vals)
+    }
+
+    /// Every name in the union cohort, with a given one-day return and drawdown.
+    fn union_obs(rs: &[f64], dds: &[f64]) -> Observations {
+        let keys = cohort_union();
+        assert_eq!(rs.len(), keys.len(), "one return per name");
+        assert_eq!(dds.len(), keys.len(), "one drawdown per name");
+        let mut obs = Observations::default();
+        for (i, (k, _)) in keys.iter().enumerate() {
+            obs.yahoo
+                .insert((*k).to_string(), union_series(rs[i], dds[i]));
+        }
+        obs
+    }
+
+    fn stress_of(r: &Reading) -> f64 {
+        r.stress().expect("expected a scored reading")
+    }
+
+    #[test]
+    fn the_velocity_channel_responds_to_a_single_session() {
+        // THE GUARD THE WHOLE CHANNEL EXISTS FOR. On 2026-11-05 the worst semis day since March 2020
+        // moved the composite 0.73 points because every market channel is a LEVEL. This asserts the
+        // new channel actually moves with the session, and does not merely carry a plausible value:
+        // after ANY weight change the failure mode here is a constant stress that looks fine.
+        let cfg = shipped();
+        let quiet = union_obs(&[0.0; 24], &[0.0; 24]);
+        let crash = union_obs(&[-8.0; 24], &[-8.0; 24]);
+        let s_quiet = stress_of(&CohortVelocity.evaluate(&Ctx {
+            obs: &quiet,
+            cfg: &cfg,
+        }));
+        let s_crash = stress_of(&CohortVelocity.evaluate(&Ctx {
+            obs: &crash,
+            cfg: &cfg,
+        }));
+        assert!(
+            s_crash > 80.0,
+            "a day when all 24 names fell 8% must read above 80, got {s_crash}"
+        );
+        assert!(
+            s_crash > s_quiet + 50.0,
+            "the channel must RESPOND, not carry a constant: quiet {s_quiet}, crash {s_crash}"
+        );
+        assert!(
+            s_quiet < 25.0,
+            "a flat day must read low or the ladder has no range, got {s_quiet}"
+        );
+    }
+
+    #[test]
+    fn a_shock_concentrated_in_one_name_is_not_scored_as_a_systemic_one() {
+        // THE DIFFERENCE FROM THE COHORT CHANNELS, asserted rather than described. `hyperscaler_shock`
+        // and `ai_supply_chain_shock` deliberately score the WORST name, so they read a single
+        // collapse at full strength. If this channel copied that, it would be a third copy of a
+        // measure that is already pinned, and it would scream on every idiosyncratic earnings miss.
+        let cfg = shipped();
+        let mut rs = vec![0.0; 24];
+        rs[0] = -20.0; // one name collapses, the rest are flat
+        let mut dds = vec![0.0; 24];
+        dds[0] = -20.0;
+        let concentrated = union_obs(&rs, &dds);
+        let broad = union_obs(&[-5.0; 24], &[-5.0; 24]);
+        let s_one = stress_of(&CohortVelocity.evaluate(&Ctx {
+            obs: &concentrated,
+            cfg: &cfg,
+        }));
+        let s_broad = stress_of(&CohortVelocity.evaluate(&Ctx {
+            obs: &broad,
+            cfg: &cfg,
+        }));
+        assert!(
+            s_broad > s_one + 40.0,
+            "a broad 5% day ({s_broad}) must read far above one -20% name among 23 flat ({s_one})"
+        );
+        assert!(
+            s_one < 30.0,
+            "one idiosyncratic collapse must not read as a systemic shock, got {s_one}"
+        );
+    }
+
+    #[test]
+    fn deflation_depth_reads_the_middle_name_not_the_worst_one() {
+        // The channel would be a duplicate of the cohort channels if it tracked the worst name. With
+        // one name at -70% and twenty-three near -10%, the MEDIAN is -10% and the score must reflect
+        // that, not the -70 that a `governing_leg` measure would take.
+        let cfg = shipped();
+        let mut dds = vec![-10.0; 24];
+        dds[0] = -70.0;
+        let obs = union_obs(&[0.0; 24], &dds);
+        let r = DeflationDepth.evaluate(&Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        });
+        match &r {
+            Reading::Scored { value, detail, .. } => {
+                assert!(
+                    (value - -10.0).abs() < 0.01,
+                    "the median of 23 names at -10 and one at -70 is -10, got {value}"
+                );
+                assert!(
+                    detail.contains("median"),
+                    "the detail must say it is a median, not a worst name: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+        let s = stress_of(&r);
+        assert!(
+            s > 25.0 && s < 45.0,
+            "-10% typical drawdown must sit in the ordinary-correction band, got {s}"
+        );
+
+        // And it must respond: a deeper typical drawdown scores materially higher.
+        let deep = union_obs(&[0.0; 24], &[-50.0; 24]);
+        let s_deep = stress_of(&DeflationDepth.evaluate(&Ctx {
+            obs: &deep,
+            cfg: &cfg,
+        }));
+        assert!(
+            s_deep > s + 40.0,
+            "half the value gone must read far above a 10% correction: {s} -> {s_deep}"
+        );
+    }
+
+    #[test]
+    fn policy_realisation_refuses_a_zero_year_and_reads_the_ratio() {
+        // A zero denominator would read as an infinite acceleration; a missing window as silence.
+        let cfg = shipped();
+        let mut zero = Observations::default();
+        zero.fr_dc_90d = Some(53);
+        zero.fr_dc_365d = Some(0);
+        match PolicyRealisation.evaluate(&Ctx {
+            obs: &zero,
+            cfg: &cfg,
+        }) {
+            Reading::Unavailable { reason } => assert!(
+                reason.contains("zero"),
+                "the refusal must say the count is zero: {reason}"
+            ),
+            other => panic!("expected Unavailable, got {other:?}"),
+        }
+
+        // The measured launch values: 53 in 90 days against 312 in a year, i.e. 0.69x the year's pace.
+        let mut obs = Observations::default();
+        obs.fr_dc_90d = Some(53);
+        obs.fr_dc_365d = Some(312);
+        let r = PolicyRealisation.evaluate(&Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        });
+        match &r {
+            Reading::Scored { value, detail, .. } => {
+                assert!(
+                    (value - 0.6894).abs() < 0.01,
+                    "53 annualised over 312 is 0.69, got {value}"
+                );
+                assert!(
+                    detail.contains("53") && detail.contains("312"),
+                    "both raw counts must be printed beside the ratio: {detail}"
+                );
+            }
+            other => panic!("expected Scored, got {other:?}"),
+        }
+        let s = stress_of(&r);
+        assert!(
+            s < 40.0,
+            "a rate BELOW the year's own pace must not score as a policy wave, got {s}"
+        );
+    }
+
+    #[test]
+    fn the_retired_forecast_is_a_stated_gap_not_a_constant() {
+        // A settled prediction market reads 100% forever. If it kept a weight it would contribute a
+        // fixed 85 stress to every run for the life of the model, which is not evidence — it is the
+        // residue of evidence. The retirement must be visible in the report, not silent.
+        let cfg = shipped();
+        let mut obs = Observations::default();
+        obs.policy_house_dem = Some(100.0);
+        obs.policy_senate_dem = Some(100.0);
+        let r = RegulatoryRisk.evaluate(&Ctx {
+            obs: &obs,
+            cfg: &cfg,
+        });
+        match r {
+            Reading::Unavailable { reason } => {
+                assert!(
+                    reason.contains("RETIRED"),
+                    "the gap must say it was retired: {reason}"
+                );
+                assert!(
+                    reason.contains("policy_realisation"),
+                    "and must name its successor: {reason}"
+                );
+                assert!(
+                    reason.contains("100"),
+                    "and must record the value it settled at: {reason}"
+                );
+            }
+            other => panic!("a settled forecast must not be scored, got {other:?}"),
         }
     }
 }

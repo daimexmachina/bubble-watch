@@ -127,7 +127,7 @@
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "3.2"
+schema_version = "3.3"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -1351,18 +1351,18 @@ anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY AND NO ANCHOR 
 [[indicator]]
 id = "regulatory_risk"
 group = "opposition"
-label = "Political risk — market-implied chance of a Democratic sweep"
-weight = 4.0
+label = "Political risk — RETIRED at 3.3, the forecast resolved"
+weight = 0.0
 unit = "pct, market-implied chance of a Democratic sweep (House x Senate)"
 source = "polymarket"
-# SORTED ASCENDING BY SWEEP PROBABILITY. A HIGHER probability of a Democratic sweep is coded as MORE
-# regulatory risk for the AI complex.
-# GROUNDED ON REFERENCE POINTS, NOT FITTED: 0% is "no change in power" and still scores 20 rather than
-# 0, because a bubble instrument should not read political risk as absent just because an election is
-# not scheduled; 50% is a coin flip; 80% is a governing majority with a mandate; 100% is certain.
-anchors = [[0.0, 20.0], [40.0, 40.0], [60.0, 55.0], [80.0, 70.0], [100.0, 85.0]]
-rationale = "THE MARKET-IMPLIED CHANCE OF A DEMOCRATIC SWEEP, from Polymarket's House and Senate control contracts (keyless Gamma API, two calls per run, verified live 2026-10-27: House Democrats 91.5% on $24.1M of volume, Senate Democrats 65.5% on $9.6M). WHY IT EXISTS: this model had NO political or regulatory-probability channel at all. Daim's thesis is a chain — a sweep leads to investigations, investigations lead to the AI boom being reined in, and that is a crash risk — and only the FIRST link is observable, so that is what this measures. THE REST OF THE CHAIN IS AN ASSUMPTION AND IS LABELLED AS ONE. THE EVIDENCE IS TWO-SIDED and both sides are in the output: investigations raise costs, and they also entrench incumbents and clear out weaker competitors. THE COUNTER-EVIDENCE IS IN THE SAME READING, not omitted: the S&P 500 has risen in the 12 months after EVERY US midterm since WWII (Wells Fargo); options markets price only about a 1% forward-volatility rise for the day after this election against a ~4% historical average (Cboe); and prediction markets were heavily wrong about Brazil's presidential election the same week. A sweep is already largely priced, which is precisely why it is a risk the market has had the chance to assess. FORWARD-LOOKING, AND THE ONLY SUCH INPUT HERE: every other channel reports a state that has already happened. That is an explicit exception to this tool's 'state descriptor, not a forecast' contract, recorded so it cannot be mistaken for a measurement of the present. LIMITS: (1) the product House x Senate assumes independence, which understates a sweep — the markets quote the sweep directly a few points higher (63-65% against ~60%); (2) a probability is an opinion about an EVENT, not a measurement of policy, and the policy response is the link that matters, for which the BIS export-control rule count in the falsifier panel is the quiet counter-evidence; (3) a prediction market has no obligation to be right."
-anchor_note = "SORTED ASCENDING BY THE SWEEP PROBABILITY IN PERCENT. On 2026-10-27 the product was about 60%, which sits between the 60 and 80 anchors and scores in the mid-50s. The anchors are stated reference points (no change, coin flip, mandate, certainty) rather than values fitted to any outcome."
+# EMPTY ON PURPOSE, and asserted empty by the indicator. The 2026 midterms were held on 2026-11-03 and
+# the Democrats won both chambers, so this input settled at 100% and can never move again. A settled
+# forecast is a CONSTANT, not a measurement, and a constant wearing a stress score is worse than a
+# stated gap: it would sit in the composite as evidence that had already been spent. Retired openly
+# rather than deleted, so the history stays in the archive and the reason stays in the record.
+anchors = []
+rationale = "RETIRED AT METHODOLOGY 3.3, 2026-11-05, AND DELIBERATELY NOT AT WEIGHT ZERO FOR CONVENIENCE: it is retired because the question it asked has an ANSWER. The midterms were held on 2026-11-03, the Democrats won the House and the Senate, and the market-implied probability of a sweep therefore settled at 100% — where it has no further information to contribute. The realised successor is `policy_realisation`, which counts what federal agencies actually PUBLISH, and unlike this channel it can move every day. A CONSEQUENCE WORTH NAMING: with this channel retired the model no longer contains a single forward-looking input, so every scored channel now reports a state that has already happened — the tool is back on its own 'state descriptor, not a forecast' contract, and the exception existed for one election. THE TEXT BELOW IS THE HISTORICAL RECORD of what was measured while it was live, kept as-is rather than edited to match the outcome. THE MARKET-IMPLIED CHANCE OF A DEMOCRATIC SWEEP, from Polymarket's House and Senate control contracts (keyless Gamma API, two calls per run, verified live 2026-10-27: House Democrats 91.5% on $24.1M of volume, Senate Democrats 65.5% on $9.6M). WHY IT EXISTED: this model had NO political or regulatory-probability channel at all. Daim's thesis is a chain — a sweep leads to investigations, investigations lead to the AI boom being reined in, and that is a crash risk — and only the FIRST link is observable, so that is what this measured. THE REST OF THE CHAIN WAS AN ASSUMPTION AND WAS LABELLED AS ONE. THE EVIDENCE IS TWO-SIDED and both sides are in the output: investigations raise costs, and they also entrench incumbents and clear out weaker competitors. THE COUNTER-EVIDENCE IS IN THE SAME READING, not omitted: the S&P 500 has risen in the 12 months after EVERY US midterm since WWII (Wells Fargo); options markets price only about a 1% forward-volatility rise for the day after this election against a ~4% historical average (Cboe); and prediction markets were heavily wrong about Brazil's presidential election the same week. A sweep is already largely priced, which is precisely why it was a risk the market had the chance to assess. LIMITS: (1) the product House x Senate assumes independence, which understates a sweep — the markets quote the sweep directly a few points higher (63-65% against ~60%); (2) a probability is an opinion about an EVENT, not a measurement of policy, and the policy response is the link that matters, for which the BIS export-control rule count in the falsifier panel is the quiet counter-evidence; (3) a prediction market has no obligation to be right."
+anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY AND NO ANCHOR IS EVER CONSULTED, which the indicator asserts. The retired ladder was [[0.0,20.0],[40.0,40.0],[60.0,55.0],[80.0,70.0],[100.0,85.0]], sorted ascending by sweep probability; it is recorded here rather than in `anchors` because a scale on a channel that no longer measures anything would invite a later reader to raise the weight back. The final reading was 100%, which under that ladder scored 85 — a constant, which is exactly the problem."
 
 [[indicator]]
 id = "hyperscaler_shock"
@@ -1397,3 +1397,80 @@ source = "yahoo"
 anchors = [[-75.0, 99.0], [-55.0, 97.0], [-40.0, 93.0], [-25.0, 85.0], [-15.0, 68.0], [-10.0, 50.0], [-5.0, 30.0], [0.0, 15.0]]
 rationale = "THE COMPANIES SELLING INTO THE AI BUILD-OUT — AMD, ARM, Broadcom, Micron, TSMC, ASML, Applied Materials, Qualcomm, Intel, Marvell, with Vertiv and Super Micro on the data-centre fit-out layer — scored on three legs with the more severe governing: the five-day return, the drawdown from the 52-week high, and the breadth of drawdowns deeper than 20%. WHY IT EXISTS: the model had cohorts for the BUYERS (the hyperscalers and the six debt-funded builders) and NONE for the SELLERS, so a rout in the companies whose revenue depends on the build-out actually happening was invisible. Measured at the 2026-10-30 close, that gap was the whole story: INTEL -29.1% IN A SINGLE SESSION and 53.7% below its 52-week high, Qualcomm -10.8%, AMD -10.6%, ARM -9.7%, Marvell -9.6%, Applied Materials -7.3%, ASML -6.6%, with 14 of 18 chip names measured more than 20% below their highs and the median one-day move -5.3% — while the five true hyperscalers fell only 1.1 to 1.6%. THE SPLIT IS THE POINT, NOT THE AVERAGE: on the same day Texas Instruments sat 9.5% off its high and Analog Devices 6.4%, selling into autos and industrial rather than AI, so the damage tracked AI EXPOSURE specifically and was NOT a general de-rating of semiconductors. LIMITS, STATED: (1) the twelve names are chosen by judgement and span three layers — logic, memory and equipment — that do not deteriorate for the same reasons, so a single number compresses genuinely different stories and the per-company breakdown is printed beside it; (2) Vertiv and Super Micro are fit-out rather than silicon, included because the demand driver is the same; (3) the five-day window is noisy by construction; (4) breadth moves in steps of one twelfth, so one name crossing the threshold is a visible jump; (5) these companies' prices say what the market did, not why it did it; (6) several are non-US listed (TSMC, ASML, ARM) and trade against a different macro backdrop, so a common move need not have a common cause."
 anchor_note = "IDENTICAL TO hyperscaler_shock ON PURPOSE. Both measure percentage moves, so a 20% drawdown should score the same at a buyer and a seller; only the cohort differs. Breadth uses its own separate ladder in code because it is a share of NAMES, not a percentage move."
+
+# ============================================================================
+# METHODOLOGY 3.3 — THE DEFLATION PHASE, added 2026-11-05.
+#
+# WHAT FORCED THIS. On 2026-11-05 the Nasdaq fell 5.5% into correction territory, the Philadelphia
+# Semiconductor Index fell 11.5% (its worst session since March 2020), Nvidia fell 9.3%, and the
+# composite moved 0.73 points. The decomposition of that run is the argument for these three channels:
+#
+#   +1.39  volatility (VIX 20.5 -> 28.2)          <- the ONLY channel that registered the day
+#   +0.11  leveraged_builder_stress
+#   +0.03  hyperscaler_shock        (pinned at 96.5 by Oracle's -53% drawdown)
+#   +0.01  ai_supply_chain_shock    (pinned at 97.8 by Intel's -63% drawdown)
+#   -0.84  six channels that read SAFER as prices fell (valuation, breadth, concentration,
+#          funding_stress, credit_hy, public_attention)
+#
+# The two channels built to detect "a major AI name took a hit" were worth 0.04 points between them,
+# because both are governed by a LEVEL that had been deep for weeks. And the heaviest pricing
+# channels measure distance ABOVE trend, so a crash improves them. The instrument measured the
+# build-up and was nearly blind to the clearing — which is the half of the story the owner's thesis
+# is about. Three channels, 16 weight, total weight 226 -> 242, schema_version 3.2 -> 3.3.
+# ============================================================================
+
+[[indicator]]
+id = "cohort_velocity"
+group = "pricing"
+label = "Single-session shock across the AI complex — how violent the day was"
+weight = 6.0
+unit = "pct — the day's mean return across the 24 AI names this model prices individually, scored half on that average and half on the share of names that fell 5% or more"
+source = "yahoo"
+# SORTED ASCENDING BY THE DAY'S MEAN RETURN. A deeper average fall is MORE stress.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED: 0% is a flat day and still scores 10 rather than 0, because
+# a bubble instrument must not read a quiet session as safety; -0.75% is an ordinary day with the
+# complex drifting; -1.5% is a bad day; -2.5% is a broad selloff; -4% is a rout day; -6% is a crash
+# day of the size measured on 2026-11-05; -9% has no benign reading at all.
+# NOT A WORST-NAME LADDER, DELIBERATELY: two other channels already carry the worst name and both are
+# pinned near the top of their scale. A third copy would saturate on one idiosyncratic earnings miss.
+anchors = [[-9.0, 99.0], [-6.0, 90.0], [-4.0, 75.0], [-2.5, 58.0], [-1.5, 40.0], [-0.75, 22.0], [0.0, 10.0]]
+rationale = "HOW VIOLENT A SINGLE SESSION WAS across the 24 AI names this model already prices individually — six hyperscalers, twelve supply-chain names and six debt-funded builders — scored HALF on the day's average return and HALF on the share of names that fell 5% or more. THE SPLIT IS THE MEASUREMENT, NOT A SMOOTHING: the average alone hides a rout concentrated in the biggest names, and the share alone cannot tell a day when everything fell 5% from a day when two names fell 20%. Scoring both and averaging separates those two states, which is exactly the distinction a systemic shock needs. WHY A SEPARATE CHANNEL FOR ONE DAY: the model's cohort channels are governed by the DRAWNDOWN from a 52-week high, which is the right measure of accumulated damage and the wrong measure of a fresh one — on 2026-11-05 Oracle's -53% drawdown governed `hyperscaler_shock`, so a 9.3% single-session fall at Nvidia moved that channel by 0.9 stress points. A worst-day event needs a worst-day measure or the instrument cannot see the worst day since March 2020. WHY NO WORST-NAME LEG: `hyperscaler_shock` and `ai_supply_chain_shock` already report the worst name, and adding a third copy would make this channel saturate on an idiosyncratic earnings miss, which is the defect it exists to avoid. COST: ZERO EXTRA REQUESTS. It reuses series the run already fetched, which matters because the daily job has a 900 s cap and was once killed by it. LIMITS, STATED: (1) one session is noisy in BOTH directions — a genuine recovery day scores as calm, so this must be read beside `deflation_depth`; (2) the cohort of 24 is chosen by judgement and excludes private companies, which have no price series at all; (3) it draws its names from three cohorts whose channels are scored separately, so it CORROBORATES rather than stands independent of them; (4) it reports what the market did, not why."
+anchor_note = "SORTED ASCENDING BY THE MEAN ONE-DAY RETURN IN PERCENT. The second leg (share of names down 5% or more) uses its own ladder inside the indicator, because a share of NAMES cannot share a scale with a percentage move — the same split `ai_supply_chain_shock` makes for its breadth leg."
+
+[[indicator]]
+id = "deflation_depth"
+group = "pricing"
+label = "How much of the AI complex has actually deflated — median drawdown"
+weight = 6.0
+unit = "pct — median drawdown from its own 52-week high across the 24 AI names this model prices individually"
+source = "yahoo"
+# SORTED ASCENDING BY THE MEDIAN DRAWDOWN. A deeper median is MORE stress — the realISATION coding
+# used by every market channel here.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED: 0% is "nothing given back" and still scores 10; -5% is a
+# wobble; -10% is an ordinary correction; -20% is a bear market for the complex; -35% is a clearing
+# visibly under way; -50% is HALF THE VALUE GONE, the reference point for a full deflation; -70% is
+# dot-com scale (the Nasdaq fell about 78% peak-to-trough, 2000-2002).
+anchors = [[-70.0, 98.0], [-50.0, 90.0], [-35.0, 75.0], [-20.0, 55.0], [-10.0, 35.0], [-5.0, 22.0], [0.0, 10.0]]
+rationale = "THE MEDIAN AI NAME's drawdown from its own 52-week high, across the same 24 names. WHY THE MEDIAN AND NOT THE WORST OR THE MEAN: the worst name is already scored twice by the two cohort channels, and a mean is dragged by whichever single name has collapsed hardest; the median answers the question nothing else answers — has the TYPICAL company deflated, or is this one story wearing a market's clothes? WHY THIS CHANNEL EXISTS: across the October-November 2026 rout this model's three heaviest pricing channels FELL by roughly 31 stress points between them, because they measure how far prices sit ABOVE their own trend, how concentrated the market is, and how wide credit spreads are — every one of which reads SAFER as a bubble deflates. Measured 2026-10-25 to 2026-11-05: valuation_stretch 18.3 -> 12.2, breadth 27.7 -> 12.9, concentration 18.3 -> 8.1. The instrument could see the bubble being inflated and could not see it losing air, which is the half of the thesis its owner keeps asking to be measured. DIRECTION: a deeper median deflation is MORE stress, matching every other realisation channel. THAT IS A CODING CHOICE AND NOT A GATED FINDING. The alternative reading — that deflation is the excess being flushed out and therefore LOWERS forward risk, which is Daim's stated thesis — is NOT what this number says, and no price series can distinguish 'letting air out' from 'burst'. What the channel does is make the magnitude of the clearing visible, where before it was arithmetically invisible. LIMITS, STATED: (1) a drawdown from a high is not a level — a name that has always traded weak reads like one that has just collapsed, though the 52-week window bounds how long that can be true; (2) the cohort is the union of three judgement-chosen cohorts and it OVERLAPS them, so it corroborates rather than stands independent; (3) private companies — OpenAI, Anthropic, xAI, Nscale — are invisible by construction and a large part of the complex's value sits there; (4) one year of history only, so the 2000-02 comparison is not in the window and the top anchor rests on a stated external reference rather than on measured data."
+anchor_note = "SORTED ASCENDING BY THE MEDIAN DRAWDOWN IN PERCENT. The reference points are stated ('half the value gone', 'dot-com scale') rather than fitted to this cohort's own distribution, because fitting the ladder to the observed range would guarantee that whatever happened next looked extreme."
+
+[[indicator]]
+id = "policy_realisation"
+group = "opposition"
+label = "Federal policy attention on data centres — realised, not forecast"
+weight = 4.0
+unit = "ratio — the trailing-90-day Federal Register publication rate mentioning data centres, annualised, against the trailing-year rate (1.0 = steady)"
+source = "federalregister"
+# SORTED ASCENDING BY THE RATE RATIO. A HIGHER ratio is MORE stress: policy attention accelerating.
+# GROUNDED ON REFERENCE POINTS, NOT FITTED: a ratio of 1.0 is "the recent quarter looks like the year"
+# and sits mid-band rather than at zero, because steady policy attention is not the absence of policy;
+# 0.5 is a quiet quarter; 1.5 is a visibly faster pace; 2.0 is a doubling; 3.0 is a policy wave; 5.0
+# is an emergency footing. Measured at launch on 2026-11-05: 53 documents in the trailing 90 days and
+# 312 in the trailing 365, a ratio of 0.69 — so the shipped scale sits BELOW mid-band on its first
+# reading, and that is recorded rather than adjusted for. Federal publication on data centres is
+# running at about seven tenths of last year's pace, which is the opposite of the "policy wave" the
+# 2026-11-05 sell-off was priced on. The channel's own limit explains the gap: the restrictions that
+# bite are state and local, and this source cannot see them.
+anchors = [[0.25, 8.0], [0.5, 18.0], [0.75, 32.0], [1.0, 45.0], [1.5, 62.0], [2.0, 75.0], [3.0, 90.0], [5.0, 97.0]]
+rationale = "WHAT FEDERAL AGENCIES ARE ACTUALLY PUBLISHING about data centres, as a RATE against their own past year — two keyless Federal Register calls per run, no quota, no key. IT REPLACES `regulatory_risk`, which read a prediction market's chance of a Democratic sweep: that resolved on 2026-11-03 at 100%, and a settled forecast is a constant. This measures the REALISED quantity instead, and it can move every day. WHY A RATIO RATHER THAN A COUNT: a raw count needs a scale invented for it, and any scale chosen on the day a channel ships is a number back-fitted to that day's reading — the exact failure this project's anchor discipline exists to prevent. Norming the recent quarter against the year's own rate makes the scale the series' own history. WHY IT MATTERS NOW: the 2026 midterms put a party that campaigned on slowing data-centre construction in control of both chambers, and the market repriced on 2026-11-05 (Nasdaq -5.5%, SOX -11.5%). The model had a channel for the EXPECTATION of that outcome and none for the policy actually being written. LIMITS, STATED AND REPEATED IN THE OUTPUT: (1) the term match is a phrase search and it is NOISY — the newest hit on 2026-11-05 was a natural-gas pipeline scoping notice, so this counts federal attention to data centres, not AI-specific regulation; (2) it measures publication, not effect — a notice is not a rule; (3) THE STATE AND LOCAL PERMITTING LAYER, WHERE RESTRICTIONS ACTUALLY BITE, IS INVISIBLE HERE and stays a declared blind spot; (4) the two windows overlap, so a sustained burst inflates both and damps the ratio; (5) publication volume is partly seasonal. DIRECTION IS AN ASSERTED ASSUMPTION: rising federal policy attention is coded as MORE stress, consistent with the retired channel's coding, and no gate has been run on that direction — it is recorded as an assumption, not a finding."
+anchor_note = "SORTED ASCENDING BY THE ANNUALISED QUARTER-AGAINST-YEAR RATE RATIO. Reference points are stated (half pace, steady, doubling, policy wave, emergency) rather than fitted; the launch measurement of 0.69 is recorded so the position of the shipped scale is auditable."

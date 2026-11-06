@@ -110,6 +110,10 @@ pub fn find(id: &str) -> Option<Box<dyn Indicator>> {
         "regulatory_risk" => Some(Box::new(fundamentals::RegulatoryRisk)),
         "hyperscaler_shock" => Some(Box::new(fundamentals::HyperscalerShock)),
         "ai_supply_chain_shock" => Some(Box::new(fundamentals::AiSupplyChainShock)),
+        // METHODOLOGY 3.3 — the deflation phase.
+        "cohort_velocity" => Some(Box::new(fundamentals::CohortVelocity)),
+        "deflation_depth" => Some(Box::new(fundamentals::DeflationDepth)),
+        "policy_realisation" => Some(Box::new(fundamentals::PolicyRealisation)),
         _ => None,
     }
 }

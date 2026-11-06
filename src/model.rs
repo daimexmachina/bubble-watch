@@ -426,6 +426,20 @@ pub struct Observations {
     #[serde(default)]
     pub policy_senate_dem: Option<f64>,
 
+    /// Federal Register document counts mentioning "data center": trailing 90 days and trailing 365.
+    ///
+    /// Added 2026-11-05. `policy_house_dem` / `policy_senate_dem` RESOLVED on 2026-11-03 — a settled
+    /// prediction market reads 100% and cannot move again — so the political channel needed a realised
+    /// successor. These two counts are the realised quantity: what federal agencies actually published.
+    /// Two windows rather than one so the channel can read ACCELERATION (the 90-day rate against the
+    /// year's rate) instead of a raw level whose scale would have to be invented.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fr_dc_90d: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fr_dc_365d: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fr_dc_provenance: Option<Provenance>,
+
     /// Public ATTENTION from Wikipedia pageviews, one entry per tracked article.
     /// UNSCORED: the indicator reading it carries weight 0, so this can never move
     /// the composite. It exists so a reader can see whether the public is looking.

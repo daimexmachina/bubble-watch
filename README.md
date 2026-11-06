@@ -67,7 +67,7 @@ for the source tree it sits in).
 Tests:
 
 ```bash
-cargo test                                         # 492 tests, no network required
+cargo test                                         # 499 tests, no network required
 BUBBLE_WATCH_LIVE=1 cargo test -- --nocapture      # adds live source assertions
 ```
 
@@ -181,10 +181,13 @@ Change a weight or an anchor and you have changed the model's opinion — commit
 | `narrative_saturation` | 5 | 10-K filings mentioning AI, annualised YoY | EDGAR full-text |
 | `depreciation_subsidy` | 6 | Depreciation-rate extension while the asset base grows | SEC EDGAR |
 | `frontier_premium` | 6 | Best closed model's rating minus best open model's, inverted (narrow gap = high stress) | LMArena (parquet, committed fixture) |
+| `cohort_velocity` | 6 | **Single-session** shock across the 24-name AI complex — half the day's mean return, half the share of names that fell 5%+ | Yahoo |
+| `deflation_depth` | 6 | Median drawdown from its own 52-week high across the same 24 names — how much of the complex has actually deflated | Yahoo |
+| `policy_realisation` | 4 | Federal Register publication rate on data centres, 90-day vs its own year — realised policy, not a forecast | Federal Register |
 | `circularity` | 12 | Verified circular structures, scored from a rubric over read filings | SEC EDGAR |
 | `distress_events` | 6 | AI-exposed company insolvencies, counted from **filed court dockets** — not from coverage of them. Covers private companies EDGAR cannot see (Character.ai's Chapter 11 returns 0 EDGAR hits but is on the docket) | CourtListener |
 
-Weight totals 230 across the 25 scored indicators, and **there are no declared gaps left**.
+Weight totals 242 across the 27 scored indicators, and **there are no declared gaps left**.
 
 ### `circularity` — a former blind spot, now scored
 

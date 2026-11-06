@@ -376,7 +376,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 492 tests green offline; live assertions opt-in.
+- 499 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -849,3 +849,96 @@ release artifacts and its build-script output (30 files / 36.9 MiB in the measur
 
 Exit code `5` covers any run that ASKED to record and did not — including an offline run, which
 records nothing by design. An unattended run therefore cannot fail quietly: the unit fails.
+
+## 18. v3.3 — the deflation phase (added 2026-11-05)
+
+### 18.1 The measurement that forced it
+
+On 2026-11-05 the Nasdaq Composite fell 5.5% into correction territory (24,315), the S&P 500 fell
+4.4%, the Dow fell 1,833 points (3.44%), the Philadelphia Semiconductor Index fell 11.5% — its worst
+session since March 2020 — and Nvidia closed at $181.60, down 9.26%. It was the worst day for the
+AI complex since the April 2025 tariff turmoil.
+
+The model recorded that day and moved **0.73 composite points**, from 46.79 to 47.52. Decomposing
+the run by indicator contribution explains the whole of it:
+
+| contribution | indicator | why |
+|---|---|---|
+| **+1.39** | `volatility` | VIX 20.5 -> 28.2. The only channel that registered the day. |
+| +0.11 | `leveraged_builder_stress` | already deep, moved a little |
+| +0.03 | `hyperscaler_shock` | PINNED at 96.5: Oracle's -53% drawdown governs |
+| +0.01 | `ai_supply_chain_shock` | PINNED at 97.8: Intel's -63% drawdown governs |
+| -0.19 | `funding_stress` | read SAFER as funding calmed |
+| -0.32 | `valuation_stretch` | price fell TOWARD its trend, so stretch fell |
+| -0.12 | `breadth` | mega-caps fell, equal-weight outperformed by construction |
+| -0.05 | `concentration` | cap-weight lead narrowed by construction |
+| -0.08 | `credit_hy`, `public_attention` | read calmer |
+
+Right-way movement totalled +1.57, of which VIX was +1.39; wrong-way movement totalled -0.84. Nine
+of the heaviest channels sat flat because they are quarterly.
+
+### 18.2 The structural finding, not a bug
+
+Across the rout (2026-10-25 -> 2026-11-05, composite 39.8 -> 47.5) the three heaviest pricing
+channels **fell**:
+
+    valuation_stretch   18.3 -> 12.2   (-6.2)
+    breadth             27.7 -> 12.9   (-14.7)
+    concentration       18.3 ->  8.1   (-10.2)
+    credit_hy           28.3 -> 26.9   (-1.4)
+
+They are LEVEL measures — distance above trend, concentration of the cap-weighted index, width of
+credit spreads — and every one of them reads SAFER as a bubble deflates. The two channels built to
+detect a shock at an AI major are governed by a drawdown from a 52-week high, which had been deep
+for weeks and therefore could not respond (95.6 -> 96.5 and 96.6 -> 97.8 across the entire rout).
+
+**So the instrument measured the inflation of the bubble and was nearly blind to its deflation.**
+That matters here more than it would elsewhere: the owner's thesis is that the failure and
+deflation of AI companies is the excess being flushed out, and the clearing was the one phase the
+score could not see.
+
+### 18.3 Three channels, and what each refuses to be
+
+- **`cohort_velocity`** (weight 6) — the day's mean return across the same 24 names, scored HALF on
+  that average and HALF on the share of names that fell 5% or more. Deliberately **not** a
+  worst-name leg: two channels already carry the worst name and both are pinned; a third copy would
+  saturate on any idiosyncratic earnings miss. A guard asserts that a broad 5% day reads more than
+  40 points above one name at -20% among 23 flat.
+- **`deflation_depth`** (weight 6) — the MEDIAN drawdown from each name's own 52-week high. Not the
+  worst (already scored twice) and not the mean (dragged by the deepest name). This is the channel
+  that can say "the typical AI company has given back a third of its value", which nothing in the
+  model could say before. Its direction is stated as a CODING CHOICE, not a gated finding: deeper
+  deflation is scored as more stress, and the alternative reading — deflation as the clearing —
+  is the owner's thesis and is explicitly NOT what the number says.
+- **`policy_realisation`** (weight 4) — the Federal Register publication rate mentioning data
+  centres, 90-day annualised against the trailing year. It replaces `regulatory_risk`, which read a
+  prediction market's probability of a Democratic sweep. **That forecast resolved on 2026-11-03**
+  (Democrats won both chambers), so the input settled at 100% and can never move again; a settled
+  forecast is a constant, and a constant wearing a stress score is worse than a stated gap. The
+  retired channel keeps its history in the archive and returns a stated gap naming its successor.
+  With it retired, **the model no longer contains a single forward-looking input** — it is back on
+  its own "state descriptor, not a forecast" contract.
+
+### 18.4 The first reading contradicted the narrative, and was left alone
+
+Measured at launch (2026-11-05): 53 Federal Register documents matching "data center" in the
+trailing 90 days, 312 in the trailing 365 — a ratio of **0.69**, i.e. federal publication running at
+about seven tenths of last year's pace. The sell-off was priced on a policy wave; the realised
+federal count does not show one. That is recorded rather than tuned: the channel's own stated limit
+explains the gap, because the restrictions that bite are **state and local**, and this source cannot
+see them. The top hit on the day was a natural-gas pipeline scoping notice, so the term match is
+noisy and the output says so.
+
+### 18.5 What was NOT done
+
+- No weight was moved to "make the number look right". The three additions are additive and each has
+  a stated reference ladder; the composite moves because the model now sees something it did not.
+- `leveraged_builder_stress` was **not** promoted as part of this change. It is the channel with the
+  strongest case for promotion (+6.2 during the rout, and the borrowers are where AI stress prices
+  first), but promotion is a lead/lag question and it has not been gated. Doing it in the same
+  commit as a visibility fix would have hidden one decision inside another.
+- The archive was not re-written. Runs before 3.3 are preserved and cannot serve as comparable
+  baselines, which the trend code enforces by refusing to compute a direction of travel across a
+  version boundary.
+
+Weight total 226 -> 242; `schema_version` 3.2 -> 3.3.

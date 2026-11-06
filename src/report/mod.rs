@@ -342,9 +342,12 @@ pub fn build_with_history(
         "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
          and refuses to compute a direction of travel across a version change: redefining an \
          indicator changes what the composite MEANS, so a difference across such a change would \
-         report an accounting change as a market move. This version replaced the share-count \
-         issuance proxy with reported cash flows and added primary-market supply; runs recorded \
-         before it are preserved but cannot serve as baselines.",
+         report an accounting change as a market move. This version added the DEFLATION-PHASE \
+         channels — single-session velocity across the AI complex, the median drawdown from \
+         52-week highs, and realised federal policy attention — and retired the resolved \
+         election-odds forecast, so the composite now sees the clearing of the bubble as well as \
+         its inflation and no longer contains a forward-looking input; runs recorded before it are \
+         preserved but cannot serve as baselines.",
         cfg.meta.schema_version
     ));
     caveats.push(

@@ -64,6 +64,46 @@ pub fn parse_count(body: &str) -> Result<(u32, Option<String>), String> {
     Ok((count as u32, latest))
 }
 
+/// Build the request for ANY term since a date, with NO agency filter.
+///
+/// Added 2026-11-05 for `policy_realisation`. The BIS query above answers "what export controls
+/// changed", which is a different question from "how much federal activity is there about data
+/// centres". Sharing `query_for` would have silently inherited the agency filter and measured the
+/// wrong thing at a plausible-looking number.
+pub fn query_for_term(term: &str, since: &str) -> String {
+    let t = term.replace(' ', "+");
+    format!(
+        "{QUERY_URL}?per_page=1&order=newest\
+         &conditions%5Bterm%5D=%22{t}%22\
+         &conditions%5Bpublication_date%5D%5Bgte%5D={since}"
+    )
+}
+
+/// Count documents matching a term published on or after `since`.
+pub fn document_count_since(
+    f: &Fetcher,
+    term: &str,
+    since: &str,
+) -> Result<(u32, Option<String>), String> {
+    let body = f.get(&query_for_term(term, since), UA_WEB)?;
+    parse_count(&body)
+}
+
+/// `YYYY-MM-DD` `days` before the given date, via real calendar arithmetic.
+///
+/// The 90-day window has to land on the actual date: `one_year_before` above gets away with
+/// string arithmetic because it only needs a coarse lower bound, but 90 days crosses months and
+/// year boundaries, and a wrong window would change the count without changing anything visible.
+pub fn days_before(date: &str, days: i64) -> String {
+    use chrono::NaiveDate;
+    match NaiveDate::parse_from_str(date, "%Y-%m-%d") {
+        Ok(d) => (d - chrono::Duration::days(days))
+            .format("%Y-%m-%d")
+            .to_string(),
+        Err(_) => date.to_string(),
+    }
+}
+
 /// Count BIS rules matching "advanced computing" published in the last year.
 ///
 /// `today` is passed in (ISO `YYYY-MM-DD`) so this is deterministic and testable
@@ -136,6 +176,31 @@ mod tests {
         assert_eq!(one_year_before("2026-01-01"), "2025-01-01");
         // Malformed input is passed through rather than producing a nonsense year.
         assert_eq!(one_year_before("nonsense"), "nonsense");
+    }
+
+    #[test]
+    fn the_ninety_day_window_crosses_a_year_boundary_correctly() {
+        // The whole reason this uses the calendar rather than string surgery. A naive
+        // "year - 0" fallback would return 2026-11-05 for a 90-day window and make the
+        // quarterly count equal the annual one, quietly halving the ratio.
+        assert_eq!(days_before("2026-11-05", 90), "2026-08-07");
+        assert_eq!(days_before("2026-01-15", 90), "2025-10-17");
+        // Leap year: 2028 is leap, so 60 days before 2028-03-01 is 2028-01-01.
+        assert_eq!(days_before("2028-03-01", 60), "2028-01-01");
+        assert_eq!(days_before("nonsense", 90), "nonsense");
+    }
+
+    #[test]
+    fn the_term_query_drops_the_agency_filter() {
+        // policy_realisation asks a FEDERAL-WIDE question. Inheriting the BIS filter from
+        // query_for would return 2 documents where the real count is 53, and look fine.
+        let q = query_for_term("data center", "2026-08-07");
+        assert!(
+            !q.contains("agencies"),
+            "a federal-wide count must not be restricted to one agency: {}",
+            q
+        );
+        assert!(q.contains("conditions%5Bterm%5D=%22data+center%22"));
     }
 
     #[test]
