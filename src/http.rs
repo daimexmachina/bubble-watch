@@ -43,6 +43,16 @@ pub struct Fetcher {
     /// it. A source that is rate-limiting us must degrade to a DECLARED gap quickly, not hold the run
     /// open; the stale-cache fallback is what makes that safe to do.
     backoff_spent: Cell<Duration>,
+    /// CourtListener's API token, read once from the environment at construction.
+    ///
+    /// Since 2026-10-27 that host refuses every request with `HTTP 401 Authentication credentials were
+    /// not provided`, which silently killed two channels carrying 14 weight for sixteen days while the
+    /// published reason blamed a rate limit. A token is now sent as `Authorization: Token <t>` — but
+    /// ONLY to that host, which `auth_header_for` enforces and tests, because a bug that sent it
+    /// everywhere would leak a credential to every source this tool reads.
+    ///
+    /// Never logged: the log records redacted URLs and status codes, never headers.
+    courtlistener_token: Option<String>,
 }
 
 /// The most a single run will ever spend waiting on rate limits, across all hosts.
@@ -129,6 +139,22 @@ impl std::fmt::Display for FetchError {
     }
 }
 
+/// The Authorization header for a host, or None.
+///
+/// WHY THIS IS A SEPARATE, TESTED FUNCTION. A credential is the one thing in this tool whose
+/// misdirection is not a wrong number but a leak: if the header were attached to every request, a
+/// token for a court-records API would be sent to Yahoo, FRED, the SEC and GDELT. The host check is
+/// therefore enforced here rather than at the call site, and a test asserts that a non-CourtListener
+/// host never gets one.
+fn auth_header_for(host: &str, token: Option<&str>) -> Option<String> {
+    match token {
+        Some(t) if !t.is_empty() && host.ends_with("courtlistener.com") => {
+            Some(format!("Token {}", t))
+        }
+        _ => None,
+    }
+}
+
 impl Fetcher {
     pub fn new(offline: bool, cache_dir: Option<std::path::PathBuf>) -> Self {
         let agent = ureq::AgentBuilder::new()
@@ -151,6 +177,9 @@ impl Fetcher {
             cache_dir,
             dead_hosts: RefCell::new(std::collections::HashSet::new()),
             backoff_spent: Cell::new(Duration::ZERO),
+            courtlistener_token: std::env::var("COURTLISTENER_TOKEN")
+                .ok()
+                .filter(|t| !t.trim().is_empty()),
         }
     }
 
@@ -402,12 +431,15 @@ impl Fetcher {
         let mut last_err = String::from("no attempt made");
         for attempt in 1..=retries.max(1) {
             self.throttle();
-            match self
+            let mut req = self
                 .agent
                 .get(url)
                 .set("User-Agent", user_agent)
-                .set("Accept", "*/*")
-                .call()
+                .set("Accept", "*/*");
+            if let Some(auth) = auth_header_for(&host, self.courtlistener_token.as_deref()) {
+                req = req.set("Authorization", &auth);
+            }
+            match req.call()
             {
                 Ok(resp) => {
                     // Read as bytes so the same path serves text and archives; the
@@ -823,5 +855,26 @@ mod tests {
             MAX_BACKOFF_PER_RUN >= Duration::from_secs(RATE_LIMIT_BACKOFF_SECS),
             "the budget must admit at least one full backoff, or the first 429 would be a hard failure"
         );
+    }
+
+    #[test]
+    fn the_courtlistener_token_is_only_ever_sent_to_courtlistener() {
+        // A wrong number is recoverable; a credential sent to the wrong host is not.
+        assert_eq!(
+            auth_header_for("www.courtlistener.com", Some("abc")),
+            Some("Token abc".to_string())
+        );
+        for host in [
+            "query1.finance.yahoo.com",
+            "api.stlouisfed.org",
+            "efts.sec.gov",
+            "api.gdeltproject.org",
+            // A look-alike must not match: ends_with, not contains.
+            "courtlistener.com.evil.example",
+        ] {
+            assert_eq!(auth_header_for(host, Some("abc")), None, "host {}", host);
+        }
+        assert_eq!(auth_header_for("www.courtlistener.com", None), None);
+        assert_eq!(auth_header_for("www.courtlistener.com", Some("")), None);
     }
 }

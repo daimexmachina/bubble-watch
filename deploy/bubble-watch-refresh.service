@@ -8,6 +8,10 @@ StartLimitIntervalSec=0
 [Service]
 Type=oneshot
 WorkingDirectory=/home/daim/workspace/bubble-watch
+# CourtListener now requires a token; without one both court channels GAP and the unit
+# exits 6. The file is optional and mode 600 — the run must not fail because the secret
+# is absent, only because a source refused it.
+EnvironmentFile=-%h/.config/bubble-watch/env
 ExecStart=/usr/bin/env bash /home/daim/workspace/bubble-watch/scripts/daily-refresh.sh
 # A live run touches Yahoo, SEC EDGAR and optionally FRED. Give it room without
 # letting it hang forever.
