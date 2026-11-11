@@ -30,8 +30,22 @@ fn fixture_obs() -> Option<Observations> {
     if !path.exists() {
         return None;
     }
-    let text = std::fs::read_to_string(&path).ok()?;
-    serde_json::from_str(&text).ok()
+    let text = std::fs::read_to_string(&path).expect("the fixture exists but cannot be read");
+    // A FIXTURE THAT EXISTS BUT DOES NOT PARSE MUST FAIL, NOT SKIP.
+    //
+    // Measured 2026-11-11: an unparseable `observations.json` (it predates a field that lacks
+    // `#[serde(default)]`) made this return None, so TEN integration tests printed "SKIP: fixtures
+    // absent" and passed for weeks. A guard that cannot fail is worse than no guard: it reports green
+    // while the regression it exists for walks past. Absent is a legitimate skip; present-and-broken is
+    // a defect and is reported as one.
+    match serde_json::from_str::<Observations>(&text) {
+        Ok(o) => Some(o),
+        Err(e) => panic!(
+            "tests/fixtures/observations.json EXISTS but does not parse as Observations: {e}. \
+             Ten tests silently skipped on this for weeks. Regenerate the fixture or fix the field; \
+             do not restore the silent skip."
+        ),
+    }
 }
 
 #[test]
@@ -1314,7 +1328,7 @@ fn the_report_publishes_the_span_the_composite_can_occupy() {
         a.position_pct
     );
     assert!(
-        r.caveats.iter().any(|c| c.contains("ATTAINABLE RANGE")),
+        r.caveats.iter().any(|c| c.contains("SCALE SPAN")),
         "the caveats must state the real span beside the score"
     );
     // A threshold at or beyond the ceiling means the label can never be produced; it must be named.
@@ -1349,5 +1363,85 @@ fn the_methodology_is_frozen_at_the_declared_version() {
          must be a deliberate act: if the change is intended, update FROZEN_METHODOLOGY and say in the \
          commit what the change does to the meaning of the composite — and then leave it alone for \
          twelve months, because the archive cannot be tested across a stream of redefinitions."
+    );
+}
+
+#[test]
+fn the_report_says_out_loud_that_no_predictive_power_has_been_shown() {
+    // `src/backtest.rs` measured its own negative result and nothing in the report ever said so. A
+    // reader about to act on a stress score is entitled to know the score has never been shown to time
+    // anything. This is a drift guard: the sentence must survive edits, because the temptation to drop
+    // an unflattering paragraph is exactly what the honesty contract exists to resist.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx {
+        obs: &obs,
+        cfg: &c,
+    };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-11-11T12:00:00Z");
+    assert!(
+        r.caveats
+            .iter()
+            .any(|c| c.contains("REJECT a predictor but cannot VALIDATE one")),
+        "the measured negative result must ship beside the score: {:?}",
+        r.caveats
+    );
+    assert!(
+        r.caveats
+            .iter()
+            .any(|c| c.contains("NO DEMONSTRATED PREDICTIVE POWER")),
+        "and it must be labelled, not buried in prose"
+    );
+}
+
+#[test]
+fn a_channel_dark_for_days_is_named_in_the_caveats() {
+    // A GAP on the day is honest. A GAP for fifteen consecutive runs is a dead source, and it was
+    // invisible to every surface of the report: opposition_pressure and distress_events carried 14
+    // weight and produced nothing for two weeks while the published reason blamed a rate limit.
+    // The streak is derived from the ARCHIVE, so it survives the day a source stops being attempted.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx {
+        obs: &obs,
+        cfg: &c,
+    };
+    let readings = indicators::evaluate_all(&ctx);
+    // Three recorded runs in which no channel produced anything.
+    let archive: Vec<_> = (0..3)
+        .map(|i| bubble_watch::model::TrendPoint {
+            date: format!("2026-11-0{}", i + 5),
+            generated_at: format!("2026-11-0{}T21:35:00Z", i + 5),
+            composite: 45.0,
+            coverage: 0.9,
+            phase: "mid".into(),
+            methodology_version: "3.5".into(),
+            stresses: Default::default(),
+        })
+        .collect();
+    let r = bubble_watch::report::build_with_history(
+        readings,
+        &obs,
+        &c,
+        "2026-11-11T12:00:00Z",
+        &archive,
+        false,
+        true,
+    );
+    let dark = r
+        .caveats
+        .iter()
+        .find(|c| c.contains("CHANNELS DARK FOR DAYS"))
+        .unwrap_or_else(|| panic!("a three-run dark streak must be named: {:?}", r.caveats));
+    assert!(
+        dark.contains("3 runs") || dark.contains("(3 runs)"),
+        "the streak length must be stated: {dark}"
     );
 }

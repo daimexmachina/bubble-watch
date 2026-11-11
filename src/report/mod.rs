@@ -438,6 +438,72 @@ pub fn build_with_history(
             ));
         }
     }
+    // WHAT THIS INSTRUMENT HAS NEVER SHOWN: PREDICTIVE POWER.
+    //
+    // `src/backtest.rs` is the most honest result in the repository and, until now, nothing in the
+    // report ever mentioned it. Three historical peaks, three candidate precursors, all measured:
+    //
+    //     A  credit widening 3m > 0.25pp     31 episodes   caught 3/3   precision 10%
+    //     C  widening FROM A TIGHT BASE       4 episodes   caught 1/3   precision 25%
+    //     E  SPX 10% off its 12m high        25 episodes   caught 1/3   precision  4%
+    //
+    // A catches every peak and is still near-useless because it is on in 16% of months; E fires at or
+    // after a peak rather than before it. The conclusion the module reaches — this data can REJECT a
+    // predictor but cannot VALIDATE one — is a claim about THIS instrument's limits, and a reader who
+    // is about to act on a stress score is entitled to it. Quoted rather than recomputed per run: the
+    // figures come from the committed Shiller fixture and are covered by their own tests, and a
+    // per-run recomputation would add minutes for a number that cannot change.
+    caveats.push(
+        "NO DEMONSTRATED PREDICTIVE POWER. This tool has been tested against the three bubble peaks \
+         available in its own data — 2000-03, 2007-10, 2020-02 — and none of the candidate precursors \
+         reached a usable precision: credit widening caught 3 of 3 peaks but fires in 16% of months, \
+         widening from a tight base caught 1 of 3, and an SPX drawdown fires AT or AFTER a peak rather \
+         than before it. Measured conclusion, unchanged since it was run: this data can REJECT a \
+         predictor but cannot VALIDATE one, because three peaks is three anecdotes, not a sample. The \
+         score describes a state; it has never been shown to time anything, and this line exists so \
+         that no reader has to discover that for themselves."
+            .into(),
+    );
+
+    // A CHANNEL THAT HAS GONE QUIET FOR DAYS, NAMED.
+    //
+    // `opposition_pressure` and `distress_events` produced no reading for fifteen consecutive runs
+    // while every surface of the report described the gap as a benign rate limit. A GAP is honest on
+    // the day it happens; a STREAK is a different fact, and it was visible only to someone who read
+    // runs.jsonl. Derived from the archive rather than from this run's failures, so it survives the
+    // day a source stops even being attempted.
+    {
+        let mut streaks: Vec<(String, usize)> = Vec::new();
+        for ic in &cfg.indicator {
+            if ic.weight <= 0.0 {
+                continue;
+            }
+            let n = archive
+                .iter()
+                .rev()
+                .take_while(|p| !p.stresses.contains_key(&ic.id))
+                .count();
+            if n >= 3 {
+                streaks.push((ic.id.clone(), n));
+            }
+        }
+        streaks.sort_by(|a, b| b.1.cmp(&a.1));
+        if !streaks.is_empty() {
+            let list = streaks
+                .iter()
+                .map(|(id, n)| format!("{} ({} runs)", id, n))
+                .collect::<Vec<_>>()
+                .join(", ");
+            caveats.push(format!(
+                "CHANNELS DARK FOR DAYS: {}. These carry weight and have produced NO reading for \
+                 three or more consecutive recorded runs, so the composite is being computed over a \
+                 smaller model than the weight table implies. A single GAP is weather; a streak of \
+                 this length is a source that has stopped answering, and the weight is being \
+                 renormalised onto whatever is left.",
+                list
+            ));
+        }
+    }
     caveats.push(format!(
         "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
          and refuses to compute a direction of travel across a version change: redefining an \
@@ -445,7 +511,11 @@ pub fn build_with_history(
          report an accounting change as a market move. This version added the DEFLATION-PHASE \
          channels — single-session velocity across the AI complex, the median drawdown from \
          52-week highs, and realised federal policy attention — and retired the resolved \
-         election-odds forecast, so the composite now carries the MAGNITUDE of the deflation — \n         scored as MORE stress, the same realisation coding every other market channel uses. It does \n         NOT implement the distinction between the excess being flushed and the bubble bursting; \n          no price series can, and claiming otherwise would be exactly the overclaim this tool \n         exists to prevent; runs recorded before it are preserved but cannot serve as baselines.",
+         election-odds forecast, so the composite now carries the MAGNITUDE of the deflation — scored as MORE stress, the same \
+         realisation coding every other market channel uses. It does NOT implement the distinction \
+         between the excess being flushed and the bubble bursting; no price series can, and claiming \
+         otherwise would be exactly the overclaim this tool exists to prevent; runs recorded before \
+         it are preserved but cannot serve as baselines.",
         cfg.meta.schema_version
     ));
     caveats.push(

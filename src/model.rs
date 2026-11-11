@@ -443,6 +443,12 @@ pub struct Observations {
     /// Public ATTENTION from Wikipedia pageviews, one entry per tracked article.
     /// UNSCORED: the indicator reading it carries weight 0, so this can never move
     /// the composite. It exists so a reader can see whether the public is looking.
+    ///
+    /// `default` added 2026-11-11: without it the committed observations fixture — captured before
+    /// this field existed — failed to deserialise, and TEN integration tests skipped silently for
+    /// weeks while reporting green. A missing field in an old fixture is not an error; an unparseable
+    /// fixture is, and the test helper now fails instead of skipping.
+    #[serde(default)]
     pub attention: Vec<crate::sources::wikipedia::AttentionChange>,
     /// CourtListener docket counts, year over year, one entry per tracked query.
     #[serde(default)]
