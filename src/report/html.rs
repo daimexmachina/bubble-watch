@@ -933,7 +933,7 @@ svg .latest {{ fill:#6a1b9a; }}
 
 <div class="card">
   <h3 style="margin-top:0;font-size:15px">Each measurement over time</h3>
-  <p class="dt" style="margin:0 0 6px">Every scored measurement, on a fixed 0-100 scale. A line
+  <p class="dt" style="margin:0 0 6px">Every scored measurement, on its own fixed 0-100 anchor scale. A line
   breaks wherever a measurement is missing — it is never drawn across a gap or plotted as zero.
   A gap in the credit lines means FRED did not answer, not that credit was calm.</p>
   {ind_charts}

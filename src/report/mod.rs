@@ -59,6 +59,43 @@ pub fn build_with_history(
     let (comp_opt, coverage) = crate::score::composite(&readings);
     crate::score::attribute(&mut readings);
 
+    // THE SPAN THE COMPOSITE CAN ACTUALLY OCCUPY, and the phase labels it can never reach.
+    //
+    // Every ladder deliberately starts above 0 and stops below 100, so the weighted mean inherits that
+    // ceiling: measured 2026-11-10 it was 30.0 to 73.3 against bands at 35/55/75, which made `late` and
+    // `critical` unreachable while the report said "out of 100". Tuning the bands to fit would be moving
+    // a goalpost (see `phase::band_margin`); publishing the span is the honest alternative, and it is
+    // printed beside the score rather than buried.
+    let attainable = cfg.attainable_band().map(|(lo, hi)| {
+        let c = comp_opt.unwrap_or(lo);
+        let span = hi - lo;
+        let position_pct = if span.abs() < f64::EPSILON {
+            0.0
+        } else {
+            ((c - lo) / span * 100.0).clamp(0.0, 100.0)
+        };
+        let p = &cfg.phase;
+        let mut unreachable = Vec::new();
+        if lo >= p.early_max {
+            unreachable.push("early".to_string());
+        }
+        if hi <= p.early_max || lo >= p.mid_max {
+            unreachable.push("mid".to_string());
+        }
+        if hi <= p.mid_max || lo >= p.late_max {
+            unreachable.push("late".to_string());
+        }
+        if hi < p.late_max {
+            unreachable.push("critical".to_string());
+        }
+        crate::model::Attainable {
+            low: lo,
+            high: hi,
+            position_pct,
+            unreachable_phases: unreachable,
+        }
+    });
+
     // Sub-question scores. Computed from the SAME readings the composite uses, and
     // deliberately NOT fed back into it — a test asserts the composite is byte-identical
     // with and without them, exactly as it is for the trend.
@@ -338,6 +375,47 @@ pub fn build_with_history(
         // nothing: a reader would infer agreement where there is only absence.
         caveats.push(format!("EXPLOSIVENESS TEST: {}", n));
     }
+    // The range the composite has ACTUALLY taken, which is the more useful fact than the arithmetic
+    // span: the anchors permit 7.9-95.5, but over 54 recorded days the score has never left 35-48.
+    let mut observed: Vec<f64> = archive.iter().map(|p| p.composite).collect();
+    if let Some(c) = comp_opt {
+        observed.push(c);
+    }
+    // One value per date: a September development burst wrote 29 runs on one day, and those re-runs
+    // would otherwise widen the "empirical span" with runs that were never a new observation.
+    let mut by_date: std::collections::BTreeMap<&str, f64> = std::collections::BTreeMap::new();
+    for (i, p) in archive.iter().enumerate() {
+        by_date.insert(p.date.as_str(), observed[i]);
+    }
+    if let Some(c) = comp_opt {
+        by_date.insert(generated_at.split('T').next().unwrap_or(""), c);
+    }
+    let observed: Vec<f64> = by_date.into_values().collect();
+
+    if let Some(a) = &attainable {
+        caveats.push(format!(
+            "SCALE SPAN. The anchors permit this composite to occupy {:.1}-{:.1}, so the ends of the \
+             nominal 0-100 axis are not reachable — a quiet reading is deliberately not scored as \
+             safety. This reading sits at {:.0}% of that span. THE EMPIRICAL SPAN IS THE MORE USEFUL \
+             FACT: across {} recorded day(s) it has only ever occupied {:.1}-{:.1}.{}",
+            a.low,
+            a.high,
+            a.position_pct,
+            observed.len(),
+            observed.iter().cloned().fold(f64::INFINITY, f64::min),
+            observed.iter().cloned().fold(f64::NEG_INFINITY, f64::max),
+            if a.unreachable_phases.is_empty() {
+                String::new()
+            } else {
+                format!(
+                    " CONSEQUENCE, STATED PLAINLY: the phase label(s) {} CANNOT be produced by any \
+                     value this composite can take. A reader should treat those words as unavailable \
+                     in this build rather than as conditions that have not yet occurred.",
+                    a.unreachable_phases.join(", ")
+                )
+            }
+        ));
+    }
     caveats.push(format!(
         "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
          and refuses to compute a direction of travel across a version change: redefining an \
@@ -345,9 +423,7 @@ pub fn build_with_history(
          report an accounting change as a market move. This version added the DEFLATION-PHASE \
          channels — single-session velocity across the AI complex, the median drawdown from \
          52-week highs, and realised federal policy attention — and retired the resolved \
-         election-odds forecast, so the composite now sees the clearing of the bubble as well as \
-         its inflation and no longer contains a forward-looking input; runs recorded before it are \
-         preserved but cannot serve as baselines.",
+         election-odds forecast, so the composite now carries the MAGNITUDE of the deflation — \n         scored as MORE stress, the same realisation coding every other market channel uses. It does \n         NOT implement the distinction between the excess being flushed and the bubble bursting; \n          no price series can, and claiming otherwise would be exactly the overclaim this tool \n         exists to prevent; runs recorded before it are preserved but cannot serve as baselines.",
         cfg.meta.schema_version
     ));
     caveats.push(
@@ -443,6 +519,7 @@ pub fn build_with_history(
         composite,
         coverage,
         confidence: confidence.to_string(),
+        attainable: attainable.clone(),
         sub_scores,
         sub_question_labels,
         failures: obs.failures.clone(),

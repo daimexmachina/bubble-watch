@@ -922,6 +922,41 @@ fn finish_code(r: &bubble_watch::model::Report) {
     if r.coverage < 0.5 {
         std::process::exit(4);
     }
+    // EXIT 6 — A CREDENTIAL-CLASS SOURCE FAILURE.
+    //
+    // The coverage floor only fires below 50%, so a source that dies permanently while the rest of the
+    // model is healthy leaves the run at 92% coverage, exit 0 and a unit that says `Finished`. That is
+    // exactly what happened: CourtListener returned `HTTP 401 Authentication credentials were not
+    // provided` on every request from 2026-10-27 to 2026-11-10 — fifteen consecutive days and 5.8% of
+    // the model's weight — while the published reason claimed a rate limit and nobody was told.
+    //
+    // 401/403 are not transient. A rate limit clears; a revoked or missing credential does not. So this
+    // fails the unit on the first occurrence rather than after an arbitrary run of days: the report and
+    // the archive row are still written (the run is a real measurement), and systemd marks it failed so
+    // it surfaces instead of accumulating silently.
+    let auth: Vec<&str> = r
+        .failures
+        .iter()
+        .filter(|f| {
+            let why = f.reason.to_ascii_lowercase();
+            why.contains("401") || why.contains("403") || why.contains("credentials were not provided")
+        })
+        .map(|f| f.source.as_str())
+        .collect();
+    if !auth.is_empty() {
+        eprintln!();
+        eprintln!(
+            "error: {} source(s) refused this run for want of a CREDENTIAL, not for rate limiting \
+             (exit 6).",
+            auth.len()
+        );
+        eprintln!("       sources: {}", auth.join(", "));
+        eprintln!(
+            "       The report and the archive row were still written; systemd will mark the unit \
+             failed."
+        );
+        std::process::exit(6);
+    }
 }
 
 /// A run that ASKED to record a measurement and did not record one must FAIL.

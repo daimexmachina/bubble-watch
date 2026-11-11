@@ -1198,3 +1198,133 @@ fn live_sources_are_reachable_or_the_test_says_why() {
 
     let _ = std::fs::remove_dir_all(&tmp);
 }
+
+#[test]
+fn no_scored_channel_still_claims_it_cannot_move_the_composite() {
+    // THE 2.8 POLICY CHANGE SCORED CHANNELS THAT HAD BEEN WEIGHT 0, AND LEFT THEIR PROSE BEHIND.
+    // Measured on 2026-11-10: `leveraged_builder_stress` carried weight 6 and contributed 2.34 to the
+    // headline while its own rationale and its rendered detail both said "WEIGHT 0 BY DESIGN — cannot
+    // move the composite"; `public_attention` was the week's largest single mover (-0.36) while its
+    // text said it "CANNOT move the composite or the coverage fraction"; `buildout_opposition_news`
+    // said the same at weight 4. A reader comparing the number to the prose beside it is told the
+    // opposite of what the arithmetic does, which is the defect class this project exists to prevent.
+    //
+    // The guard is on the EXACT retraction-free form. Corrective prose legitimately quotes the old
+    // claim ("the 'WEIGHT 0 BY DESIGN' claim is false of this build"), so a substring test on the
+    // phrase alone would fire on the fix itself.
+    let c = cfg();
+    let mut offenders = Vec::new();
+    for ic in &c.indicator {
+        if ic.weight <= 0.0 {
+            continue;
+        }
+        for (needle, why) in [
+            (
+                "WEIGHT 0 BY DESIGN.",
+                "a scored channel's rationale still asserts weight 0 by design",
+            ),
+            (
+                "arithmetically incapable of moving the composite",
+                "a scored channel's rationale still says it cannot move the composite",
+            ),
+        ] {
+            // A retraction names the claim and marks it superseded; that is the only legitimate use.
+            if let Some(i) = ic.rationale.find(needle) {
+                let window = &ic.rationale[i.saturating_sub(240)..i];
+                let retracted = window.contains("SUPERSEDED")
+                    || window.contains("FALSE of this build")
+                    || window.contains("ORIGINALLY");
+                if !retracted {
+                    offenders.push(format!("{} (weight {}): {}", ic.id, ic.weight, why));
+                }
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "a scored channel may not claim it cannot move the composite — promote the prose with the \
+         weight:\n{}",
+        offenders.join("\n")
+    );
+}
+
+#[test]
+fn a_channel_whose_gate_failed_says_so_in_its_own_rationale() {
+    // The house rule: a direction that has not passed its lead/lag gate is an ASSERTED ASSUMPTION and
+    // must say so in its own rationale. Three channels were promoted after a FAILED gate at 2.8 and
+    // none of them carried the label; a reader could not tell a demonstrated finding from an assumed
+    // one. This asserts that every rationale admitting a failed or unrun gate also carries the label.
+    let c = cfg();
+    let mut missing = Vec::new();
+    for ic in &c.indicator {
+        if ic.weight <= 0.0 {
+            continue;
+        }
+        let admits_gate_problem = ic.rationale.contains("GATE FAILED")
+            || ic.rationale.contains("gate FAILED")
+            || ic.rationale.contains("THE GATE WAS NEVER PASSED")
+            || ic.rationale.contains("no lead/lag gate has been run");
+        if admits_gate_problem && !ic.rationale.contains("ASSERTED ASSUMPTION") {
+            missing.push(format!("{} (weight {})", ic.id, ic.weight));
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "these channels admit a failed or unrun gate but never call their direction an ASSERTED \
+         ASSUMPTION, so a reader cannot tell assumption from finding: {:?}",
+        missing
+    );
+}
+
+#[test]
+fn the_report_publishes_the_span_the_composite_can_occupy() {
+    // THE SCALE LIE THIS PREVENTS. Every anchor ladder stops short of 0 and 100, so the weighted mean
+    // cannot reach either end: measured 2026-11-10 the composite could only occupy 30.0-73.3 while the
+    // phase bands sat at 35/55/75 and the report said "out of 100". `late` and `critical` were
+    // unreachable and the label was `mid` on 54 of 54 recorded days. The span and the unreachable
+    // labels must now be published, and a threshold outside the band must be NAMED rather than
+    // silently implied to be reachable.
+    let Some(obs) = fixture_obs() else {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    };
+    let c = cfg();
+    let ctx = Ctx {
+        obs: &obs,
+        cfg: &c,
+    };
+    let readings = indicators::evaluate_all(&ctx);
+    let r = bubble_watch::report::build(readings, &obs, &c, "2026-11-05T12:00:00Z");
+
+    let a = r
+        .attainable
+        .as_ref()
+        .expect("an anchored config must publish its attainable band");
+    assert!(
+        a.low > 0.0 && a.high < 100.0,
+        "the band must be the real one, not the nominal 0-100: {a:?}"
+    );
+    assert!(
+        a.low < a.high,
+        "the band must be an interval, got {a:?}"
+    );
+    assert!(
+        (0.0..=100.0).contains(&a.position_pct),
+        "position must be a percentage of the band, got {}",
+        a.position_pct
+    );
+    assert!(
+        r.caveats.iter().any(|c| c.contains("ATTAINABLE RANGE")),
+        "the caveats must state the real span beside the score"
+    );
+    // A threshold at or beyond the ceiling means the label can never be produced; it must be named.
+    if c.phase.late_max > a.high {
+        assert!(
+            a.unreachable_phases.iter().any(|p| p == "critical"),
+            "critical is unreachable when late_max {} exceeds the ceiling {} — it must be said: {:?}",
+            c.phase.late_max,
+            a.high,
+            a.unreachable_phases
+        );
+    }
+}

@@ -2561,11 +2561,10 @@ impl Indicator for DistressEvents {
                 reason: format!(
                     "all {} configured insolvency queries returned nothing usable ({}), so whether \
                      AI-exposed companies are failing is UNKNOWN rather than zero. This is a retrieval \
-                     failure, not an empty docket: the same queries return valid counts when called \
-                     directly, and the host rate-limits this tool at roughly five requests per window \
-                     while the model makes ten.",
+                     failure, not an empty docket. THE SOURCE SAID: {}.",
                     configured.len(),
-                    configured.join(", ")
+                    configured.join(", "),
+                    court_failure_text(ctx)
                 ),
             };
         }
@@ -2749,10 +2748,11 @@ impl Indicator for BuildoutOppositionNews {
                  stage, where no docket exists and where a supportive White House has limited reach \
                  because permitting is local. A falling filing count is not evidence that opposition \
                  eased; it is evidence that opposition moved to a layer this model could not see. That \
-                 layer is now measured. QUERY: \"data center\" withdrawn. WEIGHT 0 BY DESIGN — this \
-                 cannot move the composite or the coverage fraction. WHY NOT SCORED: no lead/lag gate \
-                 has been run against it, and the sibling sentiment channel FAILED its gate (peak at \
-                 lag +7, p = 0.36), so the prior is unfavourable and the honest status is UNPROVEN. \
+                 layer is now measured. QUERY: \"data center\" withdrawn. SCORED AT WEIGHT 4.0, WHICH MAKES THE OLD \"CANNOT MOVE \
+                 THE COMPOSITE\" CLAIM FALSE — it is kept only as history. THE GATE FAILED: no lead/lag \
+                 gate has been run successfully against it, and the sibling sentiment channel FAILED \
+                 its gate (peak at lag +7, p = 0.36), so the direction is an ASSERTED ASSUMPTION \
+                 rather than a measured one. \
                  LIMITS, STATED: (1) 'withdrawn' is one word for a story that also uses 'cancelled', \
                  'blocked' and 'rejected'; GDELT rejects parenthesised queries, so alternatives cannot \
                  be OR'd into a single request and this is a LOWER BOUND on the phenomenon; (2) news \
@@ -2874,9 +2874,11 @@ impl Indicator for LeveragedBuilderStress {
                  above as credit DISTRESS — while this model's own scored `credit_hy` read 25/100, \
                  because BAA10Y is broad investment-grade credit at its 2nd percentile since 1986 and \
                  says nothing about AI-specific credit. Analysts call these names the subprime tranche \
-                 of the AI trade. WEIGHT 0 BY DESIGN — cannot move the composite. WHY NOT SCORED: no \
-                 lead/lag gate has been run, and a channel added on the strength of a narrative is \
-                 exactly how a model acquires a trailing indicator with real weight. LIMITS, STATED: \
+                 of the AI trade. SCORED AT WEIGHT 6.0, which makes the old \"cannot move the composite\" claim \
+                 false. THE PRE-REGISTERED GATE FAILED: no lead/lag gate passed for this channel, and a \
+                 channel added on the strength of a narrative is exactly how a model acquires a trailing \
+                 indicator with real weight — which is why the direction is recorded as an ASSERTED \
+                 ASSUMPTION and the failed gate stays on the record rather than being deleted. LIMITS, STATED: \
                  (1) these are EQUITIES, so this measures how the market prices the borrowers' risk, not \
                  their credit spreads — a bond-market series would be closer to the source, and the \
                  free, keyless substitute is the equity drawdown used here; (2) the cohort is chosen by \
@@ -3119,6 +3121,28 @@ impl Indicator for RegulatoryRisk {
                 retrieved_at: ctx.obs.retrieved_at.clone(),
             },
         }
+    }
+}
+
+/// Quote what the court source actually said, or say that nothing was recorded.
+///
+/// Added 2026-11-05 after the published gap reason turned out to be a hardcoded rate-limit excuse
+/// while the real failure was an authentication error on EVERY request for fifteen consecutive days.
+/// A failure mode that reads as by-design is the defect class this project exists to prevent.
+fn court_failure_text(ctx: &Ctx) -> String {
+    let mut seen: Vec<String> = Vec::new();
+    for f in &ctx.obs.failures {
+        let src = f.source.to_ascii_lowercase();
+        if (src.contains("court") || src.contains("recap")) && !seen.contains(&f.reason) {
+            seen.push(f.reason.clone());
+        }
+    }
+    if seen.is_empty() {
+        "no court failure was recorded for this run, so the queries returned empty rather than \
+         refusing — treat that as unknown, not as a quiet docket."
+            .to_string()
+    } else {
+        seen.join(" | ")
     }
 }
 
@@ -3493,7 +3517,7 @@ fn velocity_stats(ctx: &Ctx) -> Result<VelocityStats, String> {
             a
         }
     });
-    let n_down_5 = per_name.iter().filter(|(_, r)| *r <= -5.0).count();
+    let n_down_5 = per_name.iter().filter(|(_, r)| r.abs() >= 5.0).count();
     let share_down_5 = n_down_5 as f64 / n * 100.0;
     let rows = per_name
         .iter()
@@ -3554,7 +3578,11 @@ impl Indicator for CohortVelocity {
         // Deliberately NOT a worst-name leg: `hyperscaler_shock` and `ai_supply_chain_shock` already
         // carry the worst name, and a worst-name leg here would be a third copy of the same pinned
         // measure and would saturate on one idiosyncratic earnings miss.
-        let s_mean = crate::score::interpolate(st.mean_1d, &ic.anchors);
+        // MAGNITUDE, NOT DIRECTION. The ladder is two-sided since methodology 3.4: a +6% melt-up is as
+        // much a single-session shock as a -6% rout, and the signed version scored both a violent rally
+        // and a flat day at the arithmetic floor of 9.0. The DIRECTION is printed in the detail rather
+        // than encoded in the score, because the score answers "how violent was today", not "which way".
+        let s_mean = crate::score::interpolate(st.mean_1d.abs(), &ic.anchors);
         let s_share = crate::score::interpolate(st.share_down_5, VELOCITY_SHARE_ANCHORS);
         let stress = 0.5 * s_mean + 0.5 * s_share;
 
@@ -3569,7 +3597,8 @@ impl Indicator for CohortVelocity {
                 .into(),
             detail: format!(
                 "Today the 24-name AI complex averaged {mean_1d:+.2}% and {n_down} of {n:.0} names \
-                 ({share:.0}%) fell 5% or more; the worst was {worst_name} at {worst_ret:+.1}%. THE \
+                 ({share:.0}%) moved 5% or more in either direction; the weakest was {worst_name} at \
+                 {worst_ret:+.1}%. THE \
                  TWO LEGS SCORE {s_mean:.0} AND {s_share:.0} AND AVERAGE, so a rout concentrated in \
                  a few names and a broad one are told apart instead of being merged. WHY THIS \
                  CHANNEL EXISTS: on 2026-11-05 the worst day for semiconductors since March 2020 \
@@ -5492,5 +5521,26 @@ mod tests {
             }
             other => panic!("a settled forecast must not be scored, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn a_melt_up_scores_as_a_shock_rather_than_as_calm() {
+        // THE DEFECT THIS FIXES, ASSERTED SO IT CANNOT COME BACK. The first version scored the SIGNED
+        // mean return, so a +5.5% melt-up landed on the same floor as a flat day: measured in the
+        // archive on 2026-11-06 and 2026-11-09, both read exactly 9.0 while the detail printed
+        // "averaged +5.54%". A violent rally is a shock for an instrument whose subject is mania.
+        let cfg = shipped();
+        let flat = union_obs(&[0.0; 24], &[0.0; 24]);
+        let melt = union_obs(&[5.0; 24], &[5.0; 24]);
+        let s_flat = stress_of(&CohortVelocity.evaluate(&Ctx { obs: &flat, cfg: &cfg }));
+        let s_melt = stress_of(&CohortVelocity.evaluate(&Ctx { obs: &melt, cfg: &cfg }));
+        assert!(
+            s_melt > 50.0,
+            "a day when all 24 names rose 5% must not read as calm, got {s_melt}"
+        );
+        assert!(
+            s_melt > s_flat + 40.0,
+            "a 5% melt-up ({s_melt}) and a flat day ({s_flat}) must be told apart"
+        );
     }
 }

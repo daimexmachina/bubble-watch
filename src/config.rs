@@ -369,6 +369,54 @@ impl Config {
         self.indicator.iter().map(|i| i.weight).sum()
     }
 
+    /// The range this composite can actually occupy, given its own anchors.
+    ///
+    /// WHY THIS EXISTS. Every indicator's anchors deliberately stop short of 0 and 100 — "a quiet week
+    /// still scores 15, because a bubble instrument must not read calm as safety". The consequence, which
+    /// nobody checked for a year, is that the WEIGHTED MEAN of those ladders cannot reach 0 or 100 either.
+    /// Measured 2026-11-10 with all 242 weight: the composite can occupy **7.9 to 95.5**, so the nominal
+    /// 0-100 axis is close to honest. The useful fact is empirical, not arithmetic — across 54 recorded
+    /// days it has only ever occupied **35.1 to 47.5** and has never entered the `late` band (>= 55), so
+    /// the phase label has been `mid` on every recorded day. That is what the report now prints.
+    ///
+    /// A FIRST VERSION OF THIS FUNCTION GOT THE BAND WRONG (30.0-73.3) and the error produced a false
+    /// finding: it took the first and last anchor BY RAW VALUE, which inverts the contribution of every
+    /// DESCENDING ladder (a deeper loss is more stress). The min and max of the STRESS values is the
+    /// only correct reading, whatever the ladder's direction.
+    ///
+    /// This computes the real span. It does NOT retune the bands: `phase::band_margin` refuses to move a
+    /// threshold to hide a model-caused crossing, and this is the same class of temptation. The honest
+    /// move is to publish the span and say which labels cannot be reached, so the reader sees the
+    /// instrument's actual reach instead of its nominal one.
+    ///
+    /// Returns None when no indicator carries both weight and anchors.
+    pub fn attainable_band(&self) -> Option<(f64, f64)> {
+        let mut lo = 0.0;
+        let mut hi = 0.0;
+        let mut w = 0.0;
+        for ic in &self.indicator {
+            if ic.weight <= 0.0 || ic.anchors.is_empty() {
+                continue;
+            }
+            // MIN AND MAX OF THE STRESS VALUES, not of the anchors at the lowest and highest raw value.
+            // A ladder may be DESCENDING (a deeper loss is more stress), and taking the first and last
+            // anchor by RAW value then inverts its contribution: measured 2026-11-11, that arithmetic
+            // reported the band as 30.0-73.3 when it was 27.8-75.5, and the error was used to claim two
+            // phase labels were unreachable when they were not.
+            let (lo_s, hi_s) = ic.anchors.iter().fold(
+                (f64::INFINITY, f64::NEG_INFINITY),
+                |(l, h), a| (l.min(a[1]), h.max(a[1])),
+            );
+            lo += ic.weight * lo_s;
+            hi += ic.weight * hi_s;
+            w += ic.weight;
+        }
+        if w <= 0.0 {
+            return None;
+        }
+        Some((lo / w, hi / w))
+    }
+
     pub fn indicator(&self, id: &str) -> Option<&IndicatorCfg> {
         self.indicator.iter().find(|i| i.id == id)
     }

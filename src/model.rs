@@ -689,6 +689,23 @@ impl Trend {
     }
 }
 
+/// The range the composite can actually occupy, and which phase labels are reachable inside it.
+///
+/// Every anchor ladder stops short of 0 and 100 on purpose, so their weighted mean cannot reach either
+/// end either. Measured 2026-11-10 with all 242 weight: the composite can occupy 7.9-95.5, so "x/100" is
+/// roughly honest at the ends — but across 54 recorded days it has only occupied 35.1-47.5 and has never
+/// reached the late band. The empirical span is the fact worth publishing; see `Config::attainable_band`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Attainable {
+    pub low: f64,
+    pub high: f64,
+    /// Where this reading sits inside `[low, high]`, in percent. The meaningful position of the score.
+    pub position_pct: f64,
+    /// Phase labels that no composite value inside the band can produce. Empty when all are reachable.
+    #[serde(default)]
+    pub unreachable_phases: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Report {
     pub tool: String,
@@ -697,6 +714,11 @@ pub struct Report {
     pub composite: f64,
     pub coverage: f64,
     pub confidence: String,
+    /// The span this composite can actually occupy, given its own anchors, and where this reading sits
+    /// inside it. `None` for a config with no anchored weight. Carried because "45 out of 100" was
+    /// misleading: the reachable range was 30-73 and two phase labels could never be produced.
+    #[serde(default)]
+    pub attainable: Option<Attainable>,
     /// The same readings scored SEPARATELY by the question they answer.
     ///
     /// CONTEXT ONLY — never an input to the composite, which is byte-identical with

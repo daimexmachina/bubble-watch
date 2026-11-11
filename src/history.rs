@@ -156,6 +156,34 @@ pub fn load(dir: &Path) -> (Vec<TrendPoint>, Vec<String>) {
 ///
 /// This is a selection rule for display, not a deletion: the archive keeps
 /// every run.
+/// True when an ISO date falls on a Saturday or Sunday.
+///
+/// WHY THIS MATTERS HERE. The timer runs every day, so the archive contains a row for every calendar
+/// day, but the market is shut at the weekend: Saturday and Sunday rows carry Friday's closes and are
+/// byte-identical to it. Measured 2026-11-07: that row moved the composite -0.50, i.e. 68% of the
+/// response to the 11-05 crash, on a closed market. Treating a carried row as an observation makes the
+/// trend compare a number with itself, ages the freshness clock, and reports a flat day as calm.
+///
+/// LIMIT, STATED: this is a WEEKEND test, not a trading calendar. A weekday market holiday will still
+/// be counted as a session. A full calendar would need a holiday list this project does not keep, and
+/// six or seven wrong rows a year is a smaller error than silently treating a third of the archive as
+/// market activity.
+pub fn is_weekend(date: &str) -> bool {
+    use chrono::{Datelike, NaiveDate};
+    NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map(|d| d.weekday().num_days_from_monday() >= 5)
+        .unwrap_or(false)
+}
+
+/// The series used for TREND, FRESHNESS and the per-indicator charts: one point per date, weekends
+/// dropped because they are carried rows rather than observations.
+pub fn observations(points: &[TrendPoint]) -> Vec<TrendPoint> {
+    daily_series(points)
+        .into_iter()
+        .filter(|p| !is_weekend(&p.date))
+        .collect()
+}
+
 pub fn daily_series(points: &[TrendPoint]) -> Vec<TrendPoint> {
     let mut by_date: BTreeMap<&str, &TrendPoint> = BTreeMap::new();
     for p in points {
@@ -658,7 +686,7 @@ pub fn compute(
     // The displayed series includes today's run.
     let mut all = archive.to_vec();
     all.push(current.clone());
-    let points = daily_series(&all);
+    let points = observations(&all);
 
     // Candidate baselines: every prior archived entry, newest first. Entries
     // from today are included so the refusal message can be accurate ("the most
@@ -861,7 +889,7 @@ pub fn freshness(
         }
     }
 
-    let daily = daily_series(archive);
+    let daily = observations(archive);
     let mut seq: Vec<&BTreeMap<String, f64>> = daily.iter().map(|p| &p.stresses).collect();
     let mut dates: Vec<String> = daily.iter().map(|p| p.date.clone()).collect();
 
@@ -1053,7 +1081,7 @@ pub fn velocity(
     }
     let total: f64 = weights.values().sum();
 
-    let daily = daily_series(archive);
+    let daily = observations(archive);
     // The baseline is the newest archived point at least `window_days` before today, so a re-run on
     // an already-archived date is measured against an earlier day rather than against itself.
     let baseline = daily
@@ -1619,6 +1647,40 @@ mod tests {
     }
 
     #[test]
+    #[test]
+    fn observations_drop_carried_weekend_rows() {
+        // The timer runs daily, so the archive holds a row for every calendar day, but Saturday and
+        // Sunday carry Friday's closes: measured 2026-11-07 the weekend row moved the composite -0.50,
+        // 68% of the response to the 11-05 crash, on a closed market. Those rows must not reach the
+        // trend, the freshness clock or the per-indicator charts.
+        let mk = |d: &str, c: f64| crate::model::TrendPoint {
+            date: d.into(),
+            generated_at: format!("{}T21:35:00Z", d),
+            composite: c,
+            coverage: 0.94,
+            phase: "mid".into(),
+            methodology_version: "3.4".into(),
+            stresses: Default::default(),
+        };
+        // 2026-11-06 is a Friday, 11-07 Saturday, 11-08 Sunday, 11-09 Monday.
+        let pts = vec![
+            mk("2026-11-06", 46.3),
+            mk("2026-11-07", 45.8),
+            mk("2026-11-08", 45.8),
+            mk("2026-11-09", 45.0),
+        ];
+        let kept = observations(&pts);
+        assert_eq!(
+            kept.iter().map(|p| p.date.as_str()).collect::<Vec<_>>(),
+            vec!["2026-11-06", "2026-11-09"],
+            "weekends are carried rows, not observations"
+        );
+        assert!(is_weekend("2026-11-07") && is_weekend("2026-11-08"));
+        assert!(!is_weekend("2026-11-09"), "Monday is a session");
+        // Daily_series still keeps them, because the archive is an audit trail rather than a series.
+        assert_eq!(daily_series(&pts).len(), 4);
+    }
+
     fn phase_change_is_flagged() {
         let archive = vec![point("2026-09-10", 30.0, 1.0, "early")];
         let current = point("2026-09-17", 40.0, 1.0, "mid");

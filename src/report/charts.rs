@@ -197,7 +197,7 @@ pub fn composite_chart(points: &[TrendPoint]) -> String {
          {dots}\
          <circle cx='{lx:.1}' cy='{ly:.1}' r='5' fill='#1a73e8' stroke='#fff' stroke-width='1.5'/>\
          <text x='{tx:.1}' y='{ty:.1}' font-size='11' fill='#1a73e8' text-anchor='end'>{val:.1}</text>\
-         <text class='ax' x='-1' y='-6' font-size='10'>0-100 fixed scale · {d}</text>\
+         <text class='ax' x='-1' y='-6' font-size='10'>fixed scale, phase bands shaded · {d}</text>\
          </svg>",
         vh = H + AXIS_H + 4.0,
         bands = band_svg,

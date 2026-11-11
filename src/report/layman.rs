@@ -246,13 +246,24 @@ of the warning signs are showing."
         .filter(|i| i.weight <= 0.0 && !i.reading.is_available())
         .count();
 
+    // THE SCORE IS NOT "OUT OF 100", and saying so was a scale lie. Its own anchors bound it to a
+    // narrower span (30.0-73.3 measured 2026-11-10), and two phase labels were unreachable inside it.
+    // The sentence now says where the reading sits in the span it can actually occupy.
+    let span_note = match r.attainable.as_ref() {
+        Some(a) => format!(
+            "The scale does not run from 0 to 100: the measurements' own reference points hold it \
+between {:.0} and {:.0}, and today's reading sits {:.0}% of the way up that range.",
+            a.low, a.high, a.position_pct
+        ),
+        None => "The scale runs from 0 to 100.".to_string(),
+    };
     let the_score = format!(
-        "The score today is {:.0} out of 100, which puts it in the {} range. For scale: a score \
+        "The score today is {:.0}, which puts it in the {} range. {} For scale: a score \
 above 55 would look more like the late stage of a bubble, and only true extremes have pushed \
-past 75. It is built from {} different measurements{}. That is not a huge number, and it is \
-why this report tells you what it cannot check as well as what it can.",
+past 75. It is built from {} different measurements{}.",
         r.composite,
         phase_plain,
+        span_note,
         scored_count,
         if declared_gaps == 1 {
             ", plus 1 thing it could not measure today".to_string()
@@ -655,6 +666,7 @@ mod tests {
             generated_at: "2026-09-17T00:00:00Z".into(),
             composite,
             coverage: 1.0,
+            attainable: None,
             sub_scores: vec![],
             sub_question_labels: vec![],
             freshness: None,
