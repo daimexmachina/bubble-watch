@@ -180,6 +180,21 @@ impl Indicator for FundingGap {
                 }
             }
         };
+        if ic.weight == 0.0 {
+            // RETIRED AT METHODOLOGY 3.5: the same capex numerator as `capex_vs_cashflow`, with a
+            // capex/revenue denominator instead of capex/operating-cash-flow. Over 54 recorded days the
+            // two stress series correlate r = 0.996, so carrying both spent 8 weight on one signal. The
+            // weight moved to the twin; this returned value stays computed nowhere and the channel is a
+            // stated gap, not a zero.
+            return Reading::Unavailable {
+                reason: "RETIRED AT METHODOLOGY 3.5 — SUPERSEDED BY `capex_vs_cashflow`. Measured over \
+                         54 recorded days the two stress series correlate r = 0.996 (same capex \
+                         numerator, different denominator), so this channel double-counted a signal \
+                         already carried at weight 16. Its weight moved rather than vanished, and its \
+                         history stays in the archive."
+                    .into(),
+            };
+        }
         let capex = cohort_ttm(ctx, |c| &c.capex);
         let rev = cohort_ttm(ctx, |c| &c.revenue);
 

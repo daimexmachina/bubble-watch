@@ -127,7 +127,7 @@
 #
 # `circularity` raised from 6.0 to 12.0 on accumulated evidence. Total weight 152 -> 158, so
 # runs archived under 2.1 are non-comparable and the trend code refuses across the boundary.
-schema_version = "3.4"
+schema_version = "3.5"
 # Reviewed: 2026-09-16
 
 [phase]
@@ -291,7 +291,7 @@ id = "concentration"
 group = "pricing"
 label = "Index concentration (cap vs equal weight)"
 # WEIGHT REDUCED 12.0 -> 6.0 at methodology 1.2. See the note below the anchors.
-weight = 6.0
+weight = 0.0
 unit = "percentage-point spread, SPY 12m return minus RSP 12m return"
 source = "yahoo"
 # ---------------------------------------------------------------------------
@@ -325,15 +325,15 @@ source = "yahoo"
 # A reader must NOT read "concentration and breadth both elevated" as two
 # corroborating signals. The report states the shared variance explicitly.
 # ---------------------------------------------------------------------------
-rationale = "Mega-cap dominance is the headline concentration concern. Computable proxy: when returns are carried by a handful of large names, cap-weight beats equal-weight. PROXY: weak-to-medium — it responds to any large-cap-vs-small-cap regime, not specifically to AI-related concentration, and it is a returns measure rather than the (unavailable) free-float market-cap share. IMPORTANT: this indicator is highly correlated with `breadth` — they measure the same equal-weight-versus-cap-weight quantity over different windows (measured r = -0.70 at 12m, -0.93 at 6m, i.e. up to ~86% shared variance). Their combined weight was reduced from 22 to 11 at methodology 1.2 to stop the model counting one phenomenon as two independent confirmations. Do not read agreement between the two as corroboration."
-anchors = [[-8.0, 8.0], [-3.0, 15.0], [0.0, 22.0], [5.0, 35.0], [10.0, 50.0], [20.0, 70.0], [35.0, 88.0], [50.0, 95.0]]
+rationale = "RETIRED TO WEIGHT 0 AT METHODOLOGY 3.5 (2026-11-11): it and `breadth` are the same quantity (cap-weight versus equal-weight performance) measured with opposite signs, and on the stress scale they correlate r = +0.98 — one signal at 11 weight. The weight moved to `breadth` (5 -> 6) rather than vanishing. THE HOUSE CAVEAT ABOUT THESE TWO WAS ALREADY IN THE REPORT (r = -0.70 at 12 months, -0.93 at 6 months, up to ~86% shared variance); halving the weight to 11 in methodology 1.2 treated the symptom and left the pair. THE TEXT BELOW DESCRIBES THE SCORED BUILD AND IS NO LONGER TRUE OF THIS ONE. ORIGINALLY: Mega-cap dominance is the headline concentration concern. Computable proxy: when returns are carried by a handful of large names, cap-weight beats equal-weight. PROXY: weak-to-medium — it responds to any large-cap-vs-small-cap regime, not specifically to AI-related concentration, and it is a returns measure rather than the (unavailable) free-float market-cap share. IMPORTANT: this indicator is highly correlated with `breadth` — they measure the same equal-weight-versus-cap-weight quantity over different windows (measured r = -0.70 at 12m, -0.93 at 6m, i.e. up to ~86% shared variance). Their combined weight was reduced from 22 to 11 at methodology 1.2 to stop the model counting one phenomenon as two independent confirmations. Do not read agreement between the two as corroboration."
+anchors = []
 
 [[indicator]]
 id = "breadth"
 group = "pricing"
 label = "Market breadth"
 # WEIGHT REDUCED 10.0 -> 5.0 at methodology 1.2. See the note under `concentration`.
-weight = 5.0
+weight = 6.0
 unit = "pct, equal-weight/cap-weight ratio vs its 200-day average"
 source = "yahoo"
 rationale = "A narrowing rally lifts the index while most constituents lag; the RSP/SPY ratio falling through its own 200-day average is the classic breadth tell. PROXY: medium — this is a relative-performance breadth proxy, not advance/decline line or % of stocks above their 200d, which we cannot get free. Negatives are meaningful: if breadth is healthy, this indicator reports LOW stress and the composite says so. IMPORTANT: this is highly correlated with `concentration` — both measure equal-weight versus cap-weight performance, this one as a ratio-versus-trend and that one as a 12-month return differential (measured r = -0.70 at 12m, -0.93 at 6m). Their combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count one phenomenon twice, and the report now discloses the shared variance."
@@ -442,7 +442,7 @@ anchors = [[1.2, 4.0], [1.6, 14.0], [2.0, 26.0], [2.5, 42.0], [3.1, 60.0], [4.0,
 id = "capex_vs_cashflow"
 group = "strain"
 label = "Hyperscaler capex vs operating cash flow"
-weight = 14.0
+weight = 16.0
 unit = "ratio, TTM capex divided by TTM operating cash flow, five-hyperscaler cohort"
 source = "edgar"
 rationale = "The core fundamental of this cycle: capital spending has grown past what the businesses generate internally, forcing the migration to debt markets. A ratio below ~0.5 is a self-funding business; above 1.0 the buildout is being financed externally, which is exactly the regime that converts a disappointing quarter into a refinancing story. Heaviest weight because it is the least subjective input: both numbers are audited figures from SEC filings, not market prices."
@@ -452,11 +452,11 @@ anchors = [[0.25, 5.0], [0.45, 18.0], [0.65, 35.0], [0.85, 52.0], [1.0, 68.0], [
 id = "funding_gap"
 group = "strain"
 label = "Infrastructure spend vs revenue"
-weight = 8.0
+weight = 0.0
 unit = "ratio, TTM capex divided by TTM revenue, five-hyperscaler cohort"
 source = "edgar"
-rationale = "How much of the business is being plowed into AI infrastructure relative to what it sells. Rising capex/revenue is the signature of a capex boom outrunning monetisation. Caveat: hyperscaler revenue is mostly non-AI cloud and advertising, so this overstates the true AI capex-to-AI-revenue gap — the ~USD 600bn-wide gap often quoted comes from narrower segment data we cannot get from XBRL. Read as direction, not as that figure."
-anchors = [[0.08, 8.0], [0.12, 25.0], [0.16, 42.0], [0.20, 58.0], [0.28, 78.0], [0.40, 94.0]]
+rationale = "RETIRED TO WEIGHT 0 AT METHODOLOGY 3.5 (2026-11-11): it measured the same quantity as `capex_vs_cashflow` and the two were counted twice. Measured over 54 recorded days the two STRESS series correlate r = 0.996, i.e. they move as one signal, so carrying both spent 8 weight on evidence already counted. The weight moved to its twin (14 -> 16) rather than vanishing, and this entry keeps its history and its rationale on the record. THE TEXT BELOW DESCRIBES THE SCORED BUILD AND IS NO LONGER TRUE OF THIS ONE. ORIGINALLY: How much of the business is being plowed into AI infrastructure relative to what it sells. Rising capex/revenue is the signature of a capex boom outrunning monetisation. Caveat: hyperscaler revenue is mostly non-AI cloud and advertising, so this overstates the true AI capex-to-AI-revenue gap — the ~USD 600bn-wide gap often quoted comes from narrower segment data we cannot get from XBRL. Read as direction, not as that figure."
+anchors = []
 
 [[indicator]]
 id = "leverage"
@@ -1252,7 +1252,7 @@ anchor_note = "SORTED ASCENDING BY THE DRAWDOWN PERCENTAGE. 2026-10-27: the rati
 id = "leveraged_builder_stress"
 group = "pricing"
 label = "Debt-funded AI builders — drawdown (the BORROWERS, not the lenders)"
-weight = 6.0
+weight = 3.0
 unit = "% below 52-week high, equal-weighted across debt-funded AI builders"
 source = "yahoo"
 # SORTED ASCENDING BY DRAWDOWN (negative percentages). A DEEPER drawdown is MORE stress: this is the
@@ -1368,7 +1368,7 @@ anchor_note = "WEIGHT 0 — THE ANCHOR LIST IS DELIBERATELY EMPTY AND NO ANCHOR 
 id = "hyperscaler_shock"
 group = "pricing"
 label = "Shock at an AI major — worst short-window return in the cohort"
-weight = 6.0
+weight = 3.0
 unit = "pct — the MORE SEVERE of the 5-day return and the drawdown from the 52-week high, worst name in the AI-major cohort"
 source = "yahoo"
 # SORTED ASCENDING BY THE 5-DAY RETURN (negative percentages). A DEEPER short-window loss is MORE
@@ -1388,7 +1388,7 @@ anchor_note = "THE SAME LADDER IS APPLIED TO BOTH MEASURES — the five-day retu
 id = "ai_supply_chain_shock"
 group = "pricing"
 label = "Shock across the AI supply chain — the companies selling into the build-out"
-weight = 6.0
+weight = 3.0
 unit = "pct — the governing leg is five-day return, drawdown from the 52-week high, or breadth of drawdowns deeper than 20%, across the AI supply chain"
 source = "yahoo"
 # THE SAME RESHAPED LADDER AS hyperscaler_shock, deliberately: both measure percentage moves on the same
@@ -1447,7 +1447,7 @@ anchor_note = "SORTED ASCENDING BY THE MEAN ONE-DAY RETURN IN PERCENT. The secon
 id = "deflation_depth"
 group = "pricing"
 label = "How much of the AI complex has actually deflated — median drawdown"
-weight = 6.0
+weight = 3.0
 unit = "pct — median drawdown from its own 52-week high across the 24 AI names this model prices individually"
 source = "yahoo"
 # SORTED ASCENDING BY THE MEDIAN DRAWDOWN. A deeper median is MORE stress — the realISATION coding

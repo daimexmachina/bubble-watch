@@ -376,7 +376,7 @@ cannot say "I was wrong" is not an instrument, it is a position.
 
 ### 12.5 Definition of done for v1.8
 
-- 504 tests green offline; live assertions opt-in.
+- 505 tests green offline; live assertions opt-in.
 - Every new source probe-verified with real values before the indicator was written.
 - Every redefinition bumped `schema_version`, and the archive **refuses** cross-version baselines.
 - The site renders the falsifiers, the explosiveness test and the exposure table — shipping analysis
@@ -942,3 +942,62 @@ noisy and the output says so.
   version boundary.
 
 Weight total 226 -> 242; `schema_version` 3.2 -> 3.3.
+
+## 19. v3.5 — de-duplication, and a methodology freeze (2026-11-11)
+
+### 19.1 The measured overlap
+
+A six-lens review of this tree measured the correlations between channels that were being scored as
+if they were separate evidence. Three families failed that test:
+
+| family | channels | weight | measured |
+|---|---|---|---|
+| capex strain | `capex_vs_cashflow` + `funding_gap` | 22 | **r = 0.996** over 54 days — same capex numerator, different denominator |
+| AI-complex drawdown | `hyperscaler_shock`, `ai_supply_chain_shock`, `leveraged_builder_stress`, `deflation_depth` | 24 | **r = 0.76 to 0.98** across four DISJOINT cohorts |
+| equal-weight gap | `concentration` + `breadth` | 11 | **r = +0.98** on the stress scale (the pair the report has warned about since 1.2) |
+
+The second row is the interesting one: the four cohorts share no tickers, so a correlation of
+0.76-0.98 across disjoint sets is evidence of ONE common AI-equity factor rather than duplication by
+construction. So the channels stay — the buyers/sellers/borrowers split is real information — but
+they stop being counted four times over.
+
+### 19.2 What changed
+
+    capex_vs_cashflow      14 -> 16
+    funding_gap             8 -> 0    RETIRED, superseded (r = 0.996)
+    hyperscaler_shock       6 -> 3
+    ai_supply_chain_shock   6 -> 3
+    leveraged_builder_stress 6 -> 3
+    deflation_depth         6 -> 3
+    concentration           6 -> 0    RETIRED, superseded (r = +0.98)
+    breadth                 5 -> 6
+
+Weight total **242 -> 219**, `schema_version` **3.4 -> 3.5**. The retired channels keep their
+history, their rationales and their measured correlations in the config; they return a stated gap
+naming the channel that absorbed their weight, so the weight MOVED rather than vanished.
+
+### 19.3 The freeze
+
+Eleven methodology versions in 54 days, with five of the seven largest daily composite moves
+coinciding with a version change. The archive therefore cannot answer the only question worth asking
+of it — whether the score says something about the world.
+
+`tests/integration_tests.rs::FROZEN_METHODOLOGY` now pins the version and a test fails when it
+changes. Bumping it remains legal and is one line, but it has to be done in a test file, in the diff,
+deliberately. The intent is twelve months without a change unless a channel is found to be wrong.
+
+### 19.4 What is now said plainly about the second method
+
+The GSADF block was byte-identical across all 52 archived reports: one statistic, window ending
+2026-03-01. It reads a long-history index series at 3-month granularity, so it is neither current nor
+AI-specific. It is now dated in the report, and a caveat fires when its window ends more than 45 days
+before the run (`EXPLOSIVENESS TEST IS STALE AND IS NOT AI-SPECIFIC`, measured 255 days on
+2026-11-11). The card stays because a second method that disagrees with the composite is
+informative; what it must not do is look live.
+
+### 19.5 Deferred, deliberately
+
+`src/backtest.rs` contains the most honest result in this repository — that three historical peaks
+"can REJECT a predictor but cannot VALIDATE one" — and it appears nowhere in the report. Surfacing it
+requires loading its Shiller fixture on the report path, which is a data-plumbing change rather than a
+wording change, and it was not folded into a de-duplication commit. It is the next piece of work.

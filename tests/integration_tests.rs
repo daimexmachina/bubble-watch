@@ -1328,3 +1328,26 @@ fn the_report_publishes_the_span_the_composite_can_occupy() {
         );
     }
 }
+
+/// The methodology version this model is FROZEN at.
+///
+/// WHY A CONSTANT AND A TEST RATHER THAN A NOTE IN THE README. Measured 2026-11-11: eleven methodology
+/// versions in 54 days, with five of the seven largest daily composite moves coinciding with a version
+/// change. The archive cannot answer "is the score telling me something about the world" while the
+/// instrument is redefined every few days, and a resolution to freeze it is worth exactly as much as the
+/// thing that makes breaking it visible. Bumping this constant is the deliberate act: it shows up in the
+/// diff of a test file, which is the one place a methodology change cannot be quietly folded into a
+/// feature commit.
+const FROZEN_METHODOLOGY: &str = "3.5";
+
+#[test]
+fn the_methodology_is_frozen_at_the_declared_version() {
+    let c = cfg();
+    assert_eq!(
+        c.meta.schema_version, FROZEN_METHODOLOGY,
+        "the methodology version changed without this freeze being lifted. That is allowed, but it \
+         must be a deliberate act: if the change is intended, update FROZEN_METHODOLOGY and say in the \
+         commit what the change does to the meaning of the composite — and then leave it alone for \
+         twelve months, because the archive cannot be tested across a stream of redefinitions."
+    );
+}

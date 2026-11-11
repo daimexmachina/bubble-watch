@@ -184,6 +184,18 @@ impl Indicator for Concentration {
                 }
             }
         };
+        if ic.weight == 0.0 {
+            // RETIRED AT METHODOLOGY 3.5: the same cap-weight-versus-equal-weight quantity as
+            // `breadth`, measured with the opposite sign. On the stress scale the two correlate
+            // r = +0.98, i.e. one signal carried at 11 weight. The weight moved to `breadth`.
+            return Reading::Unavailable {
+                reason: "RETIRED AT METHODOLOGY 3.5 — SUPERSEDED BY `breadth`. The two measure the same \
+                         cap-weight versus equal-weight performance and correlate r = +0.98 on the \
+                         stress scale, which the report has warned about since methodology 1.2 without \
+                         removing the pair. Its weight moved rather than vanished."
+                    .into(),
+            };
+        }
         let (Some(spy), Some(rsp)) = (ctx.obs.yahoo.get("SPY_1y_d"), ctx.obs.yahoo.get("RSP_1y_d"))
         else {
             return Reading::Unavailable {

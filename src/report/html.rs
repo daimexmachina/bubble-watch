@@ -317,7 +317,7 @@ fn explosiveness_card(r: &Report) -> String {
         "<div class='card expl'><h3 style='margin-top:0;font-size:15px'>Explosiveness test (GSADF)</h3>\
          <div class='expl-stat' style='color:{col}'>{stat:.2}</div>\
          <div style='font-size:13.5px;margin-bottom:6px'><b>{sig}</b> &mdash; simulated 5% critical value {p95:.2}</div>\
-         <div class='mut2' style='font-size:12.5px'>Window tested: <b>{ws}</b> to <b>{we}</b> over {n} monthly observations.</div>\
+         <div class='mut2' style='font-size:12.5px'>Window tested: <b>{ws}</b> to <b>{we}</b> over {n} observations. NOT AI-SPECIFIC: this is long-history index data, and the window end is not today's date.</div>\
          <p class='mut' style='margin:12px 0 0;font-size:12.5px'>A formal hypothesis test on the price \
          series &mdash; a different KIND of evidence from every indicator in the score above, which is a \
          hand-anchored judgement. <b>It is deliberately not part of the composite.</b> If it disagrees with \

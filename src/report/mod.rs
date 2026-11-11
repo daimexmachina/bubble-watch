@@ -362,12 +362,12 @@ pub fn build_with_history(
     // of the report must not read these two rows as independent confirmations, so
     // it is stated where the numbers are.
     caveats.push(
-        "NOT INDEPENDENT: `concentration` and `breadth` measure the same underlying quantity — \
-         equal-weight versus cap-weight performance — over different windows. Measured correlation \
-         is -0.70 at 12 months and -0.93 at 6 months, i.e. up to ~86% shared variance. Their \
-         combined weight was reduced from 22 to 11 at methodology 1.2 so the model does not count \
-         one phenomenon as two pieces of evidence. Do NOT read agreement between the two as \
-         corroboration."
+        "NOT INDEPENDENT, AND NOW NOT DOUBLE-COUNTED: `concentration` and `breadth` measure the same \
+         underlying quantity — equal-weight versus cap-weight performance — over different windows, \
+         at r = -0.70 over 12 months and -0.93 over 6. The pair was first halved from 22 to 11 weight \
+         at methodology 1.2, which treated the symptom; at methodology 3.5 `concentration` was retired \
+         to weight 0 and `breadth` carries the signal alone. A reader should not treat the two names \
+         appearing in this report as two pieces of evidence."
             .into(),
     );
     if let Some(n) = &gsadf_note {
@@ -415,6 +415,28 @@ pub fn build_with_history(
                 )
             }
         ));
+    }
+    // THE EXPLOSIVENESS CARD CAN BE MONTHS STALE AND NEVER SAY SO.
+    //
+    // Measured 2026-11-11: the GSADF block was byte-identical across all 52 archived reports — one value,
+    // window ending 2026-03-01 — because the series it reads resolves to 3-month granularity and its last
+    // observation is five months before the run that displays it. A test statistic presented beside a
+    // daily score, unchanging and undated, reads as a live second opinion. It is not.
+    if let Some(e) = &explosiveness {
+        let end = crate::history::date_of(&e.window_end_date);
+        let age_days = crate::history::days_between(&end, &crate::history::date_of(generated_at));
+        if age_days.is_some_and(|d| d > 45.0) {
+            caveats.push(format!(
+                "EXPLOSIVENESS TEST IS STALE AND IS NOT AI-SPECIFIC. Its window ends {} — {:.0} days \
+                 before this run — on a long history of the S&P 500, so it says nothing about the AI \
+                 complex and nothing about the last {} months. It is printed because a second method \
+                 that disagrees with the composite is informative; it is dated here because a \
+                 constant statistic beside a daily score otherwise reads as a fresh finding.",
+                e.window_end_date,
+                age_days.unwrap_or(0.0),
+                age_days.unwrap_or(0.0) / 30.0
+            ));
+        }
     }
     caveats.push(format!(
         "METHODOLOGY VERSION {}. The tool records which version of the model produced each run, \
