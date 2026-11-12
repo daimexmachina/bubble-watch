@@ -1056,6 +1056,13 @@ pub struct Velocity {
     pub movers: Vec<Mover>,
     /// Indicators that could not contribute because they had no value at the window start.
     pub absent: Vec<String>,
+    /// Why no comparison was made, when one was refused rather than unavailable.
+    ///
+    /// Added 2026-11-11: the window now requires a baseline recorded under the SAME methodology, and a
+    /// refusal is a different fact from "no history". Saying which is the difference between a
+    /// deliberate gap and a bug report.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 /// Recent movement across the measured inputs.
@@ -1067,6 +1074,7 @@ pub fn velocity(
     readings: &[IndicatorReading],
     today: &str,
     window_days: i64,
+    current_version: &str,
 ) -> Velocity {
     let mut current: BTreeMap<String, f64> = BTreeMap::new();
     let mut weights: BTreeMap<String, f64> = BTreeMap::new();
@@ -1084,9 +1092,16 @@ pub fn velocity(
     let daily = observations(archive);
     // The baseline is the newest archived point at least `window_days` before today, so a re-run on
     // an already-archived date is measured against an earlier day rather than against itself.
+    // THE BASELINE MUST BE THE SAME INSTRUMENT. `trend` already refuses to compute a direction of
+    // travel across a methodology change; this window did not, so on 2026-11-11 the report described
+    // "the inputs moved 1.64 composite points over the last 7 days" using a baseline recorded under
+    // 3.2/3.4, two days after a reweighting that moved the composite ~3 points on its own. The
+    // movement being reported was partly the model, not the world — the exact confusion the rest of
+    // this tool exists to prevent.
     let baseline = daily
         .iter()
         .filter(|p| p.date != today)
+        .filter(|p| methodology_of(p) == current_version)
         .filter(|p| {
             days_between(&p.date, today)
                 .map(|d| d >= window_days as f64)
@@ -1095,13 +1110,31 @@ pub fn velocity(
         .next_back();
 
     let Some(base) = baseline else {
+        // Distinguish "no history" from "no history under THIS methodology": the second is a
+        // deliberate refusal, and saying so is the difference between a gap and a bug report.
+        let any_earlier = daily.iter().any(|p| {
+            p.date != today
+                && days_between(&p.date, today)
+                    .map(|d| d >= window_days as f64)
+                    .unwrap_or(false)
+        });
         return Velocity {
-            window_days,
+            window_days: window_days,
             net: 0.0,
             gross: 0.0,
             since: None,
             movers: Vec::new(),
             absent: weights.keys().cloned().collect(),
+            reason: if any_earlier {
+                Some(format!(
+                    "no run at least {} day(s) old was recorded under methodology {} — this run \
+                     redefined the model, so comparing its inputs with an older run would report an \
+                     accounting change as a market move",
+                    window_days, current_version
+                ))
+            } else {
+                None
+            },
         };
     };
 
@@ -1140,6 +1173,7 @@ pub fn velocity(
         since: Some(base.date.clone()),
         movers,
         absent,
+        reason: None,
     }
 }
 
@@ -2130,7 +2164,7 @@ mod tests {
             reading("riser", 10.0, 40.0),  // +30 stress
             reading("faller", 10.0, 10.0), // -30 stress
         ];
-        let v = velocity(&archive, &readings, "2026-10-16", 7);
+        let v = velocity(&archive, &readings, "2026-10-16", 7, METHOD);
 
         assert_eq!(v.since.as_deref(), Some("2026-10-01"));
         // each contribution = 10 * delta / 20
@@ -2165,7 +2199,7 @@ mod tests {
         // claim "nothing moved", which is a measurement this code never took — and it is the reassuring
         // direction to fail in, which is the dangerous one.
         let readings = vec![reading("a", 10.0, 50.0)];
-        let v = velocity(&[], &readings, "2026-10-16", 7);
+        let v = velocity(&[], &readings, "2026-10-16", 7, METHOD);
 
         assert!(v.since.is_none(), "no baseline may be invented");
         assert!(v.movers.is_empty());
@@ -2190,7 +2224,7 @@ mod tests {
             reading("present", 10.0, 10.0),
             reading("new_one", 10.0, 80.0),
         ];
-        let v = velocity(&archive, &readings, "2026-10-16", 7);
+        let v = velocity(&archive, &readings, "2026-10-16", 7, METHOD);
 
         assert_eq!(v.absent, vec!["new_one".to_string()]);
         assert!(
@@ -2201,6 +2235,34 @@ mod tests {
     }
 
     #[test]
+    #[test]
+    fn a_baseline_recorded_under_another_methodology_is_refused() {
+        // Measured 2026-11-11: the report described "the inputs moved over the last 7 days" using a
+        // baseline recorded under 3.2/3.4, two days after a reweighting that moved the composite about
+        // three points on its own. The movement being described was partly the model. `trend` already
+        // refused this comparison; the velocity window did not.
+        let archive = vec![
+            point_v("2026-10-01", 40.0, 1.0, "mid", "3.2"),
+            point_v("2026-10-02", 41.0, 1.0, "mid", "3.2"),
+        ];
+        let readings = vec![scored("volatility", 8.0, 50.0)];
+        let v = velocity(&archive, &readings, "2026-10-16", 7, "3.5");
+        assert!(
+            v.since.is_none(),
+            "an older run under another methodology must not serve as the baseline"
+        );
+        let reason = v.reason.clone().unwrap_or_default();
+        assert!(
+            reason.contains("methodology"),
+            "the refusal must name the reason: {reason}"
+        );
+
+        // Same archive, same version: now it compares.
+        let v2 = velocity(&archive, &readings, "2026-10-16", 7, "3.2");
+        assert_eq!(v2.since.as_deref(), Some("2026-10-02"));
+        assert!(v2.reason.is_none());
+    }
+
     fn velocity_measures_from_at_least_the_full_window_back() {
         // The baseline must be at least `window_days` old. A one-day re-run would otherwise be measured
         // against yesterday and reported as "the last 7 days", understating every figure.
@@ -2209,7 +2271,7 @@ mod tests {
             fp("2026-10-15", &[("a", 30.0)]), // 1 day before today, must NOT be used for a 7-day window
         ];
         let readings = vec![reading("a", 10.0, 30.0)];
-        let v = velocity(&archive, &readings, "2026-10-16", 7);
+        let v = velocity(&archive, &readings, "2026-10-16", 7, METHOD);
 
         assert_eq!(
             v.since.as_deref(),

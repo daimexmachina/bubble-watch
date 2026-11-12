@@ -157,16 +157,30 @@ pub fn build_with_history(
             &readings,
             &crate::history::date_of(generated_at),
             crate::history::VELOCITY_WINDOW_DAYS,
+            &cfg.meta.schema_version,
         ))
     } else {
         None
     };
 
     let composite = comp_opt.unwrap_or(0.0);
-    let confidence = crate::score::confidence(
+    // CONFIDENCE IS COVERAGE **AND** FRESHNESS, NOT COVERAGE ALONE.
+    //
+    // Measured 2026-11-11: coverage 91.8% produced "high" while 94 of 201 weight (47%) had not moved
+    // since 18 September, and the plain-English summary two paragraphs later said the slow half "has
+    // not been re-measured". One word said confident, the prose said not really. A band that ignores
+    // half the evidence is not a band; it is a restatement of the coverage number that already sits
+    // beside it, which is why the downgrade below is conditional rather than decorative.
+    const FRESH_ENOUGH: f64 = 0.6;
+    let live_share = freshness
+        .as_ref()
+        .and_then(|f| (f.total_weight > 0.0).then(|| f.live_weight / f.total_weight));
+    let confidence = crate::score::confidence_with_freshness(
         coverage,
+        live_share,
         cfg.coverage_floor.low_below,
         cfg.coverage_floor.high_above,
+        FRESH_ENOUGH,
     );
 
     let phase = match comp_opt {
@@ -224,7 +238,17 @@ pub fn build_with_history(
             }
         }
     } else {
-        gsadf_note = Some("the explosiveness test is disabled in config.".into());
+        gsadf_note = Some(
+            "the explosiveness test DID NOT RUN in this build, by decision. Measured 2026-11-11: it returned the \
+             same statistic in all 52 archived reports — 6.02 against a 1% critical value of 2.46, \
+             window 1984-12 to 2026-03-01 — because the only long-history series reachable here is a \
+             3-month-granularity index whose last observation is five months old. A test whose answer \
+             cannot change is not a second opinion, so the card is removed rather than reprinted \
+             daily. THE LAST RESULT IS RECORDED HERE ONCE, so the finding is not lost: significant at \
+             the 1% level, on market-level data, for a window ending 2026-03-01. Re-enabling needs a \
+             monthly series with a current observation."
+                .into(),
+        );
         None
     };
 
@@ -422,6 +446,26 @@ pub fn build_with_history(
     // window ending 2026-03-01 — because the series it reads resolves to 3-month granularity and its last
     // observation is five months before the run that displays it. A test statistic presented beside a
     // daily score, unchanging and undated, reads as a live second opinion. It is not.
+    if let Some(s) = live_share {
+        if s < 0.6 {
+            caveats.push(format!(
+                "CONFIDENCE IS COVERAGE AND FRESHNESS, AND THE BAND HAS BEEN DOWNGRADED FOR \
+                 FRESHNESS: {:.0}% of the weight answered this run, but only {:.0}% of it has moved \
+                 within the last 7 days. The rest is pinned to an older measurement, so 'high' would \
+                 describe the sources rather than the reading. A flat headline is partly a statement \
+                 about filing cadence.",
+                coverage * 100.0,
+                s * 100.0
+            ));
+        }
+    }
+    if let Some(r) = velocity.as_ref().and_then(|v| v.reason.as_ref()) {
+        caveats.push(format!(
+            "RECENT MOVEMENT NOT REPORTED: {}. The movement figures are withheld rather than \
+             computed against a run that measured a different model.",
+            r
+        ));
+    }
     if let Some(e) = &explosiveness {
         let end = crate::history::date_of(&e.window_end_date);
         let age_days = crate::history::days_between(&end, &crate::history::date_of(generated_at));

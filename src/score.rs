@@ -167,6 +167,30 @@ pub fn confidence(coverage: f64, low_below: f64, high_above: f64) -> &'static st
     }
 }
 
+/// The published confidence band, from coverage AND freshness.
+///
+/// WHY FRESHNESS IS PART OF IT. Measured 2026-11-11: 91.8% coverage produced "high" while 94 of 201
+/// weight had not moved since 18 September — and the plain-English summary in the same report said the
+/// slow half "has not been re-measured". One word claimed confidence the evidence did not support, and
+/// it was a restatement of the coverage figure already printed beside it.
+///
+/// The rule: "high" requires both wide coverage and a live majority; below that share the band drops
+/// one step, because a composite mostly pinned to an older measurement is a confident statement about
+/// old data. A missing freshness (no history read) leaves the coverage band alone — the caller has not
+/// measured freshness, so it must not be assumed.
+pub fn confidence_with_freshness(
+    coverage: f64,
+    live_share: Option<f64>,
+    low_below: f64,
+    high_above: f64,
+    fresh_enough: f64,
+) -> &'static str {
+    match (confidence(coverage, low_below, high_above), live_share) {
+        ("high", Some(s)) if s < fresh_enough => "medium",
+        (band, _) => band,
+    }
+}
+
 /// Fill in each indicator's renormalized contribution to the composite.
 ///
 /// Keeping this separate from `composite` lets the report show, per indicator,
@@ -462,5 +486,25 @@ mod tests {
         let out = sub_scores(&r, &g);
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].key, "A");
+    }
+
+    #[test]
+    fn a_high_coverage_reading_with_stale_weight_is_not_high_confidence() {
+        // The measured case: 92% coverage, 47% of weight unmoved since 18 September, band said "high".
+        assert_eq!(
+            confidence_with_freshness(0.92, Some(0.53), 0.6, 0.85, 0.6),
+            "medium"
+        );
+        assert_eq!(
+            confidence_with_freshness(0.92, Some(0.75), 0.6, 0.85, 0.6),
+            "high"
+        );
+        // Freshness is unknown when no history was read: the coverage band must stand alone.
+        assert_eq!(confidence_with_freshness(0.92, None, 0.6, 0.85, 0.6), "high");
+        // Low coverage is never rescued by freshness.
+        assert_eq!(
+            confidence_with_freshness(0.40, Some(0.9), 0.6, 0.85, 0.6),
+            "low"
+        );
     }
 }

@@ -938,6 +938,29 @@ impl Indicator for ForeignOwnership {
         let yoy = crate::sources::z1::yoy_growth(&series.points);
         let stress = crate::score::interpolate(pct, &ic.anchors);
 
+        // A READING ABOVE THE TOP ANCHOR IS A CLAMP, AND IT MUST SAY SO.
+        //
+        // Measured 2026-11-11: this channel had read exactly 92.0 — its top anchor's value — for
+        // thirteen consecutive runs while its raw input sat at the 99.7th percentile of an 80-year
+        // series, i.e. at the most extreme reading the data contains. It is not broken, but it cannot
+        // rise, and nothing in the output said which. A number that cannot move is still reported; a
+        // reader is entitled to know that it has stopped being able to.
+        let top_raw = ic
+            .anchors
+            .iter()
+            .map(|a| a[0])
+            .fold(f64::NEG_INFINITY, f64::max);
+        let clamp_note = if pct >= top_raw {
+            format!(
+                " CLAMPED: the percentile ({:.1}) is at or above this channel's top anchor ({:.0}), \
+                 so the stress cannot rise further until the ladder is extended or the percentile \
+                 falls. It has been reporting the same value for every run in the archive window.",
+                pct, top_raw
+            )
+        } else {
+            String::new()
+        };
+
         Reading::Scored {
             stress,
             value: pct,
@@ -967,7 +990,7 @@ impl Indicator for ForeignOwnership {
                     Some(g) => format!(" Up {:.1}% year over year.", g),
                     None => String::new(),
                 },
-                format!(" Retrieved {}.", as_of),
+                format!(" Retrieved {}.{}", as_of, clamp_note),
             ),
             provenance: series.provenance.clone(),
         }

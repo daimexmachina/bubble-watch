@@ -206,7 +206,14 @@ sparkline_points = 30
 # tails, whereas real equity returns have both.
 # ---------------------------------------------------------------------------
 [gsadf]
-enabled = true
+# DISABLED 2026-11-11. Measured: the block was byte-identical across all 52 archived reports — one
+# statistic, window ending 2026-03-01 — because the only long-history series this tool can reach is a
+# 3-month-granularity index. A test that returns the same number every day is not a second opinion, and
+# printing it beside a daily composite invited exactly that reading. The last result is recorded ONCE in
+# the report so the history is not lost, and is not repeated. Re-enabling requires a monthly series with
+# a current last observation (the Shiller fixture is the obvious candidate, and that is a data-plumbing
+# job, not a config flag).
+enabled = false
 monte_carlo_reps = 200
 # Fixed seed so the critical values cannot move between runs. A threshold that
 # drifted run to run would make the whole report non-reproducible.

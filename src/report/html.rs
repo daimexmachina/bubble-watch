@@ -622,6 +622,36 @@ pub fn render_dashboard(
     sparkline_points: usize,
     have_page: &dyn Fn(&str) -> bool,
 ) -> String {
+    // THE LINE SPANS THE MODEL, NOT JUST THE MARKET, AND IT MUST SAY SO.
+    //
+    // Measured 2026-11-11: this chart is one continuous line labelled "score over recorded runs" and the
+    // page mentioned methodology nowhere, while the archive behind it holds eleven versions. The report
+    // itself refuses that comparison in prose ("a composite from one methodology version and a composite
+    // from another are two DIFFERENT INSTRUMENTS"); the dashboard drew it anyway and let a reader add
+    // two points together as though they were the same instrument.
+    let mut versions: Vec<&str> = points
+        .iter()
+        .map(|p| {
+            if p.methodology_version.is_empty() {
+                "1.0"
+            } else {
+                p.methodology_version.as_str()
+            }
+        })
+        .collect();
+    versions.sort_unstable();
+    versions.dedup();
+    let methodnote = if versions.len() > 1 {
+        format!(
+            "THIS LINE CROSSES {} METHODOLOGY VERSIONS ({}), so a step in it may be the MODEL \
+             changing rather than the market. Read the shape, not the difference between two points.",
+            versions.len(),
+            versions.join(" → ")
+        )
+    } else {
+        String::new()
+    };
+
     let series = sparkline(points, sparkline_points);
 
     let mut rows = String::new();
@@ -926,9 +956,9 @@ svg .latest {{ fill:#6a1b9a; }}
   <h3 style="margin-top:0;font-size:15px">Score over recorded runs</h3>
   {series}
   <p class="mut" style="margin:10px 0 0;font-size:12px">The shaded bands are the documented phases
-  (early below 35, mid 35–55, late 55–75, critical above 75) and the scale is fixed at 0–100, so a
-  small move looks small rather than being stretched to fill the chart. These are comparisons of
-  measured state, not a forecast.</p>
+  (early below 35, mid 35–55, late 55–75, critical above 75). A small move looks small rather than
+  being stretched to fill the chart, and these are comparisons of measured state, not a forecast.
+  <b>{methodnote}</b></p>
 </div>
 
 <div class="card">
@@ -1401,6 +1431,18 @@ table.exp th {{ white-space:nowrap; letter-spacing:.3px; padding-left:6px; paddi
   /* The drift callout, now class-based so it can be reached. */
   .driftnote {{ background:#2a2418; border-left-color:#8a6d1f; color:#f0e6d2; }}
 }}
+
+/* THE ANSWER BAND — the number and its qualifiers, first thing on the page. */
+.answer { display:flex; align-items:center; gap:14px; margin:14px 0 18px; padding:12px 16px;
+  border:1px solid #d8d8d8; border-radius:10px; background:#fafafa; }
+.answer-n { font-size:34px; font-weight:700; line-height:1; }
+.answer-n small { font-size:12px; font-weight:400; color:#666; }
+.answer-t { font-size:14px; line-height:1.45; }
+.answer-s { font-size:12px; color:#666; margin-top:2px; }
+@media (prefers-color-scheme: dark) {
+  .answer { background:#1b1b1b; border-color:#3a3a3a; }
+  .answer-n small, .answer-s { color:#aaa; }
+}
 "#;
 
 /// The stylesheet as rendered (format escapes resolved), for tests to assert against.
@@ -1477,7 +1519,6 @@ pub fn render(r: &Report) -> String {
             )
         },
         layman_block("Getting better or worse", &r.layman.direction_of_travel),
-        layman_block("What this cannot see at all", &r.layman.known_blind_spots),
         layman_block(
             "What this could not check today",
             &r.layman.what_we_cannot_measure,
@@ -1502,6 +1543,38 @@ pub fn render(r: &Report) -> String {
         ),
     };
 
+    // THE ANSWER BAND. Measured 2026-11-11: the first viewport carried no figure at all — the
+    // composite first appeared around word 1,164, behind an intro and a caveat wall — so a reader
+    // had to work to learn the one thing the page exists to say. Everything here is a fact already in
+    // the report, restated once at the top in the order a reader needs it.
+    let position = match &r.attainable {
+        Some(a) => format!("{:.0}% up its {:.0}-{:.0} span", a.position_pct, a.low, a.high),
+        None => String::new(),
+    };
+    let mover = r
+        .velocity
+        .as_ref()
+        .and_then(|v| v.movers.first())
+        .map(|m| {
+            format!(
+                " · biggest mover: {} {:+.1}",
+                esc(&m.id),
+                m.contribution
+            )
+        })
+        .unwrap_or_default();
+    let answer = format!(
+        "<div class='answer'><div class='answer-n'>{score:.1}<small>/100</small></div>\
+         <div class='answer-t'><b>{phase}</b> · coverage {cov:.0}% · confidence {conf}{mover}\
+         <div class='answer-s'>{position}</div></div></div>",
+        score = r.composite,
+        phase = esc(&r.phase),
+        cov = r.coverage * 100.0,
+        conf = esc(&r.confidence),
+        mover = mover,
+        position = esc(&position),
+    );
+
     format!(
         r##"<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
@@ -1512,7 +1585,8 @@ pub fn render(r: &Report) -> String {
 </style></head><body>
 
 <h1>AI Bubble Watch</h1>
-<div class="sub">generated {gen} · bubble-watch {ver} · coverage {cov:.0}% · confidence {conf}</div>
+<div class="sub">generated {gen} · bubble-watch {ver}</div>
+{answer}
 
 <div class="card lm">
   <h3 style="margin-top:0;font-size:15px">Plain-English summary</h3>
@@ -1586,7 +1660,7 @@ pub fn render(r: &Report) -> String {
         gen = esc(&r.generated_at),
         ver = esc(&r.version),
         cov = r.coverage * 100.0,
-        conf = esc(&r.confidence),
+        answer = answer,
         lm_what = esc(&r.layman.what_this_is),
         lm_blocks = lm_blocks,
         lm_bottom = esc(&r.layman.bottom_line),
